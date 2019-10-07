@@ -8,6 +8,32 @@ import matplotlib.pyplot as plt
 import argparse
 from models import dense
 import math
+import keras.backend as K
+
+def huber_loss(y_true, y_pred, delta=1.0):
+    error = y_pred - y_true
+    abs_error = K.abs(error)
+    quadratic = K.minimum(abs_error, delta)
+    linear = abs_error - quadratic
+    return 0.5 * K.square(quadratic) + delta * linear
+
+def mean_absolute_relative_error(y_true, y_pred):
+    if not K.is_tensor(y_pred):
+        y_pred = K.constant(y_pred)
+    y_true = K.cast(y_true, y_pred.dtype)
+    diff = K.abs((y_true - y_pred) / K.clip(K.abs(y_true),
+                                            K.epsilon(),
+                                            None))
+    return K.mean(diff, axis=-1)
+
+def mean_squared_relative_error(y_true, y_pred):
+    if not K.is_tensor(y_pred):
+        y_pred = K.constant(y_pred)
+    y_true = K.cast(y_true, y_pred.dtype)
+    diff = K.square((y_true - y_pred) / K.clip(K.square(y_true),
+                                            K.epsilon(),
+                                            None))
+    return K.mean(diff, axis=-1)
 
 def get_features_targets(file_name, features, targets):
     # load file
@@ -43,13 +69,16 @@ def main(args):
     targets = ['genMet_pt', 'genMet_phi']
 
     feature_array, target_array = get_features_targets(file_path, features, targets)
+    target_scale = np.array([100., 1.])
     nevents = feature_array.shape[0]
     nfeatures = feature_array.shape[1]
     ntargets = target_array.shape[1]
+    target_array = target_array/target_scale
 
     keras_model = dense(nfeatures, ntargets)
 
-    keras_model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], 
+                        loss_weights = [10., 1.], metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=10)
@@ -65,7 +94,6 @@ def main(args):
     tv_num = math.ceil(fulllen*tv_frac)
     splits = np.cumsum([fulllen-2*tv_num,tv_num,tv_num])
     splits = [int(s) for s in splits]
-    print(splits)
 
     X_train = X[0:splits[0]]
     X_val = X[splits[1]:splits[2]]
@@ -75,22 +103,30 @@ def main(args):
     y_val = y[splits[1]:splits[2]]
     y_test = y[splits[0]:splits[1]]
     
-    keras_model.fit(X_train, y_train, batch_size=1024, 
-                    epochs=10, validation_data=(X_val, y_val), shuffle=True,
+    keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
+                    epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
                     callbacks = callbacks)
 
     keras_model.load_weights('keras_model_best.h5')
     
     predict_test = keras_model.predict(X_test)
+    predict_test = np.concatenate(predict_test,axis=1)
+    print(y_test)
+    print(predict_test)
 
+    def print_res(gen_met, predict_met, name='Met_res.pdf'):
+        rel_err = (predict_met - gen_met)/np.clip(gen_met, 1e-6, None)
+        plt.figure()          
+        plt.hist(rel_err, bins=np.linspace(-1, 1, 50+1))
+        plt.xlabel("Rel. err.")
+        plt.ylabel("Events")
+        plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+        plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
+        plt.savefig(name)
     
-    plt.figure()       
-    plt.hist(predict_test[:,0]-y_test[:,0], bins=np.linspace(0.5, 1.5, 100+1))
-    plt.xlabel("Rel. err. for genMet_pt")
-    plt.ylabel("Events")
-    plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
-    plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
-    plt.savefig('Met_res.pdf')
+    print_res(y_test[:,0], predict_test[:,0], name = 'Met_res.pdf')
+    print_res(y_test[:,1], predict_test[:,1], name = 'Met_phi_res.pdf')
+    
 
 if __name__ == "__main__":
 
