@@ -57,8 +57,7 @@ def get_features_targets(file_name, features, targets):
     return feature_array,target_array
 
 def main(args):
-	# *************************
-    file_path = 'input_MET_VBF.h5'
+    file_path = 'input_MET.h5'
     features = ['L1CHSMet_pt', 'L1CHSMet_phi',
                 'L1CaloMet_pt', 'L1CaloMet_phi',
                 'L1PFMet_pt', 'L1PFMet_phi',
@@ -71,12 +70,10 @@ def main(args):
 
     feature_array, target_array = get_features_targets(file_path, features, targets)
     target_scale = np.array([100., 1.])
-    feature_scale = np.array([100., 1., 100., 1., 100., 1., 100., 1., 100., 1., 100., 1., 100., 1.])
     nevents = feature_array.shape[0]
     nfeatures = feature_array.shape[1]
     ntargets = target_array.shape[1]
     target_array = target_array/target_scale
-    feature_array = feature_array/feature_scale
 
     keras_model = dense(nfeatures, ntargets)
 
@@ -85,8 +82,7 @@ def main(args):
     print(keras_model.summary())
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=10)
-	# ***************************
-    model_checkpoint = ModelCheckpoint('keras_model_best_VBF.h5', monitor='val_loss', save_best_only=True)
+    model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
     callbacks = [early_stopping, model_checkpoint]
 
     # fit keras model
@@ -107,15 +103,11 @@ def main(args):
     y_val = y[splits[1]:splits[2]]
     y_test = y[splits[0]:splits[1]]
 
-    test_events = y_test.shape[0]
-    print("test events : ","%.d" % (test_events))
-    
     keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
                     epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
                     callbacks = callbacks)
 
-	# ***********************
-    keras_model.load_weights('keras_model_best_VBF.h5')
+    keras_model.load_weights('keras_model_best.h5')
     
     predict_test = keras_model.predict(X_test)
     predict_test = np.concatenate(predict_test,axis=1)
@@ -123,29 +115,15 @@ def main(args):
     print(predict_test)
 
     def print_res(gen_met, predict_met, name='Met_res.pdf'):
-		for i in range(test_events):
-			if -1e-6 < gen_met[i] < 1e-6:
-				gen_met[i] = 1e-6
-		rel_err = (predict_met - gen_met)/gen_met
-		# It needs to be erased
-		#rel_err = predict_met - gen_met
+		rel_err = (predict_met - gen_met)/np.clip(gen_met, 1e-6, None)
 		plt.figure()          
-		plt.hist(rel_err, bins=np.linspace(-3.5, 3.5, 50+1))
-		plt.xlabel("Relative error (%)")
+		plt.hist(rel_err, bins=np.linspace(-1., 1., 50+1))
+		plt.xlabel("Rel. err.")
 		plt.ylabel("Events")
 		plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
 		plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
 		plt.savefig(name)
 	
-    '''
-    print_res(X_test[:,1], predict_test[:,1], name = 'CHS_dif_TTbar.pdf')
-    print_res(X_test[:,3], predict_test[:,1], name = 'Calo_dif_TTbar.pdf')
-    print_res(X_test[:,5], predict_test[:,1], name = 'PF_dif_TTbar.pdf')
-    print_res(X_test[:,7], predict_test[:,1], name = 'Puppi_dif_TTbar.pdf')
-    print_res(X_test[:,9], predict_test[:,1], name = 'TK_dif_TTbar.pdf')
-    print_res(X_test[:,11], predict_test[:,1], name = 'TKV5_dif_TTbar.pdf')
-    print_res(X_test[:,13], predict_test[:,1], name = 'TKV6_dif_TTbar.pdf')
-    '''
     print_res(y_test[:,0], predict_test[:,0], name = 'MET_pt_res.pdf')
     print_res(y_test[:,1], predict_test[:,1], name = 'MET_phi_res.pdf')
     
