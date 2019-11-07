@@ -71,17 +71,28 @@ def main(args):
 
     feature_array, target_array = get_features_targets(file_path, features, targets)
     target_scale = np.array([100., 1.])
-    feature_scale = np.array([100., 1., 100., 1., 100., 1., 100., 1., 100., 1., 100., 1., 100., 1.])
     nevents = feature_array.shape[0]
     nfeatures = feature_array.shape[1]
     ntargets = target_array.shape[1]
     #target_array = target_array/target_scale
-    #feature_array = feature_array/feature_scale
 
-    # Change phi range -Pi ~ Pi to 0 ~ 2*Pi
-    target_array[:,1] = target_array[:,1] + math.pi
-    for i in [1, 3, 5, 7, 9, 11, 13]:
-        feature_array[:,i] = feature_array[:,i] + math.pi
+    # Convert feature from pt, phi to px, py
+    feature_array_xy = np.zeros((nevents, nfeatures))
+    
+    for i in range(14):
+        if i%2 == 0:
+            for j in range(nevents):
+                feature_array_xy[j,i] = feature_array[j,i] * math.cos(feature_array[j,i+1])
+        if i%2 == 1:
+            for j in range(nevents):
+                feature_array_xy[j,i] = feature_array[j,i-1] * math.sin(feature_array[j,i])
+	
+    # Convert target from pt phi to px, py
+    target_array_xy = np.zeros((nevents, ntargets))
+
+    for i in range(nevents):
+        target_array_xy[i,0] = target_array[i,0] * math.cos(target_array[i,1])
+        target_array_xy[i,1] = target_array[i,0] * math.sin(target_array[i,1])
 
 
     keras_model = dense(nfeatures, ntargets)
@@ -95,8 +106,8 @@ def main(args):
     callbacks = [early_stopping, model_checkpoint]
 
     # fit keras model
-    X = feature_array
-    y = target_array
+    X = feature_array_xy
+    y = target_array_xy
 
     fulllen = nevents
     tv_frac = 0.10
@@ -112,8 +123,8 @@ def main(args):
     y_val = y[splits[1]:splits[2]]
     y_test = y[splits[0]:splits[1]]
 
-    keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
-                    epochs=500, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
+	keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
+					epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
                     callbacks = callbacks)
 
 	#***********************
@@ -125,17 +136,17 @@ def main(args):
     print(predict_test)
 
     def print_res(gen_met, predict_met, name='Met_res.pdf'):
-        rel_err = (predict_met - gen_met)/np.clip(gen_met, 1e-6, None)
+        rel_err = (predict_met - gen_met)/gen_met#np.clip(gen_met, 1e-6, None)
         plt.figure()
-        plt.hist(rel_err, bins=np.linspace(-3., 3., 50+1))
-        plt.xlabel("Relative error ((predict - true)/true)")
+        plt.hist(rel_err, bins=np.linspace(-200., 200., 50+1))
+        plt.xlabel("relative error ((predict - true)/true)")
         plt.ylabel("Events")
         plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
         plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
         plt.savefig(name)
 	
-    print_res(y_test[:,0], predict_test[:,0], name = 'MET_pt.pdf')
-    print_res(y_test[:,1], predict_test[:,1], name = 'MET_phi.pdf')
+    print_res(y_test[:,0], predict_test[:,0], name = 'MET_px_res.pdf')
+    print_res(y_test[:,1], predict_test[:,1], name = 'MET_py_res.pdf')
     
 
 if __name__ == "__main__":
