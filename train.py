@@ -190,6 +190,13 @@ def main(args):
     print(y_test)
     print(predict_test)
 
+    # Print RMS 
+    y_test_con = np.concatenate((y_test,y_test,y_test,y_test,y_test,y_test,y_test), axis=1)
+    rel_error = (X_test - y_test_con)/y_test_con
+    y_test_square = rel_error * rel_error
+    RMS = np.sqrt(np.mean(y_test_square, axis=0))
+	print("RMS from feature : ", RMS)
+
     def print_res(gen_met, predict_met, name='Met_res.pdf'):
         rel_err = (predict_met - gen_met)
         plt.figure()
