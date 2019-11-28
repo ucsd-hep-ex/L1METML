@@ -117,6 +117,8 @@ def main(args):
     y_val = y[splits[1]:splits[2]]
     y_test = y[splits[0]:splits[1]]
     
+    print(y.shape[0])
+    print(y_test.shape[0])
     # Set parameters for weight function
     number_of_interval = 200
     mean = y_test.shape[0]/number_of_interval
@@ -187,15 +189,25 @@ def main(args):
     
     predict_test = keras_model.predict(X_test)
     predict_test = np.concatenate(predict_test,axis=1)
-    print(y_test)
-    print(predict_test)
 
-    # Print RMS 
-    y_test_con = np.concatenate((y_test,y_test,y_test,y_test,y_test,y_test,y_test), axis=1)
-    rel_error = (X_test - y_test_con)/y_test_con
-    y_test_square = rel_error * rel_error
-    RMS = np.sqrt(np.mean(y_test_square, axis=0))
-	print("RMS from feature : ", RMS)
+    test_events = predict_test.shape[0]
+
+    predict_phi = np.zeros((test_events, 2))
+    y_test_phi = np.zeros((test_events, 2))
+	
+    for i in range(test_events):
+        predict_phi[i,0] = math.sqrt((predict_test[i,0]**2 + predict_test[i,1]**2))
+        if 0 < predict_test[i,1]:
+            predict_phi[i,1] = math.acos(predict_test[i,0]/predict_phi[i,0])
+        if predict_test[i,1] < 0:
+            predict_phi[i,1] = -math.acos(predict_test[i,0]/predict_phi[i,0])
+
+    for i in range(test_events):
+        y_test_phi[i,0] = math.sqrt((y_test[i,0]**2 + y_test[i,1]**2))
+        if 0 < y_test[i,1]:
+            y_test_phi[i,1] = math.acos(y_test[i,0]/y_test_phi[i,0])
+        if y_test[i,1] < 0:
+            y_test_phi[i,1] = -math.acos(y_test[i,0]/y_test_phi[i,0])
 
     def print_res(gen_met, predict_met, name='Met_res.pdf'):
         rel_err = (predict_met - gen_met)
@@ -207,8 +219,8 @@ def main(args):
         plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
         plt.savefig(name)
 	
-    print_res(y_test[:,0], predict_test[:,0], name = 'MET_px_res.pdf')
-    print_res(y_test[:,1], predict_test[:,1], name = 'MET_py_res.pdf')
+    #print_res(y_test[:,0], predict_test[:,0], name = 'MET_px_res.pdf')
+    #print_res(y_test[:,1], predict_test[:,1], name = 'MET_py_res.pdf')
     
 
 if __name__ == "__main__":
