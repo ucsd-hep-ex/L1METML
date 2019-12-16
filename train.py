@@ -76,11 +76,28 @@ def main(args):
     targets = ['genMet_pt', 'genMet_phi']
 
     feature_array, target_array = get_features_targets(file_path, features, targets)
-    target_scale = np.array([100., 1.])
-    nevents = feature_array.shape[0]
+    nevents_1 = feature_array.shape[0]
     nfeatures = feature_array.shape[1]
     ntargets = target_array.shape[1]
-    #target_array = target_array/target_scale
+
+	# Exclude met, phi = 0 events
+    event_zero = 0
+    skip = 0
+    for i in range(nevents_1):
+        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):
+            event_zero = event_zero + 1
+    feature_array_without0 = np.zeros((nevents_1 - event_zero, 14))
+    target_array_without0 = np.zeros((nevents_1 - event_zero, 2))
+    for i in range(nevents_1):
+        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):
+            skip = skip + 1
+            continue
+        feature_array_without0[i - skip,:] = feature_array[i,:]
+        target_array_without0[i - skip,:] = target_array[i,:]
+    print(feature_array_without0)
+    print(target_array_without0)
+    nevents = feature_array_without0.shape[0]
+
 
     # Convert feature from pt, phi to px, py
     feature_array_xy = np.zeros((nevents, nfeatures))
@@ -88,17 +105,18 @@ def main(args):
     for i in range(14):
         if i%2 == 0:
             for j in range(nevents):
-                feature_array_xy[j,i] = feature_array[j,i] * math.cos(feature_array[j,i+1])
+                feature_array_xy[j,i] = feature_array_without0[j,i] * math.cos(feature_array_without0[j,i+1])
         if i%2 == 1:
             for j in range(nevents):
-                feature_array_xy[j,i] = feature_array[j,i-1] * math.sin(feature_array[j,i])
+                feature_array_xy[j,i] = feature_array_without0[j,i-1] * math.sin(feature_array_without0[j,i])
+
 	
     # Convert target from pt phi to px, py
     target_array_xy = np.zeros((nevents, ntargets))
 
     for i in range(nevents):
-        target_array_xy[i,0] = target_array[i,0] * math.cos(target_array[i,1])
-        target_array_xy[i,1] = target_array[i,0] * math.sin(target_array[i,1])
+        target_array_xy[i,0] = target_array_without0[i,0] * math.cos(target_array_without0[i,1])
+        target_array_xy[i,1] = target_array_without0[i,0] * math.sin(target_array_without0[i,1])
 
     X = feature_array_xy
     y = target_array_xy
@@ -119,26 +137,30 @@ def main(args):
     
     print(y.shape[0])
     print(y_test.shape[0])
+
+
     # Set parameters for weight function
     number_of_interval = 200
     mean = y_test.shape[0]/number_of_interval
 
+
     # Devide interval
-    x_interval = np.zeros(200)
+    x_interval = np.zeros(number_of_interval)
     for i in range(y_test.shape[0]):
-        for j in range(200):
-            if 5 * (j-100) <= y_test[i,0] < 5 * (j-99):
+        for j in range(number_of_interval):
+            if 5 * (j-number_of_interval/2) <= y_test[i,0] < 5 * (j-number_of_interval/2+1):
                x_interval[j] = x_interval[j]+1
                
     def weight_array_function_x(y_true):
         k = 0
-        for i in range(200):
-            if 5*(i-100)<=y_true<5*(j-99):
+        for i in range(number_of_interval):
+            if 5*(i-number_of_interval/2)<=y_true<5*(j-number_of_interval/2+1):
                 break
             k = x_interval[j]
         if k == 0:
             k = 1
         return mean/k
+
     weight_array_x = np.zeros(y_test.shape[0])
     for i in range(y_test.shape[0]):
         weight_array_x[i] = weight_array_function_x(y_test[i,0])
@@ -146,16 +168,16 @@ def main(args):
     def weight_loss_x(y_true, y_pred):
         return K.mean(math_ops.square((y_pred - y_true)*weight_array_x), axis=-1)
 
-    y_interval = np.zeros(200)
+    y_interval = np.zeros()
     for i in range(y_test.shape[0]):
-        for j in range(200):
-            if 5 * (j-100) <= y_test[i,1] < 5 * (j-99):
+        for j in range(number_of_interval):
+            if 5 * (j-number_of_interval/2) <= y_test[i,1] < 5 * (j-number_of_interval/2+1):
                y_interval[j] = y_interval[j]+1
 
     def weight_array_function_y(y_true):
         k = 0
-        for i in range(200):
-            if 5*(i-100)<=y_true<5*(j-99):
+        for i in range(number_of_interval):
+            if 5*(i-number_of_interval/2)<=y_true<5*(j-number_of_interval/2+1):
                 break
             k = y_interval[j]
         if k == 0:
@@ -184,7 +206,6 @@ def main(args):
 					epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
                     callbacks = callbacks)
 
-	#***********************
     keras_model.load_weights('keras_model_best.h5')
     
     predict_test = keras_model.predict(X_test)
@@ -210,17 +231,17 @@ def main(args):
             y_test_phi[i,1] = -math.acos(y_test[i,0]/y_test_phi[i,0])
 
     def print_res(gen_met, predict_met, name='Met_res.pdf'):
-        rel_err = (predict_met - gen_met)
+        rel_err = (predict_met - gen_met)/gen_met
         plt.figure()
-        plt.hist(rel_err, bins=np.linspace(-200., 200., 50+1))
-        plt.xlabel("(predict - true)")
+        plt.hist(rel_err, bins=np.linspace(-0., 500., 50+1))
+        plt.xlabel("phi")
         plt.ylabel("Events")
         plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
         plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
         plt.savefig(name)
 	
-    #print_res(y_test[:,0], predict_test[:,0], name = 'MET_px_res.pdf')
-    #print_res(y_test[:,1], predict_test[:,1], name = 'MET_py_res.pdf')
+    print_res(y_test_phi[:,0], predict_phi[:,0], name = 'MET_res.pdf')
+    #print_res(y_test_phi[:,1], predict_phi[:,1], name = 'MET_phi_res.pdf')
     
 
 if __name__ == "__main__":
