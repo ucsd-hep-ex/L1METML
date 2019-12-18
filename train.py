@@ -72,16 +72,32 @@ def main(args):
     targets = ['genMet_pt', 'genMet_phi']
 
     feature_array, target_array = get_features_targets(file_path, features, targets)
-    target_scale = np.array([100., 1.])
-    nevents = feature_array.shape[0]
+    nevents_1 = feature_array.shape[0]
     nfeatures = feature_array.shape[1]
     ntargets = target_array.shape[1]
-    target_array = target_array/target_scale
+
+	# Exclude met, phi = 0 events
+    event_zero = 0
+    skip = 0
+    for i in range(nevents_1):
+        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):
+            event_zero = event_zero + 1
+    feature_array_without0 = np.zeros((nevents_1 - event_zero, 14))
+    target_array_without0 = np.zeros((nevents_1 - event_zero, 2))
+    for i in range(nevents_1):
+        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):
+            skip = skip + 1
+            continue
+        feature_array_without0[i - skip,:] = feature_array[i,:]
+        target_array_without0[i - skip,:] = target_array[i,:]
+    print(feature_array_without0)
+    print(target_array_without0)
+    nevents = feature_array_without0.shape[0]
 
 
     # fit keras model
-    X = feature_array
-    y = target_array
+    X = feature_array_without0
+    y = target_array_without0
 
     fulllen = nevents
     tv_frac = 0.10
