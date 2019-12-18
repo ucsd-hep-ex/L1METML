@@ -1,3 +1,6 @@
+import tensorflow as tf
+from tensorflow.python.ops import math_ops
+from tensorflow.python import ops
 import keras
 import numpy as np
 import tables
@@ -75,15 +78,6 @@ def main(args):
     ntargets = target_array.shape[1]
     target_array = target_array/target_scale
 
-    keras_model = dense(nfeatures, ntargets)
-
-    keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], 
-                        loss_weights = [10., 1.], metrics=['mean_absolute_error'])
-    print(keras_model.summary())
-
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
-    model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
-    callbacks = [early_stopping, model_checkpoint]
 
     # fit keras model
     X = feature_array
@@ -103,6 +97,52 @@ def main(args):
     y_val = y[splits[1]:splits[2]]
     y_test = y[splits[0]:splits[1]]
 
+
+    # Set parameters for weight function
+    number_of_interval = 100
+    mean = y_val.shape[0]/number_of_interval
+
+
+    # Devide interval
+    MET_interval = np.zeros(number_of_interval)
+    for i in range(y_val.shape[0]):
+        for j in range(number_of_interval):
+            if (5 * j <= y_val[i,0] < 5 * (j+1)):
+               MET_interval[j] = MET_interval[j]+1
+               
+    def weight_array_function_MET(y_true):
+        k = 0
+        for i in range(number_of_interval):
+            if 5 * i <= y_true < 5 * (j+1):
+                break
+            k = MET_interval[j]
+        if k == 0:
+            k = 1
+        return mean/k
+
+    weight_array_MET= np.zeros(y_test.shape[0])
+    for i in range(y_test.shape[0]):
+        weight_array_MET[i] = weight_array_function_MET(y_val[i,0])
+
+    def weight_loss_MET(y_true, y_pred):
+        return K.mean(math_ops.square((y_pred - y_true)*weight_array_MET), axis=-1)
+
+    def mean_squared_phi_error(y_true, y_pred):
+        error = tf.atan2(tf.sin(y_pred - y_true), tf.cos(y_pred - y_true)) - math.pi
+        return K.mean(math_ops.square(error), axis=-1)
+
+    keras_model = dense(nfeatures, ntargets)
+
+    keras_model.compile(optimizer='adam', loss=[weight_loss_MET, mean_squared_phi_error], 
+                        loss_weights = [10., 1.], metrics=['mean_absolute_error'])
+    print(keras_model.summary())
+
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
+    model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
+    callbacks = [early_stopping, model_checkpoint]
+    def mean_squared_phi_error(y_true, y_pred):
+        error = tf.atan2(tf.sin(y_pred - y_true), tf.cos(y_pred - y_true)) - math.pi
+        return K.mean(math_ops.square(error), axis=-1)
     keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
                     epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
                     callbacks = callbacks)
