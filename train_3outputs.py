@@ -99,12 +99,9 @@ def main(args):
     target_array_cos = np.zeros((nevents, 3))
 
     for i in range(7):
-        if i%3 == 0:
-            feature_array_cos[:,3*i] = feature_array_without0[:,2*i]
-        if i%3 == 1:
-            feature_array_cos[:,(3*i)+1] = np.square(np.cos(feature_array_without0[:,(2*i)+1]))
-        if i%3 == 2:
-            feature_array_cos[:,(3*i)+2] = np.square(np.sin(feature_array_without0[:,(2*i)+1]))
+        feature_array_cos[:,3*i] = feature_array_without0[:,2*i]
+        feature_array_cos[:,(3*i)+1] = np.square(np.cos(feature_array_without0[:,(2*i)+1]))
+        feature_array_cos[:,(3*i)+2] = np.square(np.sin(feature_array_without0[:,(2*i)+1]))
     target_array_cos[:,0] = target_array_without0[:,0]
     target_array_cos[:,1] = np.square(np.cos(target_array_without0[:,1]))
     target_array_cos[:,2] = np.square(np.sin(target_array_without0[:,1]))
@@ -146,9 +143,9 @@ def main(args):
     def weight_array_function_MET(y_true):
         k = 0
         for i in range(number_of_interval):
-            if 5 * i <= y_true < 5 * (j+1):
+            if 5 * i <= y_true < 5 * (i+1):
                 break
-            k = MET_interval[j]
+            k = MET_interval[i]
         if k == 0:
             k = 1
         return mean/k
@@ -163,7 +160,7 @@ def main(args):
     keras_model = dense(nfeatures, ntargets)
 
     keras_model.compile(optimizer='adam', loss=[weight_loss_MET, 'mean_squared_error', 'mean_squared_error'], 
-                        loss_weights = [1., 5000., 5000], metrics=['mean_absolute_error'])
+                        loss_weights = [1., 500., 500], metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=10)
