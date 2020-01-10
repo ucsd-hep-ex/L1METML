@@ -80,12 +80,12 @@ def main(args):
     event_zero = 0
     skip = 0
     for i in range(nevents_1):
-        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0) or (target_array[i,0] < 50):
+        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):# or (target_array[i,0] < 50):
             event_zero = event_zero + 1
     feature_array_without0 = np.zeros((nevents_1 - event_zero, 14))
     target_array_without0 = np.zeros((nevents_1 - event_zero, 2))
     for i in range(nevents_1):
-        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0) or (target_array[i,0] < 50):
+        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):# or (target_array[i,0] < 50):
             skip = skip + 1
             continue
         feature_array_without0[i - skip,:] = feature_array[i,:]
@@ -95,28 +95,26 @@ def main(args):
     nevents = feature_array_without0.shape[0]
 
     # Split phi into cos^2 and sin^2
-    feature_array = np.zeros((nevents, 21))
-    target_array = np.zeros((nevents, 3))
+    feature_array_cos = np.zeros((nevents, 21))
+    target_array_cos = np.zeros((nevents, 3))
 
     for i in range(7):
         if i%3 == 0:
-            feature_array[:,3*i] = feature_array_without0[:,2*i]
+            feature_array_cos[:,3*i] = feature_array_without0[:,2*i]
         if i%3 == 1:
-			feature_array[:,(3*i)+1] = np.square(np.cos(feature_array_without0[:,(2*i)+1]))
+            feature_array_cos[:,(3*i)+1] = np.square(np.cos(feature_array_without0[:,(2*i)+1]))
         if i%3 == 2:
-			feature_array[:,(3*i)+2] = np.square(np.sin(feature_array_without0[:,(2*i)+1]))
+            feature_array_cos[:,(3*i)+2] = np.square(np.sin(feature_array_without0[:,(2*i)+1]))
+    target_array_cos[:,0] = target_array_without0[:,0]
+    target_array_cos[:,1] = np.square(np.cos(target_array_without0[:,1]))
+    target_array_cos[:,2] = np.square(np.sin(target_array_without0[:,1]))
 
-    target_array[:,0] = target_array_without0[:,0]
-    target_array[:,1] = np.square(np.cos(target_array_without0[:,1]))
-    target_array[:,2] = np.square(np.sin(target_array_without0[:,1]))
-
-
-    nfeatures = feature_array.shape[1]
-    ntargets = target_array.shape[1]
+    nfeatures = feature_array_cos.shape[1]
+    ntargets = target_array_cos.shape[1]
 
     # fit keras model
-    X = feature_array
-    y = target_array
+    X = feature_array_cos
+    y = target_array_cos
 
     fulllen = nevents
     tv_frac = 0.10
@@ -160,15 +158,11 @@ def main(args):
         weight_array_MET[i] = weight_array_function_MET(y_val[i,0])
 
     def weight_loss_MET(y_true, y_pred):
-        return K.mean(math_ops.square((y_pred - y_true)*weight_array_MET), axis=-1)
-
-    def mean_squared_phi_error(y_true, y_pred):
-        error = tf.atan2(tf.sin(y_pred - y_true), tf.cos(y_pred - y_true)) - math.pi
-        return K.mean(math_ops.square(error), axis=-1)
+        return K.mean(math_ops.square((y_pred - y_true))*weight_array_MET, axis=-1)
 
     keras_model = dense(nfeatures, ntargets)
 
-    keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error', 'mean_squared_error'], 
+    keras_model.compile(optimizer='adam', loss=[weight_loss_MET, 'mean_squared_error', 'mean_squared_error'], 
                         loss_weights = [1., 5000., 5000], metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
@@ -188,16 +182,16 @@ def main(args):
     print(predict_test)
 
     def print_res(gen_met, predict_met, name='Met_res.pdf'):
-		rel_err = (predict_met - gen_met)#/np.clip(gen_met, 1e-6, None)
-		plt.figure()          
-		plt.hist(rel_err, bins=np.linspace(-1., 1., 50+1))
-		plt.xlabel("Rel. err.")
-		plt.ylabel("Events")
-		plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
-		plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
-		plt.savefig(name)
+        rel_err = (predict_met - gen_met)
+        plt.figure()          
+        plt.hist(rel_err, bins=np.linspace(-1., 1., 50+1))
+        plt.xlabel("Abs. err.")
+        plt.ylabel("Events")
+        plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+        plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
+        plt.savefig(name)
 	
-    print_res(y_test[:,0], predict_test[:,0], name = 'MET_pt_abs.pdf')
+    #print_res(y_test[:,0], predict_test[:,0], name = 'MET_pt_abs.pdf')
     print_res(y_test[:,1], predict_test[:,1], name = 'MET_cos_abs.pdf')
     print_res(y_test[:,2], predict_test[:,2], name = 'MET_sin_abs.pdf')
     

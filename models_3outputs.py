@@ -14,27 +14,17 @@ def dense(ninputs, noutputs):
     x = Dense(32, name = 'dense_3', activation='relu')(x)
     x = Dropout(rate=0.1)(x)
     
-    outputs0 = Dense(1, name = 'output0', activation='linear')(x)
+    outputs = Dense(noutputs, name = 'output', activation='linear')(x)
 
-    y = Dense(64, name = 'dense_4', activation='softmax')(inputs)
-    y = Dropout(rate=0.1)(y)
-    y = Dense(32, name = 'dense_5', activation='softmax')(y)
-    y = Dropout(rate=0.1)(y)
-    y = Dense(32, name = 'dense_6', activation='softmax')(y)
-    y = Dropout(rate=0.1)(y)
+    outputs0 = Lambda(lambda x: slice(x, (0, 0), (-1,  1)))(outputs)
+    outputs1 = Lambda(lambda x: slice(x, (0, 1), (-1, -1)))(outputs)
 
-    outputs1 = Dense(1, name = 'output1', activation='linear')(y)
+    outputs_softmax = Dense(2, name = 'output_softmax', activation='softmax')(outputs1)
 
-    z = Dense(64, name = 'dense_7', activation='softmax')(inputs)
-    z = Dropout(rate=0.1)(z)
-    z = Dense(32, name = 'dense_8', activation='softmax')(z)
-    z = Dropout(rate=0.1)(z)
-    z = Dense(32, name = 'dense_9', activation='softmax')(z)
-    z = Dropout(rate=0.1)(z)
+    outputs_softmax0 = Lambda(lambda x: slice(x, (0, 0), (-1, 1)))(outputs_softmax)
+    outputs_softmax1 = Lambda(lambda x: slice(x, (0, 1), (-1, -1)))(outputs_softmax)
 
-    outputs2 = Dense(1, name = 'output2', activation='linear')(z)
-
-    keras_model = Model(inputs=inputs, outputs=[outputs0, outputs1, outputs2])
+    keras_model = Model(inputs=inputs, outputs=[outputs0, outputs_softmax0, outputs_softmax1])
 
     return keras_model
 
