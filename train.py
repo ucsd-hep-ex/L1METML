@@ -1,44 +1,14 @@
 import tensorflow
-from tensorflow.python.ops import math_ops
-from tensorflow.python import ops
 import keras
 import numpy as np
 import tables
 from keras.callbacks import ModelCheckpoint, EarlyStopping
-from sklearn.metrics import roc_curve, auc
-from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import argparse
 from models import dense
+from Write_MET_binned_histogram import *#Write_MET_binned_histogram
 import math
-import keras.backend as K
-
-
-
-def huber_loss(y_true, y_pred, delta=1.0):
-    error = y_pred - y_true
-    abs_error = K.abs(error)
-    quadratic = K.minimum(abs_error, delta)
-    linear = abs_error - quadratic
-    return 0.5 * K.square(quadratic) + delta * linear
-
-def mean_absolute_relative_error(y_true, y_pred):
-    if not K.is_tensor(y_pred):
-        y_pred = K.constant(y_pred)
-    y_true = K.cast(y_true, y_pred.dtype)
-    diff = K.abs((y_true - y_pred) / K.clip(K.abs(y_true),
-                                            K.epsilon(),
-                                            None))
-    return K.mean(diff, axis=-1)
-
-def mean_squared_relative_error(y_true, y_pred):
-    if not K.is_tensor(y_pred):
-        y_pred = K.constant(y_pred)
-    y_true = K.cast(y_true, y_pred.dtype)
-    diff = K.square((y_true - y_pred) / K.clip(K.square(y_true),
-                                            K.epsilon(),
-                                            None))
-    return K.mean(diff, axis=-1)
+from ROOT import *
 
 def get_features_targets(file_name, features, targets):
     # load file
@@ -76,51 +46,62 @@ def main(args):
     targets = ['genMet_pt', 'genMet_phi']
 
     feature_array, target_array = get_features_targets(file_path, features, targets)
-    nevents_1 = feature_array.shape[0]
+    nevents = feature_array.shape[0]
     nfeatures = feature_array.shape[1]
     ntargets = target_array.shape[1]
 
-	# Exclude met, phi = 0 events
+
+    # Exclude Gen met < 100 GeV events
     event_zero = 0
     skip = 0
-    for i in range(nevents_1):
-        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):
+    for i in range(nevents):
+        if (target_array[i,0] < 100):
             event_zero = event_zero + 1
-    feature_array_without0 = np.zeros((nevents_1 - event_zero, 14))
-    target_array_without0 = np.zeros((nevents_1 - event_zero, 2))
-    for i in range(nevents_1):
-        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):
+
+    feature_array_without0 = np.zeros((nevents - event_zero, nfeatures))
+    target_array_without0 = np.zeros((nevents - event_zero, 2))
+
+    for i in range(nevents):
+        if (target_array[i,0] < 100):
             skip = skip + 1
             continue
         feature_array_without0[i - skip,:] = feature_array[i,:]
         target_array_without0[i - skip,:] = target_array[i,:]
-    print(feature_array_without0)
-    print(target_array_without0)
+
     nevents = feature_array_without0.shape[0]
+    feature_array = np.zeros((nevents, nfeatures)) 
+    target_array = np.zeros((nevents, 2)) 
+    feature_array = feature_array_without0
+    target_array = target_array_without0
+
+    print(nevents)
+    print(feature_array.shape[0])
+    print(feature_array_without0.shape[0])
 
 
     # Convert feature from pt, phi to px, py
     feature_array_xy = np.zeros((nevents, nfeatures))
-    
-    for i in range(14):
+    for i in range(nfeatures):
         if i%2 == 0:
             for j in range(nevents):
-                feature_array_xy[j,i] = feature_array_without0[j,i] * math.cos(feature_array_without0[j,i+1])
+                feature_array_xy[j,i] = feature_array[j,i] * math.cos(feature_array[j,i+1])
         if i%2 == 1:
             for j in range(nevents):
-                feature_array_xy[j,i] = feature_array_without0[j,i-1] * math.sin(feature_array_without0[j,i])
+                feature_array_xy[j,i] = feature_array[j,i-1] * math.sin(feature_array[j,i])
 
-	
     # Convert target from pt phi to px, py
     target_array_xy = np.zeros((nevents, ntargets))
 
     for i in range(nevents):
-        target_array_xy[i,0] = target_array_without0[i,0] * math.cos(target_array_without0[i,1])
-        target_array_xy[i,1] = target_array_without0[i,0] * math.sin(target_array_without0[i,1])
+        target_array_xy[i,0] = target_array[i,0] * math.cos(target_array[i,1])
+        target_array_xy[i,1] = target_array[i,0] * math.sin(target_array[i,1])
+
 
     X = feature_array_xy
     y = target_array_xy
-
+    A = feature_array
+    B = target_array
+    
     fulllen = nevents
     tv_frac = 0.10
     tv_num = math.ceil(fulllen*tv_frac)
@@ -134,82 +115,35 @@ def main(args):
     y_train = y[0:splits[0]]
     y_val = y[splits[1]:splits[2]]
     y_test = y[splits[0]:splits[1]]
-    
-    print(y.shape[0])
-    print(y_test.shape[0])
 
+    A_train = A[0:splits[0]]
+    A_val = A[splits[1]:splits[2]]
+    A_test = A[splits[0]:splits[1]]
 
-    # Set parameters for weight function
-    number_of_interval = 200
-    mean = y_test.shape[0]/number_of_interval
-
-
-    # Devide interval
-    x_interval = np.zeros(number_of_interval)
-    for i in range(y_test.shape[0]):
-        for j in range(number_of_interval):
-            if 5 * (j-number_of_interval/2) <= y_test[i,0] < 5 * (j-number_of_interval/2+1):
-               x_interval[j] = x_interval[j]+1
-               
-    def weight_array_function_x(y_true):
-        k = 0
-        for i in range(number_of_interval):
-            if 5*(i-number_of_interval/2)<=y_true<5*(j-number_of_interval/2+1):
-                break
-            k = x_interval[j]
-        if k == 0:
-            k = 1
-        return mean/k
-
-    weight_array_x = np.zeros(y_test.shape[0])
-    for i in range(y_test.shape[0]):
-        weight_array_x[i] = weight_array_function_x(y_test[i,0])
-
-    def weight_loss_x(y_true, y_pred):
-        return K.mean(math_ops.square((y_pred - y_true)*weight_array_x), axis=-1)
-
-    y_interval = np.zeros()
-    for i in range(y_test.shape[0]):
-        for j in range(number_of_interval):
-            if 5 * (j-number_of_interval/2) <= y_test[i,1] < 5 * (j-number_of_interval/2+1):
-               y_interval[j] = y_interval[j]+1
-
-    def weight_array_function_y(y_true):
-        k = 0
-        for i in range(number_of_interval):
-            if 5*(i-number_of_interval/2)<=y_true<5*(j-number_of_interval/2+1):
-                break
-            k = y_interval[j]
-        if k == 0:
-            k = 1
-        return mean/k
-    weight_array_y = np.zeros(y_test.shape[0])
-    for i in range(y_test.shape[0]):
-        weight_array_y[i] = weight_array_function_y(y_test[i,0])
-
-    def weight_loss_y(y_true, y_pred):
-        return K.mean(math_ops.square((y_pred - y_true)*weight_array_y), axis=-1)
+    B_train = B[0:splits[0]]
+    B_val = B[splits[1]:splits[2]]
+    B_test = B[splits[0]:splits[1]]
 
     keras_model = dense(nfeatures, ntargets)
 
-    keras_model.compile(optimizer='adam', loss=[weight_loss_x, weight_loss_y], 
-                        loss_weights = [10., 1.], metrics=['mean_absolute_error'])
+    keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], 
+                        loss_weights = None, metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=10)
     model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
     callbacks = [early_stopping, model_checkpoint]
 
+    #keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
+                #epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
+                #callbacks = callbacks)
 
-
-    keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
-					epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
-                    callbacks = callbacks)
 
     keras_model.load_weights('keras_model_best.h5')
     
     predict_test = keras_model.predict(X_test)
     predict_test = np.concatenate(predict_test,axis=1)
+
 
     test_events = predict_test.shape[0]
 
@@ -222,7 +156,7 @@ def main(args):
             predict_phi[i,1] = math.acos(predict_test[i,0]/predict_phi[i,0])
         if predict_test[i,1] < 0:
             predict_phi[i,1] = -math.acos(predict_test[i,0]/predict_phi[i,0])
-
+    
     for i in range(test_events):
         y_test_phi[i,0] = math.sqrt((y_test[i,0]**2 + y_test[i,1]**2))
         if 0 < y_test[i,1]:
@@ -230,19 +164,9 @@ def main(args):
         if y_test[i,1] < 0:
             y_test_phi[i,1] = -math.acos(y_test[i,0]/y_test_phi[i,0])
 
-    def print_res(gen_met, predict_met, name='Met_res.pdf'):
-        rel_err = (predict_met - gen_met)/gen_met
-        plt.figure()
-        plt.hist(rel_err, bins=np.linspace(-0., 500., 50+1))
-        plt.xlabel("phi")
-        plt.ylabel("Events")
-        plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
-        plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
-        plt.savefig(name)
-	
-    print_res(y_test_phi[:,0], predict_phi[:,0], name = 'MET_res.pdf')
-    #print_res(y_test_phi[:,1], predict_phi[:,1], name = 'MET_phi_res.pdf')
-    
+    Write_MET_binned_histogram(predict_phi, y_test_phi, 20, 0, 100, 400, name='histogram_all_no100cut.root')
+
+    MET_rel_error(predict_phi[:,0], y_test_phi[:,0], name='rel_error.pdf')
 
 if __name__ == "__main__":
 
@@ -250,3 +174,4 @@ if __name__ == "__main__":
         
     args = parser.parse_args()
     main(args)
+    
