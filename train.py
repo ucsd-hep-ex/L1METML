@@ -1,14 +1,44 @@
 import tensorflow
+from tensorflow.python.ops import math_ops
 import keras
+from keras.callbacks import ModelCheckpoint, EarlyStopping
+import keras.backend as K
 import numpy as np
 import tables
-from keras.callbacks import ModelCheckpoint, EarlyStopping
 import matplotlib.pyplot as plt
 import argparse
 from models import dense
-from Write_MET_binned_histogram import *#Write_MET_binned_histogram
 import math
 from ROOT import *
+from Write_MET_binned_histogram import *#Write_MET_binned_histogram
+
+def weight_loss_function(number_of_bin, val_array, min_, max_):
+    binning = (max_ - min_)/number_of_bin
+    val_events = val_array.shape[0]
+    mean = val_events/number_of_bin
+    MET_interval = np.zeros(number_of_bin)
+
+    for i in range(val_events):
+        for j in range(number_of_bin):
+            if (binning * j <= math.sqrt(val_array[i,0] ** 2 + val_array[i,1] ** 2) < binning * (j + 1)):
+                MET_interval[j] = MET_interval[j] + 1
+
+    def allocate_weight(val_):
+        k = 0
+        for i in range(number_of_bin):
+            if (binning * i <= val_ < binning * (i + 1)):
+                break
+            k = MET_interval[i]
+        if k == 0:
+            k = 1
+        return mean/k
+
+    weight_array = np.zeros(val_events)
+    
+    for i in range(val_events):
+        weight_array[i] = allocate_weight(math.sqrt(val_array[i,0] ** 2 + val_array[i,1] ** 2))
+
+    return weight_array
 
 def get_features_targets(file_name, features, targets):
     # load file
@@ -50,7 +80,7 @@ def main(args):
     nfeatures = feature_array.shape[1]
     ntargets = target_array.shape[1]
 
-
+    '''
     # Exclude Gen met < 100 GeV events
     event_zero = 0
     skip = 0
@@ -77,7 +107,7 @@ def main(args):
     print(nevents)
     print(feature_array.shape[0])
     print(feature_array_without0.shape[0])
-
+    '''
 
     # Convert feature from pt, phi to px, py
     feature_array_xy = np.zeros((nevents, nfeatures))
@@ -124,9 +154,16 @@ def main(args):
     B_val = B[splits[1]:splits[2]]
     B_test = B[splits[0]:splits[1]]
 
+
+    weight_loss_functioni(20, y_val, 0, 500)
+
+    def weight_loss(y_true, y_pred):
+        return K.mean(math_ops.square((y_pred - y_true))*weight_array, axis=-1)
+
     keras_model = dense(nfeatures, ntargets)
 
-    keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], 
+    keras_model.compile(optimizer='adam', loss=[weight_loss, weight_loss], 
+    #keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], 
                         loss_weights = None, metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
@@ -134,9 +171,9 @@ def main(args):
     model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
     callbacks = [early_stopping, model_checkpoint]
 
-    #keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
-                #epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
-                #callbacks = callbacks)
+    keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
+                epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
+                callbacks = callbacks)
 
 
     keras_model.load_weights('keras_model_best.h5')
@@ -174,4 +211,3 @@ if __name__ == "__main__":
         
     args = parser.parse_args()
     main(args)
-    
