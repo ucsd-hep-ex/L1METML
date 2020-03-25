@@ -103,3 +103,24 @@ def Phi_abs_error(gen_met, predict_met, name='Met_res.pdf'):
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
 
+def dist(predict_met, name='dist.pdf'):
+    rel_err = predict_met
+    plt.figure()
+    plt.hist(rel_err, bins=np.linspace(0, 500, 50+1))
+    plt.xlabel("MET [GeV]")
+    plt.ylabel("Events")
+    plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
+    plt.savefig(name)
+    #plt.show()
+
+def dist_xy(predict_met, name='dist.pdf'):
+    rel_err = predict_met
+    plt.figure()
+    plt.hist(rel_err, bins=np.linspace(-500, 500, 50+1))
+    plt.xlabel("MET [GeV]")
+    plt.ylabel("Events")
+    plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
+    plt.savefig(name)
+    #plt.show()
