@@ -10,7 +10,7 @@ import argparse
 from models import dense
 import math
 from ROOT import *
-from Write_MET_binned_histogram import *#Write_MET_binned_histogram
+from Write_MET_binned_histogram import *
 
 def weight_loss_function(number_of_bin, val_array, min_, max_):
     binning = (max_ - min_)/number_of_bin
@@ -22,6 +22,7 @@ def weight_loss_function(number_of_bin, val_array, min_, max_):
         for j in range(number_of_bin):
             if (binning * j <= math.sqrt(val_array[i,0] ** 2 + val_array[i,1] ** 2) < binning * (j + 1)):
                 MET_interval[j] = MET_interval[j] + 1
+                break
 
     def allocate_weight(val_):
         k = 0
@@ -80,34 +81,82 @@ def main(args):
     nfeatures = feature_array.shape[1]
     ntargets = target_array.shape[1]
 
-    '''
+    # rescale process
+        # if it's not rescaled : 0 , rescaled : 1
+    resc_check_ = 1
+    if resc_check_ == 1:
+        resc_check = 'after_rescaled'
+    else:
+        resc_check = 'before_rescaled'
+
+    bin_ = 25
+    bin_mini = 0
+    bin_maxi = 500
+        # number of variable that will be rescaled
+    resc_var = 2 
+    
+    scalefactor = np.zeros((bin_, resc_var))
+    scalefactor_div = np.zeros(bin_)
+    genMET_mean = np.zeros(bin_)
+
+    binning_ = (bin_maxi - bin_mini)/bin_
+
+    for i in range(nevents):
+        for j in range(bin_):
+            if (j*binning_+bin_mini < target_array[i,0] <= (j+1)*binning_+bin_mini):
+                scalefactor_div[j] += 1
+                genMET_mean[j] += target_array[i,0]
+                for k in range(resc_var):
+                    scalefactor[j,k] += feature_array[i,k*2]
+    
+    for i in range(bin_):
+        if scalefactor_div[i] ==0:
+            scalefactor_div[i] = 1
+    
+    genMET_mean = genMET_mean/scalefactor_div
+
+    for i in range(resc_var):
+        scalefactor[:,i] = scalefactor[:,i]/scalefactor_div
+
+    for i in range(nevents):
+        for j in range(bin_):
+            for k in range(resc_var):
+                if ((j*binning_+bin_mini < target_array[i,0] <= (j+1)*binning_+bin_mini)):
+                    if resc_check_ ==1:
+                        feature_array[i,k*2] = feature_array[i,k*2]*(genMET_mean[j]/scalefactor[j,k])
+
+    
     # Exclude Gen met < 100 GeV events
-    event_zero = 0
-    skip = 0
-    for i in range(nevents):
-        if (target_array[i,0] < 100):
-            event_zero = event_zero + 1
+        # if genMET cut is not applied : 0 , applied : 1
+    genMET_cut = 1
 
-    feature_array_without0 = np.zeros((nevents - event_zero, nfeatures))
-    target_array_without0 = np.zeros((nevents - event_zero, 2))
+    if genMET_cut == 1:
+        genMET_check = '10cut'
+        event_zero = 0
+        skip = 0
+        for i in range(nevents):
+            if (target_array[i,0] < 100):
+                event_zero = event_zero + 1
 
-    for i in range(nevents):
-        if (target_array[i,0] < 100):
-            skip = skip + 1
-            continue
-        feature_array_without0[i - skip,:] = feature_array[i,:]
-        target_array_without0[i - skip,:] = target_array[i,:]
+        feature_array_without0 = np.zeros((nevents - event_zero, nfeatures))
+        target_array_without0 = np.zeros((nevents - event_zero, 2))
 
-    nevents = feature_array_without0.shape[0]
-    feature_array = np.zeros((nevents, nfeatures)) 
-    target_array = np.zeros((nevents, 2)) 
-    feature_array = feature_array_without0
-    target_array = target_array_without0
+        for i in range(nevents):
+            if (target_array[i,0] < 100):
+                skip = skip + 1
+                continue
+            feature_array_without0[i - skip,:] = feature_array[i,:]
+            target_array_without0[i - skip,:] = target_array[i,:]
 
-    print(nevents)
-    print(feature_array.shape[0])
-    print(feature_array_without0.shape[0])
-    '''
+        nevents = feature_array_without0.shape[0]
+        feature_array = np.zeros((nevents, nfeatures)) 
+        target_array = np.zeros((nevents, 2)) 
+        feature_array = feature_array_without0
+        target_array = target_array_without0
+    else:
+        genMET_check = 'nocut'
+
+    
 
     # Convert feature from pt, phi to px, py
     feature_array_xy = np.zeros((nevents, nfeatures))
@@ -127,10 +176,10 @@ def main(args):
         target_array_xy[i,1] = target_array[i,0] * math.sin(target_array[i,1])
 
 
+    
+    # Split datas into train, validation, test set
     X = feature_array_xy
     y = target_array_xy
-    A = feature_array
-    B = target_array
     
     fulllen = nevents
     tv_frac = 0.10
@@ -146,20 +195,17 @@ def main(args):
     y_val = y[splits[1]:splits[2]]
     y_test = y[splits[0]:splits[1]]
 
-    A_train = A[0:splits[0]]
-    A_val = A[splits[1]:splits[2]]
-    A_test = A[splits[0]:splits[1]]
-
-    B_train = B[0:splits[0]]
-    B_val = B[splits[1]:splits[2]]
-    B_test = B[splits[0]:splits[1]]
 
 
-    weight_loss_functioni(20, y_val, 0, 500)
+    # Make weight loss function
+    weight_array = weight_loss_functioni(20, y_val, 0, 500)
 
     def weight_loss(y_true, y_pred):
         return K.mean(math_ops.square((y_pred - y_true))*weight_array, axis=-1)
 
+
+
+    # Set keras train model
     keras_model = dense(nfeatures, ntargets)
 
     keras_model.compile(optimizer='adam', loss=[weight_loss, weight_loss], 
@@ -171,17 +217,24 @@ def main(args):
     model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
     callbacks = [early_stopping, model_checkpoint]
 
+
+
+    # fit keras
     keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
                 epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
                 callbacks = callbacks)
 
 
+
+    # load created weights
     keras_model.load_weights('keras_model_best.h5')
     
     predict_test = keras_model.predict(X_test)
     predict_test = np.concatenate(predict_test,axis=1)
 
 
+
+    # convert px py into pt phi
     test_events = predict_test.shape[0]
 
     predict_phi = np.zeros((test_events, 2))
