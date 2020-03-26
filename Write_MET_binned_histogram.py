@@ -69,8 +69,8 @@ def Write_MET_binned_histogram(Predict_array, Gen_array, bin_number, bin_minimum
 
 
 
-def MET_rel_error(gen_met, predict_met, name='Met_res.pdf'):
-    rel_err = (predict_met - gen_met)/gen_met
+def MET_rel_error(predict_met, gen_met, name='Met_res.pdf'):
+    rel_err = (predict_met - gen_met)/np.clip(gen_met,0.1, 1000)
     plt.figure()
     plt.hist(rel_err, bins=np.linspace(-3., 3., 50+1))
     plt.xlabel("rel error (predict - true)/true")
@@ -81,7 +81,7 @@ def MET_rel_error(gen_met, predict_met, name='Met_res.pdf'):
 
 
 
-def MET_abs_error(gen_met, predict_met, name='Met_res.pdf'):
+def MET_abs_error(predict_met,gen_met, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)
     plt.figure()
     plt.hist(rel_err, bins=np.linspace(-500., 500., 50+1))
@@ -93,7 +93,7 @@ def MET_abs_error(gen_met, predict_met, name='Met_res.pdf'):
 
 
 
-def Phi_abs_error(gen_met, predict_met, name='Met_res.pdf'):
+def Phi_abs_error(predict_met,gen_met, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)
     plt.figure()
     plt.hist(rel_err, bins=np.linspace(-3.5, 3.5, 50+1))
