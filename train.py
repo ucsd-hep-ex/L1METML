@@ -12,6 +12,13 @@ import math
 from ROOT import *
 from Write_MET_binned_histogram import *
 
+def huber_loss(y_true, y_pred, delta=1.0):
+    error = y_pred - y_true
+    abs_error = K.abs(error)
+    quadratic = K.minimum(abs_error, delta)
+    linear = abs_error - quadratic
+    return 0.5 * K.square(quadratic) + delta * linear
+
 def weight_loss_function(number_of_bin, val_array, min_, max_):
     binning = (max_ - min_)/number_of_bin
     val_events = val_array.shape[0]
@@ -64,7 +71,6 @@ def get_features_targets(file_name, features, targets):
 
 
 def main(args):
-	# *************************
     file_path = 'input_MET.h5'
     features = ['L1CHSMet_pt', 'L1CHSMet_phi',
                 'L1CaloMet_pt', 'L1CaloMet_phi',
@@ -81,49 +87,6 @@ def main(args):
     nfeatures = feature_array.shape[1]
     ntargets = target_array.shape[1]
 
-    # rescale process
-        # if it's not rescaled : 0 , rescaled : 1
-    resc_check_ = 1
-    if resc_check_ == 1:
-        resc_check = 'after_rescaled'
-    else:
-        resc_check = 'before_rescaled'
-
-    bin_ = 25
-    bin_mini = 0
-    bin_maxi = 500
-        # number of variable that will be rescaled
-    resc_var = 2 
-    
-    scalefactor = np.zeros((bin_, resc_var))
-    scalefactor_div = np.zeros(bin_)
-    genMET_mean = np.zeros(bin_)
-
-    binning_ = (bin_maxi - bin_mini)/bin_
-
-    for i in range(nevents):
-        for j in range(bin_):
-            if (j*binning_+bin_mini < target_array[i,0] <= (j+1)*binning_+bin_mini):
-                scalefactor_div[j] += 1
-                genMET_mean[j] += target_array[i,0]
-                for k in range(resc_var):
-                    scalefactor[j,k] += feature_array[i,k*2]
-    
-    for i in range(bin_):
-        if scalefactor_div[i] ==0:
-            scalefactor_div[i] = 1
-    
-    genMET_mean = genMET_mean/scalefactor_div
-
-    for i in range(resc_var):
-        scalefactor[:,i] = scalefactor[:,i]/scalefactor_div
-
-    for i in range(nevents):
-        for j in range(bin_):
-            for k in range(resc_var):
-                if ((j*binning_+bin_mini < target_array[i,0] <= (j+1)*binning_+bin_mini)):
-                    if resc_check_ ==1:
-                        feature_array[i,k*2] = feature_array[i,k*2]*(genMET_mean[j]/scalefactor[j,k])
 
     
     # Exclude Gen met < 100 GeV events
@@ -131,7 +94,7 @@ def main(args):
     genMET_cut = 1
 
     if genMET_cut == 1:
-        genMET_check = '10cut'
+        genMET_check = '100cut'
         event_zero = 0
         skip = 0
         for i in range(nevents):
@@ -198,7 +161,7 @@ def main(args):
 
 
     # Make weight loss function
-    weight_array = weight_loss_functioni(20, y_val, 0, 500)
+    weight_array = weight_loss_function(20, y_val, 0, 500)
 
     def weight_loss(y_true, y_pred):
         return K.mean(math_ops.square((y_pred - y_true))*weight_array, axis=-1)
@@ -208,9 +171,8 @@ def main(args):
     # Set keras train model
     keras_model = dense(nfeatures, ntargets)
 
-    keras_model.compile(optimizer='adam', loss=[weight_loss, weight_loss], 
-    #keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], 
-                        loss_weights = None, metrics=['mean_absolute_error'])
+    keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], 
+                        loss_weights = [weight_array, weight_array], metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=10)
@@ -256,7 +218,7 @@ def main(args):
 
     Write_MET_binned_histogram(predict_phi, y_test_phi, 20, 0, 100, 400, name='histogram_all_no100cut.root')
 
-    MET_rel_error(predict_phi[:,0], y_test_phi[:,0], name='rel_error.pdf')
+    MET_rel_error(predict_phi[:,0], y_test_phi[:,0], name='rel_error_weight.png')
 
 if __name__ == "__main__":
 

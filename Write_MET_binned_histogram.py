@@ -124,3 +124,93 @@ def dist_xy(predict_met, name='dist.pdf'):
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
     #plt.show()
+
+def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, name='predict_mean.pdf'):
+    bin_ = (maxi - mini)/binning
+    X_genMET = np.zeros(bin_)
+    X_error = np.zeros(bin_)
+    y_predict = np.zeros(bin_)
+    y_error = np.zeros(bin_)
+    entry = np.zeros(bin_)
+
+    for i in range(predict_met.shape[0]):
+        for j in range(bin_):
+            if ((j * binning) <= gen_met[i] < ((j + 1) * binning)):
+                X_genMET[j] += gen_met[i]
+                y_predict[j] += predict_met[i]
+                entry[j] += 1
+                break
+
+    X_genMET = X_genMET/entry
+    y_predict = y_predict/entry
+
+    for i in range(predict_met.shape[0]):
+        for j in range(bin_):
+            if ((j * binning) <= gen_met[i] < ((j + 1) * binning)):
+                X_error[j] += (gen_met[i] - X_genMET[j]) ** 2
+                y_error[j] += (predict_met[i] - y_predict[j]) ** 2
+                break
+
+    X_error = np.sqrt(X_error/entry)
+    y_error = np.sqrt(y_error/entry)
+
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error)
+
+    ## x = y plot
+    X = np.arange(mini, maxi, binning)
+    plt.plot(X, X, 'r-')
+    ##
+
+    plt.xlim(mini, maxi)
+    plt.ylim(mini, maxi)
+    plt.xlabel('genMET mean [GeV]', fontsize = 20)
+    plt.ylabel('predicted MET mean [GeV]', fontsize = 20)
+    plt.savefig(name)
+    plt.show()
+
+
+def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_cut, corr_check, name='predict_mean.pdf'):
+    bin_ = (maxi - mini)/binning
+    X_genMET = np.zeros(bin_)
+    X_error = np.zeros(bin_)
+    y_predict = np.zeros(bin_)
+    y_error = np.zeros(bin_)
+    entry = np.zeros(bin_)
+
+    for i in range(predict_met.shape[0]):
+        for j in range(bin_):
+            if ((j * binning) <= gen_met[i] < ((j + 1) * binning)):
+                X_genMET[j] += gen_met[i]
+                y_predict[j] += predict_met[i]/gen_met[i]
+                entry[j] += 1
+                break
+
+    X_genMET = X_genMET/entry
+    y_predict = y_predict/entry
+
+    for i in range(predict_met.shape[0]):
+        for j in range(bin_):
+            if ((j * binning) <= gen_met[i] < ((j + 1) * binning)):
+                X_error[j] += (gen_met[i] - X_genMET[j]) ** 2
+                y_error[j] += (predict_met[i]/gen_met[i] - y_predict[j]) ** 2
+                break
+
+    X_error = np.sqrt(X_error/entry)
+    y_error = np.sqrt(y_error/entry)
+
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, label='cut = '+str(genMET_cut)+', '+str(corr_check)+'.')
+
+    ## y = 1 plot
+    X = np.arange(mini, maxi, binning)
+    y = np.zeros(bin_)
+    y[:] = 1
+    plt.plot(X, y, 'r-')
+    ##
+
+    plt.xlim(mini, maxi)
+    plt.ylim(mini, 3)
+    plt.xlabel('Gen MET mean [GeV]', fontsize = 16)
+    plt.ylabel('(predicted MET/Gen MET) mean [GeV]', fontsize = 16)
+    plt.legend()
+    plt.savefig(name)
+    #plt.show()
