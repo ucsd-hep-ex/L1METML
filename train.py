@@ -161,7 +161,7 @@ def main(args):
 
 
     # Make weight loss function
-    weight_array = weight_loss_function(20, y_val, 0, 500)
+    weight_array = weight_loss_function(20, y_train, 0, 500)
 
     def weight_loss(y_true, y_pred):
         return K.mean(math_ops.square((y_pred - y_true))*weight_array, axis=-1)
@@ -182,7 +182,7 @@ def main(args):
 
 
     # fit keras
-    keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
+    keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, sample_weights = [weight_array, weight_array], 
                 epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
                 callbacks = callbacks)
 
