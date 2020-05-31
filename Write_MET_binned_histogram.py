@@ -1,4 +1,5 @@
 from ROOT import *
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
@@ -55,13 +56,13 @@ def Write_MET_binned_histogram(Predict_array, Gen_array, bin_number, bin_minimum
         for j in range(int(bin_/2.)):
             if (j*binning_le < v_gen.Mod()) and (v_gen.Mod() <= (j+1)*binning_le):
                 hists["v_gen_"+str(int(j*binning_le))+"-"+str(int((j+1)*binning_le))+""].Fill(v_gen.Mod())
-                hists["predict_para_"+str(int(j*binning_le))+"-"+str(int((j+1)*binning_le))+""].Fill(v_para_predict.Mod())
-                hists["predict_perp_"+str(int(j*binning_le))+"-"+str(int((j+1)*binning_le))+""].Fill(v_perp_predict.Mod())
+                hists["predict_para_"+str(int(j*binning_le))+"-"+str(int((j+1)*binning_le))+""].Fill(SgnPara(v_para_predict, v_gen))
+                hists["predict_perp_"+str(int(j*binning_le))+"-"+str(int((j+1)*binning_le))+""].Fill(SgnPerp(v_perp_predict, v_gen))
         for j in range(int(bin_/2.)):
             if (j*binning_gr+bin_medi < v_gen.Mod()) and (v_gen.Mod() <= (j+1)*binning_gr+bin_medi):
                 hists["v_gen_"+str(int(j*binning_gr+bin_medi))+"-"+str(int((j+1)*binning_gr+bin_medi))+""].Fill(v_gen.Mod())
-                hists["predict_para_"+str(int(j*binning_gr+bin_medi))+"-"+str(int((j+1)*binning_gr+bin_medi))+""].Fill(v_para_predict.Mod())
-                hists["predict_perp_"+str(int(j*binning_gr+bin_medi))+"-"+str(int((j+1)*binning_gr+bin_medi))+""].Fill(v_perp_predict.Mod())
+                hists["predict_para_"+str(int(j*binning_gr+bin_medi))+"-"+str(int((j+1)*binning_gr+bin_medi))+""].Fill(SgnPara(v_para_predict, v_gen))
+                hists["predict_perp_"+str(int(j*binning_gr+bin_medi))+"-"+str(int((j+1)*binning_gr+bin_medi))+""].Fill(SgnPerp(v_perp_predict, v_gen))
 
     fout = TFile(name, "recreate")
     for n in hists:
@@ -69,31 +70,94 @@ def Write_MET_binned_histogram(Predict_array, Gen_array, bin_number, bin_minimum
 
 
 
-def MET_rel_error(predict_met, gen_met, name='Met_res.pdf'):
-    rel_err = (predict_met - gen_met)/np.clip(gen_met,0.1, 1000)
+def MET_rel_error_bad(predict_met, gen_met, name='Met_res.pdf'):
+    rel_err = (predict_met - gen_met)/gen_met
+
+    mask = (rel_err[:] < 3)
+    rel_err = rel_err[~mask]
+
+
+    mean = np.mean(rel_err)
+    std = np.std(rel_err)
+
+    entry = rel_err.shape[0]
+    #for i in range(rel_err.shape[0]):
+    #    std += (mean - rel_err[i]) **2
+
+    #std = std/rel_err.shape[0]
+    #std = math.sqrt(std)
+
+    mean = mean * 1000
+    mean = int(mean)
+    mean = float(mean) / 1000
+    std = std * 1000
+    std = int(std)
+    std = float(std) / 1000
+
     plt.figure()
-    plt.hist(rel_err, bins=np.linspace(-3., 3., 50+1))
-    plt.xlabel("rel error (predict - true)/true")
-    plt.ylabel("Events")
+    plt.hist(rel_err, bins=np.linspace(3., 50., 50+1), label='mean : '+str(mean)+'\nstandard deviation : '+str(std)+'\nentry : '+str(entry)+'')
+    plt.xlabel("relative error (predict - true)/true", fontsize=16)
+    plt.ylabel("Events", fontsize=16)
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
+    plt.legend()
     plt.savefig(name)
+    plt.show()
 
 
 
-def MET_abs_error(predict_met,gen_met, name='Met_res.pdf'):
-    rel_err = (predict_met - gen_met)
+
+def MET_rel_error(predict_met, gen_met, name='Met_res.pdf'):
+    rel_err = (predict_met - gen_met)/gen_met
+
+    mask = (rel_err[:] > 3)
+    rel_err = rel_err[~mask]
+
+
+    mean = np.mean(rel_err)
+    std = np.std(rel_err)
+
+    entry = rel_err.shape[0]
+
+    mean = mean * 1000
+    mean = int(mean)
+    print(mean)
+    mean = float(mean) / 1000
+    std = std * 1000
+    std = int(std)
+    std = float(std) / 1000
+
     plt.figure()
-    plt.hist(rel_err, bins=np.linspace(-500., 500., 50+1))
+    plt.hist(rel_err, bins=np.linspace(-3., 3., 50+1), label='mean : '+str(mean)+'\nstandard deviation : '+str(std)+'\nentry : '+str(entry)+'')
+    plt.xlabel("relative error (predict - true)/true", fontsize=16)
+    plt.ylabel("Events", fontsize=16)
+    plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
+    plt.legend()
+    plt.savefig(name)
+    plt.show()
+
+
+
+
+def MET_abs_error(predict_met, gen_met, name='Met_res.pdf'):
+    rel_err = (predict_met - gen_met)
+
+    mask = gen_met[:] > 100
+    rel_err = rel_err[~mask]
+
+    plt.figure()
+    plt.hist(rel_err, bins=np.linspace(-150., 150., 50+1))
     plt.xlabel("abs error (predict - true)")
     plt.ylabel("Events")
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
+    plt.show()
 
 
 
-def Phi_abs_error(predict_met,gen_met, name='Met_res.pdf'):
+def Phi_abs_error(predict_met, gen_met, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)
     plt.figure()
     plt.hist(rel_err, bins=np.linspace(-3.5, 3.5, 50+1))
@@ -102,6 +166,7 @@ def Phi_abs_error(predict_met,gen_met, name='Met_res.pdf'):
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
+    plt.show()
 
 def dist(predict_met, name='dist.pdf'):
     rel_err = predict_met
@@ -112,7 +177,7 @@ def dist(predict_met, name='dist.pdf'):
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
-    #plt.show()
+    plt.show()
 
 def dist_xy(predict_met, name='dist.pdf'):
     rel_err = predict_met
@@ -123,9 +188,9 @@ def dist_xy(predict_met, name='dist.pdf'):
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
-    #plt.show()
+    plt.show()
 
-def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, name='predict_mean.pdf'):
+def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, genMET_cut, corr_check, name='predict_mean.pdf'):
     bin_ = (maxi - mini)/binning
     X_genMET = np.zeros(bin_)
     X_error = np.zeros(bin_)
@@ -154,7 +219,7 @@ def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, name='pre
     X_error = np.sqrt(X_error/entry)
     y_error = np.sqrt(y_error/entry)
 
-    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error)
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, label='cut = '+str(genMET_cut)+', '+str(corr_check)+'.')
 
     ## x = y plot
     X = np.arange(mini, maxi, binning)
@@ -162,14 +227,16 @@ def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, name='pre
     ##
 
     plt.xlim(mini, maxi)
-    plt.ylim(mini, maxi)
-    plt.xlabel('genMET mean [GeV]', fontsize = 20)
-    plt.ylabel('predicted MET mean [GeV]', fontsize = 20)
+    plt.ylim(mini, 700)
+    plt.xlabel('Gen MET mean [GeV]', fontsize = 16)
+    #plt.ylabel('PUPPI MET mean [GeV]', fontsize = 16)
+    plt.ylabel('predicted MET mean [GeV]', fontsize = 16)
+    plt.legend()
     plt.savefig(name)
     plt.show()
 
 
-def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_cut, corr_check, name='predict_mean.pdf'):
+def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_cut, comment, name='predict_mean.pdf'):
     bin_ = (maxi - mini)/binning
     X_genMET = np.zeros(bin_)
     X_error = np.zeros(bin_)
@@ -198,7 +265,7 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
     X_error = np.sqrt(X_error/entry)
     y_error = np.sqrt(y_error/entry)
 
-    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, label='cut = '+str(genMET_cut)+', '+str(corr_check)+'.')
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, label='cut = '+str(genMET_cut)+', '+str(comment)+'.')
 
     ## y = 1 plot
     X = np.arange(mini, maxi, binning)
@@ -213,4 +280,47 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
     plt.ylabel('(predicted MET/Gen MET) mean [GeV]', fontsize = 16)
     plt.legend()
     plt.savefig(name)
-    #plt.show()
+    plt.show()
+
+
+def extract_result(feat_array, targ_array, path, genMET_cut, max_genMET_cut):
+    feat = open(''+path+'feature_array_MET_'+str(genMET_cut)+'-'+str(max_genMET_cut)+'.txt', 'w')
+    for i in range(feat_array.shape[0]):
+        data = '%f' %feat_array[i,0]
+        feat.write(data)
+        feat.write('\n')
+    feat_phi = open(''+path+'feature_array_phi_'+str(genMET_cut)+'-'+str(max_genMET_cut)+'.txt', 'w')
+    for i in range(feat_array.shape[0]):
+        data = '%f' %feat_array[i,1]
+        feat_phi.write(data)
+        feat_phi.write('\n')
+    targ = open(''+path+'target_array_MET_'+str(genMET_cut)+'-'+str(max_genMET_cut)+'.txt', 'w')
+    for i in range(feat_array.shape[0]):
+        data = '%f' %targ_array[i,0]
+        targ.write(data)
+        targ.write('\n')
+    targ_phi = open(''+path+'target_array_phi_'+str(genMET_cut)+'-'+str(max_genMET_cut)+'.txt', 'w')
+    for i in range(feat_array.shape[0]):
+        data = '%f' %targ_array[i,1]
+        targ_phi.write(data)
+        targ_phi.write('\n')
+    feat.close()
+    targ.close()
+    feat_phi.close()
+    targ_phi.close()
+
+
+def histo_2D(predict_pT, gen_pT, name = '2D_histo.png'):
+    X_hist = np.arange(0,500, 20)
+    Y_hist = 2.*X_hist#1.25*X_hist
+    #Y_hist_1 = 0.75*X_hist
+    plt.plot(X_hist, Y_hist, '-r')
+    #plt.plot(X_hist, Y_hist_1, '-r')
+    x_bins = np.linspace(0, 500, 50)
+    y_bins = np.linspace(0, 500, 50)
+    plt.hist2d(gen_pT, predict_pT,  bins=[x_bins, y_bins], cmap=plt.cm.jet)
+    plt.colorbar()
+    plt.xlabel('gen MET [GeV]')
+    plt.ylabel('predicted MET [GeV]')
+    plt.savefig(name)
+    plt.show()
