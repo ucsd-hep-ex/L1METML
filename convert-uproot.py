@@ -7,18 +7,20 @@ import tables
 import sys
 filters = tables.Filters(complevel=7, complib='blosc')
 
-path = '/afs/cern.ch/work/d/daekwon/public/l1samples/'
+path = 'data/'
 
 infiles = [#path+'perfNano_SingleNeutrino_PU200.v0.root',
            path+'perfNano_TTbar_PU200.v0.root',
            path+'perfNano_VBF_HToInvisible_PU200.v0.root',
 ]
 
-outfile = 'input_MET.h5'
+outfile = 'data/input_MET.h5'
 #entrystop = 10000
 entrystop = None
 
 other_branches = ['run', 'luminosityBlock', 'event', 'nL1PuppiJets']
+
+njet_branch = 'nL1PuppiJets'
 
 met_branches = [# barrel
                 'L1CHSMetBarrel_pt', 'L1CHSMetBarrel_phi',
@@ -52,7 +54,6 @@ met_branches = [# barrel
                 'genMet_pt', 'genMet_phi'
 ]
 
-
 jet_branches =['L1PuppiJets_pt','L1PuppiJets_eta','L1PuppiJets_phi', 
                'L1PuppiJets_mass']
 
@@ -76,15 +77,25 @@ for infile in infiles:
 
     upfile = uproot.open(infile)
     tree = upfile['Events']
-    
+
     df_other = tree.pandas.df(branches=other_branches, entrystart=0, entrystop = entrystop)
     df_met = tree.pandas.df(branches=met_branches, entrystart=0, entrystop = entrystop)
     df_jet = tree.pandas.df(branches=jet_branches, entrystart=0, entrystop = entrystop)
 
+    # first find total length of evens-level dataframe before cuts
+    # for re-indexing later (to avoid making duplicaes)
+    totallength = len(df_other)
+
+    # need to require more than 1 jet for jet-based training
+    mask = df_other[njet_branch]>0
+    df_other = df_other[mask]
+    df_met = df_met[mask]
+
     df_other.index = df_other.index+currententry
     df_met.index = df_met.index+currententry
     df_jet.index = df_jet.index.set_levels(df_jet.index.levels[0]+currententry, level=0)
-    currententry += len(df_other)
+
+    currententry += totallength
 
     df_others.append(df_other)
     df_mets.append(df_met)
@@ -94,11 +105,13 @@ df_other = pd.concat(df_others)
 df_met = pd.concat(df_mets)
 df_jet = pd.concat(df_jets)
 
+
 # shuffle
 df_other = df_other.sample(frac=1)
 # apply new ordering to other dataframes
 df_met = df_met.reindex(df_other.index.values)
 df_jet = df_jet.reindex(df_other.index.values,level=0)
+
 
 with tables.open_file(outfile, mode='w') as h5file:
     

@@ -1,20 +1,20 @@
-from ROOT import *
 import math
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 
 def Write_MET_binned_histogram(Predict_array, Gen_array, bin_number, bin_minimum, bin_median, bin_maximum, name='title'):
-    
+    import ROOT as rt
+
     # book histograms
     def book(h,name,n,a,b,title=""):
-        h[name]=TH1F(name,title,n,a,b)
+        h[name]=rt.TH1F(name,title,n,a,b)
         h[name].Sumw2()
     def book2(h,name,nx,ax,bx,ny,ay,by,title=""):
-        h[name]=TH2F(name,title,nx,ax,bx,ny,ay,by)
+        h[name]=rt.TH2F(name,title,nx,ax,bx,ny,ay,by)
         h[name].Sumw2()
     def SgnPara(para,z):
-        return para.Mod()*(1. if abs(para.DeltaPhi(z))>TMath.Pi()/2 else -1.)
+        return para.Mod()*(1. if abs(para.DeltaPhi(z))>rt.TMath.Pi()/2 else -1.)
     def SgnPerp(perp,z):
         return perp.Mod()*(1. if perp.DeltaPhi(z)>0 else -1.)
 
@@ -39,12 +39,12 @@ def Write_MET_binned_histogram(Predict_array, Gen_array, bin_number, bin_minimum
         book(hists, "predict_para_"+str(int(i*binning_gr+bin_medi))+"-"+str(int((i+1)*binning_gr+bin_medi))+"", 100, -bin_maxi, bin_maxi)
         book(hists, "v_gen_"+str(int(i*binning_gr+bin_medi))+"-"+str(int((i+1)*binning_gr+bin_medi))+"", 1000, i*binning_gr+bin_medi, (i+1)*binning_gr+bin_medi)
 
-    v_gen =	TVector2()
-    v_para_PUPPI = TVector2()
-    v_perp_PUPPI = TVector2()
-    v_predict = TVector2()
-    v_para_predict = TVector2()
-    v_perp_predict = TVector2()
+    v_gen =	rt.TVector2()
+    v_para_PUPPI = rt.TVector2()
+    v_perp_PUPPI = rt.TVector2()
+    v_predict = rt.TVector2()
+    v_para_predict = rt.TVector2()
+    v_perp_predict = rt.TVector2()
     
     test_events = Predict_array.shape[0]
     
@@ -64,7 +64,7 @@ def Write_MET_binned_histogram(Predict_array, Gen_array, bin_number, bin_minimum
                 hists["predict_para_"+str(int(j*binning_gr+bin_medi))+"-"+str(int((j+1)*binning_gr+bin_medi))+""].Fill(SgnPara(v_para_predict, v_gen))
                 hists["predict_perp_"+str(int(j*binning_gr+bin_medi))+"-"+str(int((j+1)*binning_gr+bin_medi))+""].Fill(SgnPerp(v_perp_predict, v_gen))
 
-    fout = TFile(name, "recreate")
+    fout = rt.TFile(name, "recreate")
     for n in hists:
         hists[n].Write()
 
@@ -73,7 +73,7 @@ def Write_MET_binned_histogram(Predict_array, Gen_array, bin_number, bin_minimum
 def MET_rel_error_bad(predict_met, gen_met, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)/gen_met
 
-    mask = (rel_err[:] < 3)
+    mask = (rel_err < 3)
     rel_err = rel_err[~mask]
 
 
@@ -191,35 +191,21 @@ def dist_xy(predict_met, name='dist.pdf'):
     plt.show()
 
 def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, genMET_cut, corr_check, name='predict_mean.pdf'):
-    bin_ = (maxi - mini)/binning
+    bin_ = int((maxi - mini)/binning)
     X_genMET = np.zeros(bin_)
     X_error = np.zeros(bin_)
     y_predict = np.zeros(bin_)
     y_error = np.zeros(bin_)
-    entry = np.zeros(bin_)
 
-    for i in range(predict_met.shape[0]):
-        for j in range(bin_):
-            if ((j * binning) <= gen_met[i] < ((j + 1) * binning)):
-                X_genMET[j] += gen_met[i]
-                y_predict[j] += predict_met[i]
-                entry[j] += 1
-                break
+    for j in range(bin_):
+        mask = (gen_met > (j * binning)) & (gen_met < ((j + 1) * binning))
+        X_genMET[j] = np.mean(gen_met[mask])
+        y_predict[j] = np.mean(predict_met[mask])
+        X_error[j] = np.std(gen_met[mask])
+        y_error[j] = np.std(predict_met[mask])
 
-    X_genMET = X_genMET/entry
-    y_predict = y_predict/entry
-
-    for i in range(predict_met.shape[0]):
-        for j in range(bin_):
-            if ((j * binning) <= gen_met[i] < ((j + 1) * binning)):
-                X_error[j] += (gen_met[i] - X_genMET[j]) ** 2
-                y_error[j] += (predict_met[i] - y_predict[j]) ** 2
-                break
-
-    X_error = np.sqrt(X_error/entry)
-    y_error = np.sqrt(y_error/entry)
-
-    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, label='cut = '+str(genMET_cut)+', '+str(corr_check)+'.')
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, 
+                 label='cut = '+str(genMET_cut)+', '+str(corr_check)+'.')
 
     ## x = y plot
     X = np.arange(mini, maxi, binning)
@@ -242,30 +228,16 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
     X_error = np.zeros(bin_)
     y_predict = np.zeros(bin_)
     y_error = np.zeros(bin_)
-    entry = np.zeros(bin_)
 
-    for i in range(predict_met.shape[0]):
-        for j in range(bin_):
-            if ((j * binning) <= gen_met[i] < ((j + 1) * binning)):
-                X_genMET[j] += gen_met[i]
-                y_predict[j] += predict_met[i]/gen_met[i]
-                entry[j] += 1
-                break
+    for j in range(bin_):
+        mask = (gen_met > (j * binning)) & (gen_met < ((j + 1) * binning))
+        X_genMET[j] = np.mean(gen_met[mask])
+        y_predict[j] = np.mean(predict_met[mask]/gen_met[mask])
+        X_error[j] = np.std(gen_met[mask])
+        y_error[j] = np.std(predict_met[mask]/gen_met[mask])
 
-    X_genMET = X_genMET/entry
-    y_predict = y_predict/entry
-
-    for i in range(predict_met.shape[0]):
-        for j in range(bin_):
-            if ((j * binning) <= gen_met[i] < ((j + 1) * binning)):
-                X_error[j] += (gen_met[i] - X_genMET[j]) ** 2
-                y_error[j] += (predict_met[i]/gen_met[i] - y_predict[j]) ** 2
-                break
-
-    X_error = np.sqrt(X_error/entry)
-    y_error = np.sqrt(y_error/entry)
-
-    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, label='cut = '+str(genMET_cut)+', '+str(comment)+'.')
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, 
+                 label='cut = '+str(genMET_cut)+', '+str(comment)+'.')
 
     ## y = 1 plot
     X = np.arange(mini, maxi, binning)

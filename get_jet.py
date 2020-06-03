@@ -25,7 +25,7 @@ def get_features_targets(file_name, features, targets):
     h5file.close()
     return feature_array,target_array
 
-def get_jet_features_targets(file_name, features, number_of_jets):
+def get_jet_features(file_name, features, number_of_jets):
     # load file
     h5file = tables.open_file(file_name, 'r')
     nevents = getattr(h5file.root,features[0]).shape[0]
@@ -33,11 +33,11 @@ def get_jet_features_targets(file_name, features, number_of_jets):
     print(nevents)
 
     # allocate arrays
-    feature_array = np.zeros((nevents,nfeatures*number_of_jets))
+    feature_array = np.zeros((nevents,number_of_jets,nfeatures))
 
     # load feature arrays
-    for (i, feat) in enumerate(features):
-        for j in range(number_of_jets):
-            feature_array[:,(j*number_of_jets)+i] = getattr(h5file.root, feat)[:,j]
+    for j in range(number_of_jets):
+        for (i, feat) in enumerate(features):
+            feature_array[:,j,i] = getattr(h5file.root, feat)[:,j]
     h5file.close()
     return feature_array
