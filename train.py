@@ -7,7 +7,7 @@ import numpy as np
 import tables
 import matplotlib.pyplot as plt
 import argparse
-from models import dense, dense_conv
+from models import dense, dense_conv, conv, deepmetlike
 import math
 import setGPU
 from Write_MET_binned_histogram import MET_rel_error, MET_binned_predict_mean
@@ -36,7 +36,7 @@ def weight_loss_function(number_of_bin, val_array, min_, max_):
     bin_indices = np.clip(bin_indices,0,number_of_bin-1) # make last bin an overflow
 
     weight_array = np.full(val_events, mean)/MET_interval[bin_indices]
-
+    
     return weight_array
 
 
@@ -50,18 +50,19 @@ def main(args):
                 'L1TKMet_pt', 'L1TKMet_phi',
                 'L1TKV5Met_pt', 'L1TKV5Met_phi',
                 'L1TKV6Met_pt', 'L1TKV6Met_phi']
-    features_jet = ['L1PuppiJets_pt', 'L1PuppiJets_phi', 'L1PuppiJets_eta']
+
+    features_jet = ['L1PuppiJets_pt', 'L1PuppiJets_phi', 
+                    'L1PuppiJets_eta', 'L1PuppiJets_mass']
 
     targets = ['genMet_pt', 'genMet_phi']
     targets_jet = ['GenJets_pt', 'GenJets_phi', 'GenJets_eta']
 
     # Set number of jets you will use
-    number_of_jets = 10
+    number_of_jets = 20
 
     feature_MET_array, target_array = get_features_targets(file_path, features, targets)
     feature_jet_array = get_jet_features(file_path, features_jet, number_of_jets)
     nMETs = int(feature_MET_array.shape[1]/2)
-    print(nMETs)
 
     nevents = target_array.shape[0]
     nmetfeatures = feature_MET_array.shape[1]
@@ -93,6 +94,7 @@ def main(args):
         feature_jet_array_xy[:,i,0] = feature_jet_array[:,i,0] * np.cos(feature_jet_array[:,i,1])
         feature_jet_array_xy[:,i,1] = feature_jet_array[:,i,0] * np.sin(feature_jet_array[:,i,1])
         feature_jet_array_xy[:,i,2] = feature_jet_array[:,i,2]
+        feature_jet_array_xy[:,i,3] = feature_jet_array[:,i,3]
     
     # Convert target from pt phi to px, py
     target_array_xy = np.zeros((nevents, ntargets))
@@ -121,11 +123,27 @@ def main(args):
     # Make weight loss function
     weight_array = weight_loss_function(20, y_train, 0, 500)
 
-    # Set keras train model
-    keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
+    # Set keras train model (and correct input)
+
+    # met+jet-based model
+    #keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
+
+    # only-met-based model
+    #keras_model = dense(nmetfeatures, ntargets); 
+    #X_train = X_train[0]
+    #X_val = X_val[0]
+    #X_test = X_test[0]
+
+    # only-jet-based models
+    #keras_model = conv(njets, njetfeatures, ntargets)
+    keras_model = deepmetlike(njets, njetfeatures, ntargets)
+    X_train = X_train[1]
+    X_val = X_val[1]
+    X_test = X_test[1]
+
 
     keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], 
-                        loss_weights = None, metrics=['mean_absolute_error'])
+                        loss_weights = [1., 1.], metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=10)
