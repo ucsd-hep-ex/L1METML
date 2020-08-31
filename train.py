@@ -166,10 +166,13 @@ def main(args):
     # Set keras train model (and correct input)
 
     # met+jet-based model
-    keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
+    #keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
+    #X_train = X_train[:2]
+    #X_val = X_val[:2]
+    #X_val = X_test[:2]
 
     # met+jet+PupCandi-based model
-    #keras_model = dense_conv_all(nmetfeatures, njets, njetfeatures, npupcandis, npupcandifeatures, ntargets)
+    keras_model = dense_conv_all(nmetfeatures, njets, njetfeatures, npupcandis, npupcandifeatures, ntargets)
 
     # only-met-based model
     #keras_model = dense(nmetfeatures, ntargets); 
