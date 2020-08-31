@@ -1,7 +1,7 @@
 import tensorflow 
 from tensorflow.python.ops import math_ops
 import keras
-from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.callbacks import ModelCheckpoint, EarlyStopping, CSVLogger
 import keras.backend as K
 import numpy as np
 import tables
@@ -10,7 +10,7 @@ import argparse
 from models import dense, dense_conv, conv, deepmetlike
 import math
 import setGPU
-from Write_MET_binned_histogram import MET_rel_error, MET_binned_predict_mean
+from Write_MET_binned_histogram import MET_rel_error, MET_abs_error, MET_binned_predict_mean, Phi_abs_error, dist, histo_2D, Write_MET_binned_histogram
 from get_jet import get_features_targets, get_jet_features
 
 def huber_loss(y_true, y_pred, delta=1.0):
@@ -42,7 +42,7 @@ def weight_loss_function(number_of_bin, val_array, min_, max_):
 
 def main(args):
 
-    file_path = 'data/input_MET.h5'
+    file_path = 'data/input_MET_PupCandi.h5'
     features = ['L1CHSMet_pt', 'L1CHSMet_phi',
                 'L1CaloMet_pt', 'L1CaloMet_phi',
                 'L1PFMet_pt', 'L1PFMet_phi',
@@ -54,34 +54,58 @@ def main(args):
     features_jet = ['L1PuppiJets_pt', 'L1PuppiJets_phi', 
                     'L1PuppiJets_eta', 'L1PuppiJets_mass']
 
+    features_pupcandi = ['L1PuppiCands_pt','L1PuppiCands_phi','L1PuppiCands_eta',
+                         'L1PuppiCands_charge','L1PuppiCands_pdgId','L1PuppiCands_puppiWeight']
+
     targets = ['genMet_pt', 'genMet_phi']
     targets_jet = ['GenJets_pt', 'GenJets_phi', 'GenJets_eta']
 
-    # Set number of jets you will use
+    # Set number of jets and pupcandis you will use
     number_of_jets = 20
+    number_of_pupcandis = 100
 
     feature_MET_array, target_array = get_features_targets(file_path, features, targets)
     feature_jet_array = get_jet_features(file_path, features_jet, number_of_jets)
+    feature_pupcandi_array = get_jet_features(file_path, features_pupcandi, number_of_pupcandis)
     nMETs = int(feature_MET_array.shape[1]/2)
 
     nevents = target_array.shape[0]
     nmetfeatures = feature_MET_array.shape[1]
     njets = feature_jet_array.shape[1]
     njetfeatures = feature_jet_array.shape[2]
+    npupcandis = feature_pupcandi_array.shape[1]
+    npupcandifeatures = feature_pupcandi_array.shape[2]
     ntargets = target_array.shape[1]
 
     # Exclude puppi met < 100 GeV events
     # Set PUPPI MET min, max cut
 
-    PupMET_cut = 0
+    PupMET_cut = 100 
     PupMET_cut_max = 500
 
-    mask = (feature_MET_array[:,0] > PupMET_cut) & (feature_MET_array[:,0] < PupMET_cut_max)
+    mask = (feature_MET_array[:,6] > PupMET_cut) & (feature_MET_array[:,0] < PupMET_cut_max)
     feature_MET_array = feature_MET_array[mask]
     feature_jet_array = feature_jet_array[mask]
+    feature_pupcandi_array = feature_pupcandi_array[mask]
     target_array = target_array[mask]
 
     nevents = target_array.shape[0]
+
+    # Exclude Gen met < 100 GeV events
+    # Set Gen MET min, max cut
+
+    TarMET_cut = 0.5
+    TarMET_cut_max = 500
+
+    mask1 = (target_array[:,0] > TarMET_cut) & (target_array[:,0] < TarMET_cut_max)
+    feature_MET_array = feature_MET_array[mask1]
+    feature_jet_array = feature_jet_array[mask1]
+    feature_pupcandi_array = feature_pupcandi_array[mask1]
+    target_array = target_array[mask1]
+
+    nevents = target_array.shape[0]
+
+
 
     # Convert feature from pt, phi to px, py
     feature_MET_array_xy = np.zeros((nevents, nmetfeatures))
@@ -95,6 +119,17 @@ def main(args):
         feature_jet_array_xy[:,i,1] = feature_jet_array[:,i,0] * np.sin(feature_jet_array[:,i,1])
         feature_jet_array_xy[:,i,2] = feature_jet_array[:,i,2]
         feature_jet_array_xy[:,i,3] = feature_jet_array[:,i,3]
+
+    
+    feature_pupcandi_array_xy = np.zeros((nevents, npupcandis, npupcandifeatures))
+    for i in range(number_of_pupcandis):
+        feature_pupcandi_array_xy[:,i,0] = feature_pupcandi_array[:,i,0] * np.cos(feature_pupcandi_array[:,i,1])
+        feature_pupcandi_array_xy[:,i,1] = feature_pupcandi_array[:,i,0] * np.sin(feature_pupcandi_array[:,i,1])
+        feature_pupcandi_array_xy[:,i,2] = feature_pupcandi_array[:,i,2]
+        feature_pupcandi_array_xy[:,i,3] = feature_pupcandi_array[:,i,3]
+        feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
+        feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
+    
     
     # Convert target from pt phi to px, py
     target_array_xy = np.zeros((nevents, ntargets))
@@ -103,8 +138,9 @@ def main(args):
     target_array_xy[:,1] = target_array[:,0] * np.sin(target_array[:,1])
     
     # Split datas into train, validation, test set
-    X = [feature_MET_array_xy, feature_jet_array_xy]
+    X = [feature_MET_array_xy, feature_jet_array_xy, feature_pupcandi_array_xy]
     y = target_array_xy
+    A = feature_MET_array[:,(6,7)]
     
     fulllen = nevents
     tv_frac = 0.10
@@ -120,13 +156,20 @@ def main(args):
     y_val = y[splits[1]:splits[2]]
     y_test = y[splits[0]:splits[1]]
 
+    A_train = A[0:splits[0]]
+    A_val = A[splits[1]:splits[2]]
+    A_test = A[splits[0]:splits[1]]
+
     # Make weight loss function
     weight_array = weight_loss_function(20, y_train, 0, 500)
 
     # Set keras train model (and correct input)
 
     # met+jet-based model
-    #keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
+    keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
+
+    # met+jet+PupCandi-based model
+    #keras_model = dense_conv_all(nmetfeatures, njets, njetfeatures, npupcandis, npupcandifeatures, ntargets)
 
     # only-met-based model
     #keras_model = dense(nmetfeatures, ntargets); 
@@ -136,30 +179,43 @@ def main(args):
 
     # only-jet-based models
     #keras_model = conv(njets, njetfeatures, ntargets)
-    keras_model = deepmetlike(njets, njetfeatures, ntargets)
-    X_train = X_train[1]
-    X_val = X_val[1]
-    X_test = X_test[1]
+    #keras_model = deepmetlike(njets, njetfeatures, ntargets)
+    #X_train = X_train[1]
+    #X_val = X_val[1]
+    #X_test = X_test[1]
 
 
-    keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], 
+    # print variables
+    print()
+    print("# \t\tGen MET cut\t :\t %.1f \t\t#" % TarMET_cut)
+    print("# \t\tPUPPI MET cut\t :\t %.1f \t\t#" % PupMET_cut)
+    print("# \t\tNumber of event\t : \t %d\t\t#" % nevents)
+    print("# \t\tNumber of training event\t : \t %d\t\t#" % A_train.shape[0])
+    print("# \t\tNumber of test event\t : \t %d\t\t#" % A_test.shape[0])
+    print()
+
+    keras_model.compile(optimizer='adam', loss=['mean_squared_error','mean_squared_error'], 
                         loss_weights = [1., 1.], metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=50)
     model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
-    callbacks = [early_stopping, model_checkpoint]
+    csv_logger = CSVLogger('loss_data.log')
+    callbacks = [early_stopping, model_checkpoint, csv_logger]
 
 
     # fit keras
+    
     keras_model.fit(X_train, 
                     [y_train[:,:1], y_train[:,1:]], 
                     batch_size=1024, 
+                    #batch_size=64, 
                     sample_weight=[weight_array, weight_array], 
-                    epochs=100, 
+                    epochs=500, 
                     validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), 
                     shuffle=True,
                     callbacks=callbacks)
+    
 
 
     # load created weights
@@ -175,16 +231,33 @@ def main(args):
     y_test_phi = np.zeros((test_events, 2))
 	
     predict_phi[:,0] = np.sqrt((predict_test[:,0]**2 + predict_test[:,1]**2))
-    predict_phi[:,1] = np.sign(predict_phi[:,1])*np.arccos(predict_test[:,0]/predict_phi[:,0])
+    predict_phi[:,1] = np.sign(predict_test[:,1])*np.arccos(predict_test[:,0]/predict_phi[:,0])
 
     y_test_phi[:,0] = np.sqrt((y_test[:,0]**2 + y_test[:,1]**2))
     y_test_phi[:,1] = np.sign(y_test[:,1])*np.arccos(y_test[:,0]/y_test_phi[:,0])
 
-    #Write_MET_binned_histogram(predict_phi, y_test_phi, 20, 0, 100, 400, name='histogram_all_no100cut.root')
+    print(predict_phi)
+    print(y_test_phi)
 
-    MET_rel_error(predict_phi[:,0], y_test_phi[:,0], name='rel_error_weight.png')
-    MET_binned_predict_mean(predict_phi[:,0], y_test_phi[:,0], 20, 0, 500, 0, '.', name='predict_mean.png')
+    #path='./result/TTbar/nocut/'
+    #path='./temp/Candi/'+str(PupMET_cut)+'cut/'
+    path='./temp/no_Candi/'+str(PupMET_cut)+'cut/'
+
+    #Write_MET_binned_histogram(predict_phi, y_test_phi, 20, 0, 100, 400, name=''+path+'histogram_all_no100cut.root')
+    #Write_MET_binned_histogram(A_test, y_test_phi, 20, 0, 100, 400, name='histogram_puppi_no100cut.root')
+
+    MET_rel_error(predict_phi[:,0], y_test_phi[:,0], name=''+path+'rel_error_200k.png')
+    #MET_abs_error(predict_phi[:,0], y_test_phi[:,0], name=''+path+'rel_abs.png')
+    #Phi_abs_error(predict_phi[:,1], y_test_phi[:,1], name=''+path+'Phi_error.png')
+    MET_binned_predict_mean(predict_phi[:,0], y_test_phi[:,0], 20, 0, 500, 0, '.', name=''+path+'predict_mean_200k.png')
+    #dist(predict_phi[:,0], name=''+path+'predict_dist.png')
+    #dist(y_test_phi[:,0], name=''+path+'Gen_dist.png')
+    #histo_2D(A_test[:,0], y_test_phi[:,0], name='./plots/2D_histo.png')
+
+    #MET_rel_error(A_test[:,0], y_test_phi[:,0], name='rel_error_weight.png')
+    #MET_binned_predict_mean(A_test[:,0], y_test_phi[:,0], 20, 0, 500, 0, '.', name='predict_mean.png')
     
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
