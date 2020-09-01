@@ -9,11 +9,11 @@ def dense(ninputs, noutputs):
     inputs = Input(shape=(ninputs,), name = 'input')
 
     x = BatchNormalization(name='bn_1')(inputs)
-    x = Dense(64, name = 'dense_1', activation='relu', kernel_initializer='glorot_uniform')(x)
+    x = Dense(128, name = 'dense_1', activation='relu', kernel_initializer='glorot_uniform')(x)
 
-    x = Dense(32, name = 'dense_2', activation='relu', kernel_initializer='glorot_uniform')(x)
+    x = Dense(64, name = 'dense_2', activation='relu', kernel_initializer='glorot_uniform')(x)
 
-    x = Dense(32, name = 'dense_3', activation='relu', kernel_initializer='glorot_uniform')(x)
+    x = Dense(64, name = 'dense_3', activation='relu', kernel_initializer='glorot_uniform')(x)
 
     outputs = Dense(noutputs, name = 'output', activation='linear')(x)
 
@@ -24,11 +24,10 @@ def dense(ninputs, noutputs):
 
     return keras_model
 
-
 def dense_conv(ndenseinputs, nconvs, nconvinputs, noutputs):
 
     inputs_dense = Input(shape=(ndenseinputs,), name = 'input_dense')
-    inputs_conv = Input(shape=(nconvs, nconvinputs,), name = 'input_conv')
+    inputs_conv = Input(shape=(nconvs, nconvinputs), name = 'input_conv')
 
     x = BatchNormalization(name='bn_1')(inputs_dense)
     x = Dense(64, name = 'dense_1', activation='relu', kernel_initializer='glorot_uniform')(x)
@@ -37,14 +36,14 @@ def dense_conv(ndenseinputs, nconvs, nconvinputs, noutputs):
 
     x = Dense(32, name = 'dense_3', activation='relu', kernel_initializer='glorot_uniform')(x)
 
-    y = BatchNormalization(name='bn_2')(inputs_conv)
-    y = Conv1D(filters=64, kernel_size=(1,), strides=(1,), padding='same', 
+    y= BatchNormalization(name='bn_2')(inputs_conv)
+    y = Conv1D(filters=64, kernel_size=(3,), strides=(1,), padding='same', 
                kernel_initializer='he_normal', use_bias=True, name='conv_1',
                activation = 'relu')(y)
-    y = Conv1D(filters=32, kernel_size=(1,), strides=(1,), padding='same', 
+    y = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
                kernel_initializer='he_normal', use_bias=True, name='conv_2',
                activation = 'relu')(y)
-    y = Conv1D(filters=32, kernel_size=(1,), strides=(1,), padding='same', 
+    y = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
                kernel_initializer='he_normal', use_bias=True, name='conv_3',
                activation = 'relu')(y)
 
@@ -67,18 +66,74 @@ def dense_conv(ndenseinputs, nconvs, nconvinputs, noutputs):
 
     return keras_model
 
+
+def dense_conv_all(ndenseinputs, nconvs_1, nconvinputs_1, nconvs_2, nconvinputs_2, noutputs):
+
+    inputs_dense = Input(shape=(ndenseinputs,), name = 'input_dense')
+    inputs_conv_1 = Input(shape=(nconvs_1, nconvinputs_1,), name = 'input_conv_1')
+    inputs_conv_2 = Input(shape=(nconvs_2, nconvinputs_2,), name = 'input_conv_2')
+
+    x = BatchNormalization(name='bn_1')(inputs_dense)
+    x = Dense(64, name = 'dense_1', activation='relu', kernel_initializer='glorot_uniform')(x)
+
+    x = Dense(32, name = 'dense_2', activation='relu', kernel_initializer='glorot_uniform')(x)
+
+    x = Dense(32, name = 'dense_3', activation='relu', kernel_initializer='glorot_uniform')(x)
+
+    y_1 = BatchNormalization(name='bn_2')(inputs_conv_1)
+    y_1 = Conv1D(filters=64, kernel_size=(3,), strides=(1,), padding='same', 
+               kernel_initializer='he_normal', use_bias=True, name='conv_11',
+               activation = 'relu')(y_1)
+    y_1 = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
+               kernel_initializer='he_normal', use_bias=True, name='conv_12',
+               activation = 'relu')(y_1)
+    y_1 = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
+               kernel_initializer='he_normal', use_bias=True, name='conv_13',
+               activation = 'relu')(y_1)
+
+    y_2 = BatchNormalization(name='bn_3')(inputs_conv_2)
+    y_2 = Conv1D(filters=64, kernel_size=(3,), strides=(1,), padding='same', 
+               kernel_initializer='he_normal', use_bias=True, name='conv_21',
+               activation = 'relu')(y_2)
+    y_2 = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
+               kernel_initializer='he_normal', use_bias=True, name='conv_22',
+               activation = 'relu')(y_2)
+    y_2 = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
+               kernel_initializer='he_normal', use_bias=True, name='conv_23',
+               activation = 'relu')(y_2)
+
+    # Try GRU
+    #y = GRU(50,go_backwards=True,implementation=2,name='gru')(y)
+    # Try summing over jets
+    y_1 = Lambda(lambda x: K.mean(x, axis=-2), input_shape=(nconvs_1,32)) (y_1)
+    y_2 = Lambda(lambda x: K.mean(x, axis=-2), input_shape=(nconvs_2,32)) (y_2)
+    # Try flattening all jets
+    #y = Flatten()(y)
+    
+    concat = Concatenate()([x,y_1,y_2])
+    z = Dense(128, name = 'dense_4', activation='relu', kernel_initializer='glorot_uniform')(concat)
+    z = Dense(128, name = 'dense_5', activation='relu', kernel_initializer='glorot_uniform')(z)
+    outputs = Dense(noutputs, name = 'output', activation='linear')(z)
+
+    outputs0 = Lambda(lambda x: slice(x, (0, 0), (-1,  1)))(outputs)
+    outputs1 = Lambda(lambda x: slice(x, (0, 1), (-1, -1)))(outputs)
+
+    keras_model = Model(inputs=[inputs_dense,inputs_conv_1, inputs_conv_2], outputs=[outputs0, outputs1])
+
+    return keras_model
+
 def conv(nconvs, nconvinputs, noutputs):
 
     inputs_conv = Input(shape=(nconvs, nconvinputs,), name = 'input_conv')
 
     y = BatchNormalization(name='bn_2')(inputs_conv)
-    y = Conv1D(filters=64, kernel_size=(1,), strides=(1,), padding='same', 
+    y = Conv1D(filters=64, kernel_size=(3,), strides=(1,), padding='same', 
                kernel_initializer='he_normal', use_bias=True, name='conv_1',
                activation = 'relu')(y)
-    y = Conv1D(filters=32, kernel_size=(1,), strides=(1,), padding='same', 
+    y = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
                kernel_initializer='he_normal', use_bias=True, name='conv_2',
                activation = 'relu')(y)
-    y = Conv1D(filters=32, kernel_size=(1,), strides=(1,), padding='same', 
+    y = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
                kernel_initializer='he_normal', use_bias=True, name='conv_3',
                activation = 'relu')(y)
 
