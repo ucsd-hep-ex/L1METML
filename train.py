@@ -128,7 +128,7 @@ def main(args):
         feature_pupcandi_array_xy[:,i,2] = feature_pupcandi_array[:,i,2]
         feature_pupcandi_array_xy[:,i,3] = feature_pupcandi_array[:,i,3]
         feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
-        feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
+        feature_pupcandi_array_xy[:,i,5] = feature_pupcandi_array[:,i,5]
     
     
     # Convert target from pt phi to px, py
