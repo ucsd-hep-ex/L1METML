@@ -15,7 +15,7 @@ infiles = [#path+'perfNano_SingleNeutrino_PU200.v0.root',
            #path+'perfNano_VBF_HToInvisible_PU200.v0.root',
 ]
 
-outfile = 'data/input_MET.h5'
+outfile = 'data/input_MET_PupCandi.h5'
 #entrystop = 10000
 entrystop = None
 
@@ -87,6 +87,7 @@ for infile in infiles:
     df_met = tree.pandas.df(branches=met_branches, entrystart=0, entrystop = entrystop)
     df_jet = tree.pandas.df(branches=jet_branches, entrystart=0, entrystop = entrystop)
     df_pupcandi = tree.pandas.df(branches=pupcandi_branches, entrystart=0, entrystop = entrystop)
+    print(df_pupcandi)
 
     ####### for test what is differences btw df_jet and df_pupcandi
 
