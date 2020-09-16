@@ -8,25 +8,17 @@ cmsenv
 git clone https://github.com/jmduarte/L1METML
 cd L1METML
 ```
-Create an anaconda environment with Python 3.5-3.7   
-In order to run 'convert-uproot.py', you need to install [uproot](https://github.com/scikit-hep/uproot "uproot link").
+Create an anaconda environment with Python 3.6 and install packages needed to run train.py.
 ```
-conda config --add channels conda-forge
-conda install uproot
+sh conda_setup.sh
 ```
-And you need to install following packages.
-These can be installed by "conda install [package name]"
-* [numpy](https://scipy.org/install.html)
-* [matplotlib](https://matplotlib.org/)
-* [awkward-array](https://github.com/scikit-hep/awkward-array)
-* [uproot-methods](https://github.com/scikit-hep/uproot-methods)
-* [cachetools](https://pypi.org/project/cachetools/)
-* [pandas](https://pandas.pydata.org/)
-* [tables](https://pypi.org/project/tables/)
-* [tensorflow](https://www.tensorflow.org/install)
-* [keras](https://keras.io/#installation)
 
 ### Convert
+The TTBar sample used in 'convert-uproot.py' is located in
+```
+/afs/cern.ch/work/y/yeseo/public/ml4MET/L1METML/data/perfNano_TTbar_PU200.110X_v1.root
+```
+Convert into hdf5
 ```
 python convert-uproot.py
 ```
