@@ -1,8 +1,11 @@
 import keras
 from keras.models import Model
-from keras.layers import Input, Dense, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten
+from keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape
 import keras.backend as K
 from keras.backend import slice
+from keras import initializers
+
+from weighted_sum_layer import weighted_sum_layer
 
 def dense(ninputs, noutputs):
 
@@ -128,19 +131,19 @@ def conv(nconvs, nconvinputs, noutputs):
 
     y = BatchNormalization(name='bn_2')(inputs_conv)
     y = Conv1D(filters=64, kernel_size=(3,), strides=(1,), padding='same', 
-               kernel_initializer='he_normal', use_bias=True, name='conv_1',
+               kernel_initializer='glorot_normal', use_bias=True, name='conv_1',
                activation = 'relu')(y)
     y = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
-               kernel_initializer='he_normal', use_bias=True, name='conv_2',
+               kernel_initializer='glorot_normal', use_bias=True, name='conv_2',
                activation = 'relu')(y)
     y = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
-               kernel_initializer='he_normal', use_bias=True, name='conv_3',
+               kernel_initializer='glorot_normal', use_bias=True, name='conv_3',
                activation = 'relu')(y)
 
     y = Lambda(lambda x: K.mean(x, axis=-2), input_shape=(nconvs,32)) (y) 
                  
-    y = Dense(128, name = 'dense_1', activation='relu', kernel_initializer='glorot_uniform')(y)
-    y = Dense(128, name = 'dense_2', activation='relu', kernel_initializer='glorot_uniform')(y)
+    y = Dense(64, name = 'dense_1', activation='relu', kernel_initializer='glorot_uniform')(y)
+    y = Dense(32, name = 'dense_2', activation='relu', kernel_initializer='glorot_uniform')(y)
 
     outputs = Dense(noutputs, name = 'output', activation='linear')(y)
 
@@ -188,3 +191,36 @@ def deepmetlike(nconvs, nconvinputs, noutputs):
     keras_model = Model(inputs=inputs_conv, outputs=[outputs0, outputs1])
 
     return keras_model
+
+
+def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim=0):
+
+    inputs_cont = Input(shape=(number_of_pupcandis, n_features), name='input')
+
+    embeddings = []
+    for i_emb in range(n_features_cat):
+        input_cat = Input(shape=(number_of_pupcandis, 1), name='input_cat{}'.format(i_emb))
+        if i_emb == 0:
+            inputs = [inputs_cont, input_cat]
+        else:
+            inputs.append(input_cat)
+        embedding = Embedding(input_dim=embedding_input_dim[i_emb], output_dim=4, embeddings_initializer=initializers.RandomNormal(mean=0, stddev=0.4/8), name='embedding{}'.format(i_emb))(input_cat)
+        embedding = Reshape((number_of_pupcandis, 4))(embedding)
+        embeddings.append(embedding)
+
+    x = Concatenate()([inputs[0]] + [emb for emb in embeddings])
+
+    for i_dense in range(n_dense_layers):
+        x = Dense(8*2**(n_dense_layers-i_dense), activation = activation, kernel_initializer='lecun_uniform')(x)
+        x = BatchNormalization(momentum=0.95)(x)
+
+    x = weighted_sum_layer(with_bias=False, name="weighted_sum")(x)#name = "output")(x)
+
+    outputs = Dense(2, name = 'output', activation='linear')(x)
+
+    outputs0 = Lambda(lambda x: slice(x, (0, 0), (-1,  1)))(outputs)
+    outputs1 = Lambda(lambda x: slice(x, (0, 1), (-1, -1)))(outputs)
+
+    keras_model = Model(inputs=inputs, outputs=[outputs0, outputs1])
+
+    return keras_model 
