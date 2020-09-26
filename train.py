@@ -203,10 +203,10 @@ def main(args):
     # Set keras train model (and correct input)
 
     # met+jet-based model
-    keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
-    X_train = X_train[:2]
-    X_val = X_val[:2]
-    X_val = X_test[:2]
+    #keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
+    #X_train = X_train[:2]
+    #X_val = X_val[:2]
+    #X_val = X_test[:2]
 
     # met+jet+PupCandi-based model
     #keras_model = dense_conv_all(nmetfeatures, njets, njetfeatures, npupcandis, npupcandifeatures, ntargets)
@@ -233,7 +233,7 @@ def main(args):
     #X_test = X_test[2]
 
     # test!!! Dense embedding ############
-    #keras_model = dense_embedding(n_features_cat=2,activation='relu', embedding_input_dim = embedding_input_dim ,with_bias=True)
+    keras_model = dense_embedding(n_features_cat=2,activation='relu', embedding_input_dim = embedding_input_dim ,with_bias=True)
 
 
     # print variables
