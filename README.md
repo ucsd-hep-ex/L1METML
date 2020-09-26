@@ -14,6 +14,11 @@ sh conda_setup.sh
 ```
 
 ### Convert
+The TTBar sample used in 'convert-uproot.py' is located in
+```
+/afs/cern.ch/work/y/yeseo/public/ml4MET/L1METML/data/perfNano_TTbar_PU200.110X_v1.root
+```
+Convert into hdf5
 ```
 python convert-uproot.py
 ```
