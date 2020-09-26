@@ -130,20 +130,20 @@ def conv(nconvs, nconvinputs, noutputs):
     inputs_conv = Input(shape=(nconvs, nconvinputs,), name = 'input_conv')
 
     y = BatchNormalization(name='bn_2')(inputs_conv)
+    y = Conv1D(filters=128, kernel_size=(3,), strides=(1,), padding='same', 
+               kernel_initializer='he_normal', use_bias=True, name='conv_1',
+               activation = 'relu')(y)
     y = Conv1D(filters=64, kernel_size=(3,), strides=(1,), padding='same', 
-               kernel_initializer='glorot_normal', use_bias=True, name='conv_1',
+               kernel_initializer='he_normal', use_bias=True, name='conv_2',
                activation = 'relu')(y)
-    y = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
-               kernel_initializer='glorot_normal', use_bias=True, name='conv_2',
-               activation = 'relu')(y)
-    y = Conv1D(filters=32, kernel_size=(3,), strides=(1,), padding='same', 
-               kernel_initializer='glorot_normal', use_bias=True, name='conv_3',
+    y = Conv1D(filters=64, kernel_size=(3,), strides=(1,), padding='same', 
+               kernel_initializer='he_normal', use_bias=True, name='conv_3',
                activation = 'relu')(y)
 
     y = Lambda(lambda x: K.mean(x, axis=-2), input_shape=(nconvs,32)) (y) 
                  
-    y = Dense(64, name = 'dense_1', activation='relu', kernel_initializer='glorot_uniform')(y)
-    y = Dense(32, name = 'dense_2', activation='relu', kernel_initializer='glorot_uniform')(y)
+    y = Dense(128, name = 'dense_1', activation='relu', kernel_initializer='glorot_uniform')(y)
+    y = Dense(64, name = 'dense_2', activation='relu', kernel_initializer='glorot_uniform')(y)
 
     outputs = Dense(noutputs, name = 'output', activation='linear')(y)
 
@@ -193,9 +193,10 @@ def deepmetlike(nconvs, nconvinputs, noutputs):
     return keras_model
 
 
-def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim=0):
+def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim=0, with_bias=False):
 
     inputs_cont = Input(shape=(number_of_pupcandis, n_features), name='input')
+    pxpy = Lambda(lambda x: slice(x, (0, 0, n_features-2), (-1, -1, -1)))(inputs_cont)
 
     embeddings = []
     for i_emb in range(n_features_cat):
@@ -214,9 +215,14 @@ def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation
         x = Dense(8*2**(n_dense_layers-i_dense), activation = activation, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
 
-    x = weighted_sum_layer(with_bias=False, name="weighted_sum")(x)#name = "output")(x)
+    x = Dense(3 if with_bias else 1, activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+    print('Shape of last dense layer', x.shape)
 
-    outputs = Dense(2, name = 'output', activation='linear')(x)
+    x = Concatenate()([x, pxpy])
+    x = weighted_sum_layer(with_bias, name="weighted_sum" if with_bias else "output")(x)
+
+    if with_bias:
+        outputs = Dense(2, activation='linear', name='output')(x)
 
     outputs0 = Lambda(lambda x: slice(x, (0, 0), (-1,  1)))(outputs)
     outputs1 = Lambda(lambda x: slice(x, (0, 1), (-1, -1)))(outputs)

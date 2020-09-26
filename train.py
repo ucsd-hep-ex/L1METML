@@ -10,7 +10,7 @@ import argparse
 from models import *# dense, dense_conv, conv, deepmetlike
 import math
 import setGPU
-from Write_MET_binned_histogram import MET_rel_error, MET_abs_error, MET_binned_predict_mean, Phi_abs_error, dist, histo_2D#, Write_MET_binned_histogram # Write_MET_binned_histogram function needs ROOT. Maybe ROOT version over 6.22 supports for py3?
+from Write_MET_binned_histogram import MET_rel_error, MET_rel_error_opaque, MET_abs_error, MET_binned_predict_mean, Phi_abs_error, dist, histo_2D#, Write_MET_binned_histogram # Write_MET_binned_histogram function needs ROOT. Maybe ROOT version over 6.22 supports for py3?
 from get_jet import get_features_targets, get_jet_features
 
 def huber_loss(y_true, y_pred, delta=1.0):
@@ -80,7 +80,7 @@ def main(args):
     # Exclude puppi met < +PupMET_cut+ GeV events
     # Set PUPPI MET min, max cut
 
-    PupMET_cut = 0 
+    PupMET_cut = 50 
     PupMET_cut_max = 500
 
     mask = (feature_MET_array[:,6] > PupMET_cut) & (feature_MET_array[:,0] < PupMET_cut_max)
@@ -130,7 +130,29 @@ def main(args):
         feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
         feature_pupcandi_array_xy[:,i,5] = feature_pupcandi_array[:,i,5]
     
-    
+    for i in range(nevents):
+        for j in range(number_of_pupcandis):
+            if feature_pupcandi_array_xy[i,j,4] == 1:
+                feature_pupcandi_array_xy[i,j,4] = 2
+            if feature_pupcandi_array_xy[i,j,4] == 0:
+                feature_pupcandi_array_xy[i,j,4] = 1
+            if feature_pupcandi_array_xy[i,j,4] == -1:
+                feature_pupcandi_array_xy[i,j,4] = 0
+
+
+            if feature_pupcandi_array_xy[i,j,5] == -211:
+                feature_pupcandi_array_xy[i,j,5] = 0
+            if feature_pupcandi_array_xy[i,j,5] == -11:
+                feature_pupcandi_array_xy[i,j,5] = 1
+            if feature_pupcandi_array_xy[i,j,5] == 11:
+                feature_pupcandi_array_xy[i,j,5] = 2
+            if feature_pupcandi_array_xy[i,j,5] == 22:
+                feature_pupcandi_array_xy[i,j,5] = 3
+            if feature_pupcandi_array_xy[i,j,5] == 130:
+                feature_pupcandi_array_xy[i,j,5] = 4
+            if feature_pupcandi_array_xy[i,j,5] == 211:
+                feature_pupcandi_array_xy[i,j,5] = 5
+        
     # Convert target from pt phi to px, py
     target_array_xy = np.zeros((nevents, ntargets))
 
@@ -138,9 +160,12 @@ def main(args):
     target_array_xy[:,1] = target_array[:,0] * np.sin(target_array[:,1])
     
     # Split datas into train, validation, test set
-
+    
     # for test!!! (applying embedding)################
-    inputs = feature_pupcandi_array_xy[:,:,0:4]
+    inputs = feature_pupcandi_array[:,:,0:4]
+    inputs = np.concatenate((inputs, feature_pupcandi_array_xy[:,:,(0,1)]), axis=-1)
+    # concatenate~
+    #inputs = feature_pupcandi_array_xy[:,:,0:4]
     inputs_cat0 = feature_pupcandi_array_xy[:,:,4:5]
     inputs_cat1 = feature_pupcandi_array_xy[:,:,5:6]
     Xc = [inputs_cat0, inputs_cat1]
@@ -149,10 +174,10 @@ def main(args):
     X = [inputs]+[inputs_cat0]+[inputs_cat0]
 
     embedding_input_dim = {i : int(np.max(Xc[i][:,:])) + 1 for i in range(2)}
-
-    #X = [feature_MET_array_xy, feature_jet_array_xy, feature_pupcandi_array_xy[:,:,(0,1)]]
+    
+    X = [feature_MET_array_xy, feature_jet_array_xy]#, feature_pupcandi_array_xy[:,:,(0,1)]]
     y = target_array_xy
-    A = feature_MET_array_xy[:,(6,7)]
+    A = feature_MET_array[:,(6,7)]
     
     fulllen = nevents
     tv_frac = 0.10
@@ -173,15 +198,15 @@ def main(args):
     A_test = A[splits[0]:splits[1]]
 
     # Make weight loss function
-    weight_array = weight_loss_function(20, y_train, 0, 500)
+    weight_array = weight_loss_function(20, y_val, 0, 500)
 
     # Set keras train model (and correct input)
 
     # met+jet-based model
-    #keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
-    #X_train = X_train[:2]
-    #X_val = X_val[:2]
-    #X_val = X_test[:2]
+    keras_model = dense_conv(nmetfeatures, njets, njetfeatures, ntargets)
+    X_train = X_train[:2]
+    X_val = X_val[:2]
+    X_val = X_test[:2]
 
     # met+jet+PupCandi-based model
     #keras_model = dense_conv_all(nmetfeatures, njets, njetfeatures, npupcandis, npupcandifeatures, ntargets)
@@ -200,15 +225,15 @@ def main(args):
     #X_test = X_test[1]
 
     # only-Candi-based models
-    keras_model = conv(npupcandis, npupfeatures, ntargets)
+    #keras_model = conv(npupcandis, npupcandifeatures, ntargets)
     #keras_model = conv(npupcandis, npupcandifeatures, ntargets)
     #keras_model = deepmetlike(njets, njetfeatures, ntargets)
-    X_train = X_train[2]
-    X_val = X_val[2]
-    X_test = X_test[2]
+    #X_train = X_train[2]
+    #X_val = X_val[2]
+    #X_test = X_test[2]
 
     # test!!! Dense embedding ############
-    #keras_model = dense_embedding(n_features_cat=2,activation='relu', embedding_input_dim = embedding_input_dim)
+    #keras_model = dense_embedding(n_features_cat=2,activation='relu', embedding_input_dim = embedding_input_dim ,with_bias=True)
 
 
     # print variables
@@ -224,7 +249,7 @@ def main(args):
                         loss_weights = [1., 1.], metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=50)
     model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
     csv_logger = CSVLogger('loss_data.log')
     callbacks = [early_stopping, model_checkpoint, csv_logger]
@@ -235,12 +260,12 @@ def main(args):
     keras_model.fit(X_train, 
                     [y_train[:,:1], y_train[:,1:]], 
                     batch_size=1024, 
-                    #sample_weight=[weight_array, weight_array], 
-                    epochs=100, 
+                    sample_weight=[weight_array, weight_array], 
+                    epochs=400, 
                     validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), 
                     shuffle=True,
                     callbacks=callbacks)
-
+    
 
     # load created weights
     keras_model.load_weights('keras_model_best.h5')
@@ -265,7 +290,7 @@ def main(args):
     
 
     ### For check PUPPI candis are OK
-
+    '''
     feature_check_xy = np.zeros((nevents, 2))
     feature_check_xy[:,0] = feature_MET_array_xy[:,6]
     feature_check_xy[:,1] = feature_MET_array_xy[:,7]
@@ -284,7 +309,7 @@ def main(args):
 
     MET_rel_error(pupcandi_check[:,0], feature_check[:,0], name='./temp/Pupcandi_check_MET.png')
     Phi_abs_error(pupcandi_check[:,1], feature_check[:,1], name='./temp/Pupcandi_check_phi.png')
-    
+    '''
     # Set the path where the result plots will be saved.
     path='./'
 
@@ -293,10 +318,12 @@ def main(args):
     #Write_MET_binned_histogram(A_test, y_test_phi, 20, 0, 100, 400, name='histogram_puppi_'+PupMET_cut+'.root')
 
     # For plots
-    MET_rel_error(predict_phi[:,0], y_test_phi[:,0], name=''+path+'rel_error_200k.png')
+    #MET_rel_error(predict_phi[:,0], y_test_phi[:,0], name=''+path+'rel_error_200k.png')
+    #MET_rel_error(A_test[:,0], y_test_phi[:,0], name=''+path+'rel_error_200k.png')
+    MET_rel_error_opaque(predict_phi[:,0], A_test[:,0], y_test_phi[:,0], name=''+path+'rel_error_200k_opaque.png')
     #MET_abs_error(predict_phi[:,0], y_test_phi[:,0], name=''+path+'rel_abs.png')
     #Phi_abs_error(predict_phi[:,1], y_test_phi[:,1], name=''+path+'Phi_error.png')
-    MET_binned_predict_mean(predict_phi[:,0], y_test_phi[:,0], 20, 0, 500, 0, '.', name=''+path+'predict_mean_200k.png')
+    #MET_binned_predict_mean(predict_phi[:,0], y_test_phi[:,0], 20, 0, 500, 0, '.', name=''+path+'predict_mean_200k.png')
     #dist(predict_phi[:,0], name=''+path+'predict_dist.png')
     #dist(y_test_phi[:,0], name=''+path+'Gen_dist.png')
     #histo_2D(A_test[:,0], y_test_phi[:,0], name='./plots/2D_histo.png')
