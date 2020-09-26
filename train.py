@@ -130,6 +130,29 @@ def main(args):
         feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
         feature_pupcandi_array_xy[:,i,5] = feature_pupcandi_array[:,i,5]
     
+    for i in range(nevents):
+        for j in range(number_of_pupcandis):
+            if feature_pupcandi_array_xy[i,j,4] == 1:
+                feature_pupcandi_array_xy[i,j,4] = 2
+            if feature_pupcandi_array_xy[i,j,4] == 0:
+                feature_pupcandi_array_xy[i,j,4] = 1
+            if feature_pupcandi_array_xy[i,j,4] == -1:
+                feature_pupcandi_array_xy[i,j,4] = 0
+
+
+            if feature_pupcandi_array_xy[i,j,5] == -211:
+                feature_pupcandi_array_xy[i,j,5] = 0
+            if feature_pupcandi_array_xy[i,j,5] == -11:
+                feature_pupcandi_array_xy[i,j,5] = 1
+            if feature_pupcandi_array_xy[i,j,5] == 11:
+                feature_pupcandi_array_xy[i,j,5] = 2
+            if feature_pupcandi_array_xy[i,j,5] == 22:
+                feature_pupcandi_array_xy[i,j,5] = 3
+            if feature_pupcandi_array_xy[i,j,5] == 130:
+                feature_pupcandi_array_xy[i,j,5] = 4
+            if feature_pupcandi_array_xy[i,j,5] == 211:
+                feature_pupcandi_array_xy[i,j,5] = 5
+
     
     # Convert target from pt phi to px, py
     target_array_xy = np.zeros((nevents, ntargets))
