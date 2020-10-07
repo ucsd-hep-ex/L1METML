@@ -8,6 +8,7 @@ import tables
 import matplotlib.pyplot as plt
 import argparse
 from models import *# dense, dense_conv, conv, deepmetlike
+from utils import custom_loss
 import math
 import setGPU
 from Write_MET_binned_histogram import MET_rel_error, MET_abs_error, MET_binned_predict_mean, Phi_abs_error, dist, histo_2D#, Write_MET_binned_histogram # Write_MET_binned_histogram function needs ROOT. Maybe ROOT version over 6.22 supports for py3?
@@ -41,6 +42,7 @@ def weight_loss_function(number_of_bin, val_array, min_, max_):
 
 
 def main(args):
+
 
     file_path = 'data/input_MET_PupCandi.h5'
     features = ['L1CHSMet_pt', 'L1CHSMet_phi',
@@ -82,6 +84,7 @@ def main(args):
 
     PupMET_cut = 0 
     PupMET_cut_max = 500
+    weight_path = ''+str(PupMET_cut)+'cut'
 
     mask = (feature_MET_array[:,6] > PupMET_cut) & (feature_MET_array[:,0] < PupMET_cut_max)
     feature_MET_array = feature_MET_array[mask]
@@ -223,7 +226,7 @@ def main(args):
     #X_test = X_test[1]
 
     # only-Candi-based models
-    keras_model = conv(npupcandis, npupfeatures, ntargets)
+    keras_model = conv(npupcandis, npupcandifeatures, ntargets)
     #keras_model = conv(npupcandis, npupcandifeatures, ntargets)
     #keras_model = deepmetlike(njets, njetfeatures, ntargets)
     X_train = X_train[2]
@@ -243,30 +246,29 @@ def main(args):
     print("# \t\tNumber of test event\t : \t %d" % A_test.shape[0])
     print()
 
-    keras_model.compile(optimizer='adam', loss=['mean_squared_error','mean_squared_error'], 
+    keras_model.compile(optimizer='adam', loss=[custom_loss,custom_loss], 
                         loss_weights = [1., 1.], metrics=['mean_absolute_error'])
     print(keras_model.summary())
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=10)
-    model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
+    model_checkpoint = ModelCheckpoint('/model_weights/'+weights_path+'/keras_model_best.h5', monitor='val_loss', save_best_only=True)
     csv_logger = CSVLogger('loss_data.log')
     callbacks = [early_stopping, model_checkpoint, csv_logger]
 
 
     # fit keras
      
-    keras_model.fit(X_train, 
-                    [y_train[:,:1], y_train[:,1:]], 
+    keras_model.fit(X_train, y_train, 
                     batch_size=1024, 
                     #sample_weight=[weight_array, weight_array], 
                     epochs=100, 
-                    validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), 
+                    validation_data=(X_val, y_val), 
                     shuffle=True,
                     callbacks=callbacks)
 
 
     # load created weights
-    keras_model.load_weights('keras_model_best.h5')
+    keras_model.load_weights('/model_weights/'+weights_path+'/keras_model_best.h5')
     
     predict_test = keras_model.predict(X_test)
     predict_test = np.concatenate(predict_test,axis=1)
