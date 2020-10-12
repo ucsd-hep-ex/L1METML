@@ -218,6 +218,6 @@ def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation
 
     outputs = Dense(2, name = 'output', activation='linear')(x)
 
-    keras_model = Model(inputs=inputs, outputs)
+    keras_model = Model(inputs=inputs, outputs=outputs)
 
     return keras_model 
