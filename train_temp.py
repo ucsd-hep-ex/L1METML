@@ -134,7 +134,6 @@ def main(args):
         feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
         feature_pupcandi_array_xy[:,i,5] = feature_pupcandi_array[:,i,5]
     
-
 	#labeling
     A=feature_pupcandi_array_xy[:,:,4]
     A=np.where(A==-1,3,A)
@@ -155,7 +154,6 @@ def main(args):
     print(A)
     print(B)
    
-
 
     
     # Convert target from pt phi to px, py
