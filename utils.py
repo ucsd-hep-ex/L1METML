@@ -1,3 +1,6 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
 def custom_loss(y_true, y_pred):
     '''
     cutmoized loss function to improve the recoil response,
@@ -50,3 +53,38 @@ def custom_loss(y_true, y_pred):
     #loss += 200.*dev
     loss += 10.*dev
     return loss
+
+
+def flatting(GenMET):
+    bin_width = 5
+    min_ = 0
+    max_ = 1000
+
+    bin_number = int((max_ - min_)/bin_width)
+    bin_ = np.linspace(0,300, num = bin_number)
+
+    MET_interval = np.histogram(GenMET[:,0], bin_)
+
+    bin_indices = np.digitize(GenMET[:,0], bin_)
+
+    bin_size = np.zeros(bin_number)
+    mask = [True]
+
+    for i in range(GenMET.shape[0]):
+        for j in range(bin_number):
+            if (bin_width*(j + 0) + min_ <= GenMET[i,0] < bin_width*(j + 1) + min_):
+                bin_size[j] = bin_size[j] + 1
+                if bin_size[j] >= 3000:
+                    mask.append(bool(False))
+                else:
+                    if (i == 0):
+                        1
+                    else:
+                        mask.append(bool(True))
+
+    GenMET = GenMET[mask]
+    plt.hist(GenMET[:,0], bins=np.linspace(0, 500, 100))
+    plt.savefig('flat.png')
+    plt.show()
+
+    return mask
