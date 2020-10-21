@@ -193,9 +193,10 @@ def deepmetlike(nconvs, nconvinputs, noutputs):
     return keras_model
 
 
-def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim=0):
+def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim=0, with_bias=True):
 
     inputs_cont = Input(shape=(number_of_pupcandis, n_features), name='input')
+    pxpy = Lambda(lambda x: slice(x, (0, 0, n_features-2), (-1, -1, -1)))(inputs_cont)
 
     embeddings = []
     for i_emb in range(n_features_cat):
@@ -213,6 +214,10 @@ def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation
     for i_dense in range(n_dense_layers):
         x = Dense(8*2**(n_dense_layers-i_dense), activation = activation, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
+
+    x = Dense(3 if with_bias else 1, activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+
+    x = Concatenate()([x, pxpy])
 
     x = weighted_sum_layer(with_bias=False, name="weighted_sum")(x)#name = "output")(x)
 
