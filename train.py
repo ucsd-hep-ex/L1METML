@@ -112,10 +112,6 @@ def main(args):
 
     nevents = target_array.shape[0]
     
-    
-    ##### TEMPORARY!
-    target_array[:,0] = target_array[:,0] + 30
-
 
     # Flatting the sample
 
@@ -159,7 +155,7 @@ def main(args):
         feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
         feature_pupcandi_array_xy[:,i,5] = feature_pupcandi_array[:,i,5]
     
-
+    
 	#labeling
     A=feature_pupcandi_array_xy[:,:,4:5]
     A=np.where(A==-1,3,A)
@@ -177,7 +173,7 @@ def main(args):
     B=np.where(B==22,7,B)
     B=np.where(B==130,8,B)
     B=np.where(B==211,9,B)
-
+    
     
     # Convert target from pt phi to px, py
     target_array_xy = np.zeros((nevents, ntargets))
@@ -188,16 +184,12 @@ def main(args):
     # Split datas into train, validation, test set
 
     # for test!!! (applying embedding)################
-    inputs = feature_pupcandi_array_xy[:,:,0:4]
-    inputs = np.concatenate((feature_pupcandi_array[:,:,0:1], feature_pupcandi_array_xy), axis=-1)
-    #inputs = np.concatenate((feature_pupcandi_array[:,:,(0,1)], inputs), axis=-1)
+    inputs = np.concatenate((feature_pupcandi_array[:,:,0:1], feature_pupcandi_array_xy[:,:,0:2]), axis=-1)
     inputs_cat0 = A 
     inputs_cat1 = B
     Xc = [inputs_cat0, inputs_cat1]
-    print(Xc)
 
     X = [inputs]+[inputs_cat0]+[inputs_cat0]
-    #X = [X, feature_MET_array[:,6]] for MET_embedding_model
 
     embedding_input_dim = {i : int(np.max(Xc[i])) + 1 for i in range(2)}
 
@@ -258,8 +250,9 @@ def main(args):
     #X_test = X_test[2]
 
     # test!!! Dense embedding ############
-    keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim)
-    #keras_model = MET_dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, activation='tanh', embedding_input_dim = embedding_input_dim)
+    print('feature number = {}'.format(inputs.shape[-1]))
+    #keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim)
+    keras_model = CNN_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim)
 
 
     # print variables
@@ -276,8 +269,8 @@ def main(args):
     time_path = time.strftime('%Y_%m_%d', time.localtime(time.time()))
     # path for various GenMET cut
     #path='./result/GenMET_cut_result_'+time_path+'/'+str(TarMET_cut)+'-'+str(TarMET_cut_max)+'/'
-    path='./result/With_pT_cut_result_'+time_path+'/nocut_genmet_upscale/'
     # path for various PuppiMET cut
+    path='./result/result_'+time_path+'/CNN/'+str(PupMET_cut)+'-'+str(PupMET_cut_max)+'/'
     #path='./result/result_'+time_path+'/'+str(PupMET_cut)+'-'+str(PupMET_cut_max)+'/'
     try:
         if not os.path.exists(path):
@@ -324,8 +317,6 @@ def main(args):
     y_test_phi[:,0] = np.sqrt((y_test[:,0]**2 + y_test[:,1]**2))
     y_test_phi[:,1] = np.sign(y_test[:,1])*np.arccos(y_test[:,0]/y_test_phi[:,0])
 
-    ### TEMPORARY
-    y_test_phi[:,0] = y_test_phi[:,0] - 30
 
     print(predict_phi)
     print(y_test_phi)

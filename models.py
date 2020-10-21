@@ -223,8 +223,7 @@ def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation
     return keras_model 
 
 
-
-def MET_dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim=0):
+def CNN_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim=0):
 
     inputs_cont = Input(shape=(number_of_pupcandis, n_features), name='input')
 
@@ -241,9 +240,9 @@ def MET_dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activa
 
     x = Concatenate()([inputs[0]] + [emb for emb in embeddings])
 
+    x = BatchNormalization(momentum=0.95)(x)
     for i_dense in range(n_dense_layers):
-        x = Dense(8*2**(n_dense_layers-i_dense), activation = activation, kernel_initializer='lecun_uniform')(x)
-        x = BatchNormalization(momentum=0.95)(x)
+        x = Conv1D(filters=8*2**(n_dense_layers-i_dense), kernel_size=(3,), strides=(1,), padding='same', kernel_initializer='glorot_normal', use_bias=True, activation = activation)(x)
 
     x = weighted_sum_layer(with_bias=False, name="weighted_sum")(x)#name = "output")(x)
 
@@ -252,3 +251,4 @@ def MET_dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activa
     keras_model = Model(inputs=inputs, outputs=outputs)
 
     return keras_model 
+
