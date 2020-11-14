@@ -15,7 +15,7 @@ infiles = [#path+'perfNano_SingleNeutrino_PU200.v0.root',
            #path+'perfNano_VBF_HToInvisible_PU200.v0.root',
 ]
 
-outfile = 'data/input_MET_PupCandi.h5'
+outfile = 'data/input_MET_PFCandi.h5'
 #entrystop = 10000
 entrystop = None
 
@@ -60,10 +60,14 @@ jet_branches =['L1PuppiJets_pt','L1PuppiJets_eta','L1PuppiJets_phi',
 pupcandi_branches =['L1PuppiCands_pt','L1PuppiCands_eta','L1PuppiCands_phi',
                    'L1PuppiCands_charge','L1PuppiCands_pdgId','L1PuppiCands_puppiWeight']
 
+PFcandi_branches =['L1PFCands_pt','L1PFCands_eta','L1PFCands_phi',
+                   'L1PFCands_charge','L1PFCands_pdgId','L1PFCands_puppiWeight']
+
 print("Reading branches", other_branches)
 print("Reading branches:", met_branches)
 print("Reading branches:", jet_branches)
 print("Reading branches:", pupcandi_branches)
+print("Reading branches:", PFcandi_branches)
 
 def _write_carray(a, h5file, name, group_path='/', **kwargs):
     h5file.create_carray(group_path, name, obj=a, filters=filters, createparents=True, **kwargs)
@@ -75,6 +79,7 @@ df_others = []
 df_mets = []
 df_jets = []
 df_pupcandis = []
+df_PFcandis = []
 
 currententry = 0
 for infile in infiles:
@@ -87,13 +92,14 @@ for infile in infiles:
     df_met = tree.pandas.df(branches=met_branches, entrystart=0, entrystop = entrystop)
     df_jet = tree.pandas.df(branches=jet_branches, entrystart=0, entrystop = entrystop)
     df_pupcandi = tree.pandas.df(branches=pupcandi_branches, entrystart=0, entrystop = entrystop)
-    print(df_pupcandi)
+    df_PFcandi = tree.pandas.df(branches=PFcandi_branches, entrystart=0, entrystop = entrystop)
 
     ####### for test what is differences btw df_jet and df_pupcandi
 
     print(df_other)
     print(df_jet)
     print(df_pupcandi)
+    print(df_PFcandi)
 
 
     # first find total length of evens-level dataframe before cuts
@@ -109,6 +115,7 @@ for infile in infiles:
     df_met.index = df_met.index+currententry
     df_jet.index = df_jet.index.set_levels(df_jet.index.levels[0]+currententry, level=0)
     df_pupcandi.index = df_pupcandi.index.set_levels(df_pupcandi.index.levels[0]+currententry, level=0)
+    df_PFcandi.index = df_PFcandi.index.set_levels(df_PFcandi.index.levels[0]+currententry, level=0)
 
     currententry += totallength
 
@@ -116,11 +123,13 @@ for infile in infiles:
     df_mets.append(df_met)
     df_jets.append(df_jet)
     df_pupcandis.append(df_pupcandi)
+    df_PFcandis.append(df_PFcandi)
     
 df_other = pd.concat(df_others)
 df_met = pd.concat(df_mets)
 df_jet = pd.concat(df_jets)
 df_pupcandi = pd.concat(df_pupcandis)
+df_PFcandi = pd.concat(df_PFcandis)
 
 
 # shuffle
@@ -129,6 +138,7 @@ df_other = df_other.sample(frac=1)
 df_met = df_met.reindex(df_other.index.values)
 df_jet = df_jet.reindex(df_other.index.values,level=0)
 df_pupcandi = df_pupcandi.reindex(df_other.index.values,level=0)
+df_PFcandi = df_PFcandi.reindex(df_other.index.values,level=0)
 
 
 with tables.open_file(outfile, mode='w') as h5file:
@@ -137,8 +147,10 @@ with tables.open_file(outfile, mode='w') as h5file:
     # cap at 20 jets
     max_jet = 20
     max_pupcandi = 100
+    max_PFcandi = 700
     print("Max number of jets",max_jet)
     print("Max number of pupcandi",max_pupcandi)
+    print("Max number of PFcandi",max_PFcandi)
     
     v_jet = _transform(df_jet, max_particles = max_jet)
     for k in jet_branches:
@@ -149,6 +161,11 @@ with tables.open_file(outfile, mode='w') as h5file:
     for k in pupcandi_branches:
         z = np.stack([z_pupcandi[(k, i)].values for i in range(max_pupcandi)], axis=-1)
         _write_carray(z, h5file, name=k)
+        
+    x_PFcandi = _transform(df_PFcandi, max_particles = max_PFcandi)
+    for k in PFcandi_branches:
+        x = np.stack([x_PFcandi[(k, i)].values for i in range(max_PFcandi)], axis=-1)
+        _write_carray(x, h5file, name=k)
         
     for k in df_other.columns:
         _write_carray(df_other[k].values, h5file, name=k.replace('[','').replace(']',''))

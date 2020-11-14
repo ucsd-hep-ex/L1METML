@@ -46,147 +46,56 @@ def weight_loss_function(number_of_bin, val_array, min_, max_):
 
 def main(args):
 
-
-    file_path = 'data/input_MET_PupCandi.h5'
-    features = ['L1CHSMet_pt', 'L1CHSMet_phi',
-                'L1CaloMet_pt', 'L1CaloMet_phi',
-                'L1PFMet_pt', 'L1PFMet_phi',
-                'L1PuppiMet_pt', 'L1PuppiMet_phi',
-                'L1TKMet_pt', 'L1TKMet_phi',
-                'L1TKV5Met_pt', 'L1TKV5Met_phi',
-                'L1TKV6Met_pt', 'L1TKV6Met_phi']
-
-    features_jet = ['L1PuppiJets_pt', 'L1PuppiJets_phi', 
-                    'L1PuppiJets_eta', 'L1PuppiJets_mass']
-
-    features_pupcandi = ['L1PuppiCands_pt','L1PuppiCands_phi','L1PuppiCands_eta', 'L1PuppiCands_puppiWeight',
-                         'L1PuppiCands_charge','L1PuppiCands_pdgId']
-
-    targets = ['genMet_pt', 'genMet_phi']
-    targets_jet = ['GenJets_pt', 'GenJets_phi', 'GenJets_eta']
-
-    # Set number of jets and pupcandis you will use
-    number_of_jets = 20
-    number_of_pupcandis = 100
-
-    feature_MET_array, target_array = get_features_targets(file_path, features, targets)
-    feature_jet_array = get_jet_features(file_path, features_jet, number_of_jets)
-    feature_pupcandi_array = get_jet_features(file_path, features_pupcandi, number_of_pupcandis)
-    nMETs = int(feature_MET_array.shape[1]/2)
-
-    nevents = target_array.shape[0]
-    nmetfeatures = feature_MET_array.shape[1]
-    njets = feature_jet_array.shape[1]
-    njetfeatures = feature_jet_array.shape[2]
-    npupcandis = feature_pupcandi_array.shape[1]
-    npupcandifeatures = feature_pupcandi_array.shape[2]
-    ntargets = target_array.shape[1]
-
-    # Exclude puppi met < +PupMET_cut+ GeV events
-    # Set PUPPI MET min, max cut
-
-    PupMET_cut = 0
-    PupMET_cut_max = 500
-    weights_path = ''+str(PupMET_cut)+'cut'
-
-    mask = (feature_MET_array[:,6] > PupMET_cut) & (feature_MET_array[:,0] < PupMET_cut_max)
-    print("mask : {}".format(mask))
-    feature_MET_array = feature_MET_array[mask]
-    feature_jet_array = feature_jet_array[mask]
-    feature_pupcandi_array = feature_pupcandi_array[mask]
-    target_array = target_array[mask]
-
-    nevents = target_array.shape[0]
-
-    # Exclude Gen met < +TarMET_cut+ GeV events
-    # Set Gen MET min, max cut
+    # Set cuts for input
 
     TarMET_cut = 5
     TarMET_cut_max = 500
+    PupMET_cut = 0
+    PupMET_cut_max = 500
 
-    mask1 = (target_array[:,0] > TarMET_cut) & (target_array[:,0] < TarMET_cut_max)
-    feature_MET_array = feature_MET_array[mask1]
-    feature_jet_array = feature_jet_array[mask1]
-    feature_pupcandi_array = feature_pupcandi_array[mask1]
-    target_array = target_array[mask1]
 
-    nevents = target_array.shape[0]
-    
+    target_array_xy = np.load("targ_MET_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
+    feature_MET_array_xy = np.load("feat_MET_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
+    feature_MET_array = np.load("feat_MET_array_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
+    feature_jet_array_xy = np.load("feat_jet_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max)) 
+    feature_pupcandi_array_xy = np.load("feat_Pup_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
+    feature_PFcandi_array_xy = np.load("feat_PF_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
+    nMETs = int(feature_MET_array_xy.shape[1]/2)
 
-    # Flatting the sample
+    # Set number of jets and pupcandis you will use
+    number_of_jets = feature_jet_array_xy.shape[1]
+    number_of_pupcandis = feature_pupcandi_array_xy.shape[1]
+    number_of_PFcandis = feature_PFcandi_array_xy.shape[1]
 
-    mask2 = flatting(target_array)
-    feature_MET_array = feature_MET_array[mask2]
-    feature_jet_array = feature_jet_array[mask2]
-    feature_pupcandi_array = feature_pupcandi_array[mask2]
-    target_array = target_array[mask2]
+    nevents = target_array_xy.shape[0]
+    nmetfeatures = feature_MET_array_xy.shape[1]
+    njets = feature_jet_array_xy.shape[1]
+    njetfeatures = feature_jet_array_xy.shape[2]
+    npupcandis = feature_pupcandi_array_xy.shape[1]
+    npupcandifeatures = feature_pupcandi_array_xy.shape[2]
+    nPFcandis = feature_PFcandi_array_xy.shape[1]
+    nPFcandifeatures = feature_PFcandi_array_xy.shape[2]
+    ntargets = target_array_xy.shape[1]
 
-    nevents = target_array.shape[0]
-
-    # Shuffle again
-    shuffler = np.random.permutation(len(target_array))
-    print(shuffler)
-    feature_MET_array = feature_MET_array[shuffler]
-    feature_jet_array = feature_jet_array[shuffler,:,:]
-    feature_pupcandi_array = feature_pupcandi_array[shuffler,:,:]
-    target_array = target_array[shuffler]
-    
-
-    # Convert feature from pt, phi to px, py
-    feature_MET_array_xy = np.zeros((nevents, nmetfeatures))
-    for i in range(nMETs):
-        feature_MET_array_xy[:,2*i] =   feature_MET_array[:,2*i] * np.cos(feature_MET_array[:,2*i+1])
-        feature_MET_array_xy[:,2*i+1] = feature_MET_array[:,2*i] * np.sin(feature_MET_array[:,2*i+1])
-
-    feature_jet_array_xy = np.zeros((nevents, njets, njetfeatures))
-    for i in range(number_of_jets):
-        feature_jet_array_xy[:,i,0] = feature_jet_array[:,i,0] * np.cos(feature_jet_array[:,i,1])
-        feature_jet_array_xy[:,i,1] = feature_jet_array[:,i,0] * np.sin(feature_jet_array[:,i,1])
-        feature_jet_array_xy[:,i,2] = feature_jet_array[:,i,2]
-        feature_jet_array_xy[:,i,3] = feature_jet_array[:,i,3]
-
-    
-    feature_pupcandi_array_xy = np.zeros((nevents, npupcandis, npupcandifeatures))
-    for i in range(number_of_pupcandis):
-        feature_pupcandi_array_xy[:,i,0] = feature_pupcandi_array[:,i,0] * np.cos(feature_pupcandi_array[:,i,1])
-        feature_pupcandi_array_xy[:,i,1] = feature_pupcandi_array[:,i,0] * np.sin(feature_pupcandi_array[:,i,1])
-        feature_pupcandi_array_xy[:,i,2] = feature_pupcandi_array[:,i,2]
-        feature_pupcandi_array_xy[:,i,3] = feature_pupcandi_array[:,i,3]
-        feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
-        feature_pupcandi_array_xy[:,i,5] = feature_pupcandi_array[:,i,5]
-    
-    
-	#labeling
-    A=feature_pupcandi_array_xy[:,:,4:5]
-    A=np.where(A==-1,3,A)
-    A=np.where(A==0,4,A)
-    A=np.where(A==1,5,A)
-
-    B=feature_pupcandi_array_xy[:,:,5:]
-    B=np.where(B==-211,0,B)
-    B=np.where(B==-130,1,B)
-    B=np.where(B==-22,2,B)
-    B=np.where(B==-13,3,B)
-    B=np.where(B==-11,4,B)
-    B=np.where(B==11,5,B)
-    B=np.where(B==13,6,B)
-    B=np.where(B==22,7,B)
-    B=np.where(B==130,8,B)
-    B=np.where(B==211,9,B)
-    
-    
-    # Convert target from pt phi to px, py
-    target_array_xy = np.zeros((nevents, ntargets))
-
-    target_array_xy[:,0] = target_array[:,0] * np.cos(target_array[:,1])
-    target_array_xy[:,1] = target_array[:,0] * np.sin(target_array[:,1])
     
     # Split datas into train, validation, test set
 
     # for test!!! (applying embedding)################
-    inputs = np.concatenate((feature_pupcandi_array[:,:,0:1], feature_pupcandi_array_xy[:,:,0:2]), axis=-1)
-    inputs_cat0 = A 
-    inputs_cat1 = B
+    # for PUPPI candidtaes
+    
+    #inputs = np.concatenate((feature_pupcandi_array[:,:,0:1], feature_pupcandi_array_xy[:,:,0:2]), axis=-1)
+    inputs = feature_pupcandi_array_xy
+    inputs_cat0 = feature_pupcandi_array_xy[:,:,4:5]
+    inputs_cat1 = feature_pupcandi_array_xy[:,:,5:]
+    '''
+    # for PF candidtaes
+    
+    #inputs = np.concatenate((feature_PFcandi_array[:,:,0:1], feature_PFcandi_array_xy[:,:,0:2]), axis=-1)
+    inputs = feature_PFcandi_array_xy
+    inputs_cat0 = feature_PFcandi_array_xy[:,:,4:5]
+    inputs_cat1 = feature_PFcandi_array_xy[:,:,5:]
+    '''
+
     Xc = [inputs_cat0, inputs_cat1]
 
     X = [inputs]+[inputs_cat0]+[inputs_cat0]
@@ -251,8 +160,8 @@ def main(args):
 
     # test!!! Dense embedding ############
     print('feature number = {}'.format(inputs.shape[-1]))
-    #keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim)
-    keras_model = CNN_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim)
+    keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim)
+    #keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim, number_of_pupcandis=700)
 
 
     # print variables
@@ -270,7 +179,7 @@ def main(args):
     # path for various GenMET cut
     #path='./result/GenMET_cut_result_'+time_path+'/'+str(TarMET_cut)+'-'+str(TarMET_cut_max)+'/'
     # path for various PuppiMET cut
-    path='./result/result_'+time_path+'/CNN/'+str(PupMET_cut)+'-'+str(PupMET_cut_max)+'/'
+    path='./result/result_'+time_path+'_with PFcandis/DNN/'+str(PupMET_cut)+'-'+str(PupMET_cut_max)+'/'
     #path='./result/result_'+time_path+'/'+str(PupMET_cut)+'-'+str(PupMET_cut_max)+'/'
     try:
         if not os.path.exists(path):
