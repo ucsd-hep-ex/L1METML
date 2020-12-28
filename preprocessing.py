@@ -10,7 +10,7 @@ from utils import custom_loss, flatting
 def main(args):
 
 
-    file_path = 'data/input_MET_PFCandi.h5'
+    file_path = 'data/input_test_1M_200k.h5'
     features = ['L1CHSMet_pt', 'L1CHSMet_phi',
                 'L1CaloMet_pt', 'L1CaloMet_phi',
                 'L1PFMet_pt', 'L1PFMet_phi',
@@ -57,7 +57,7 @@ def main(args):
     # Exclude puppi met < +PupMET_cut+ GeV events
     # Set PUPPI MET min, max cut
 
-    PupMET_cut = 50
+    PupMET_cut = 0
     PupMET_cut_max = 500
     weights_path = ''+str(PupMET_cut)+'cut'
 
@@ -203,8 +203,10 @@ def main(args):
 
 
     # Save datas into files
+    # Set the path where the result plots and model weights will be saved.
 
-    path = "./preprocessed/"
+    time_path = time.strftime('%Y_%m_%d', time.localtime(time.time()))
+    path = "./preprocessed/1M/"+time_path+"/"
 
 
     try:
