@@ -8,11 +8,11 @@ import tables
 import matplotlib.pyplot as plt
 import argparse
 import math
-import setGPU
+#import setGPU
 import time
 import os
-from Write_MET_binned_histogram import * # MET_rel_error, MET_abs_error, MET_binned_predict_mean, Phi_abs_error, dist, histo_2D, Write_MET_binned_histogram # Write_MET_binned_histogram function needs ROOT. Maybe ROOT version over 6.22 supports for py3?
-from get_jet import get_features_targets, get_jet_features
+from Write_MET_binned_histogram import MET_rel_error_opaque, Phi_abs_error, Phi_abs_error_opaque
+from cyclical_learning_rate import CyclicLR
 from models import *# dense, dense_conv, conv, deepmetlike
 from utils import custom_loss, flatting
 
@@ -47,9 +47,8 @@ def weight_loss_function(number_of_bin, val_array, min_, max_):
 def main(args):
 
     # Set the path where the result plots and model weights will be saved.
-    time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 
-    preprocessed = './preprocessed/1M/'+time_path+'/'
+    preprocessed = args.input 
 
     # Set cuts for input
 
@@ -64,22 +63,48 @@ def main(args):
     feature_MET_array = np.load(""+preprocessed+"feat_MET_array_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
     feature_jet_array_xy = np.load(""+preprocessed+"feat_jet_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max)) 
     feature_pupcandi_array_xy = np.load(""+preprocessed+"feat_Pup_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
-    feature_PFcandi_array_xy = np.load(""+preprocessed+"feat_PF_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
-    
+    #feature_PFcandi_array_xy = np.load(""+preprocessed+"feat_PF_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
+
+
+    # Test for Normalization
+    target_array_xy = target_array_xy / 50
+    feature_pupcandi_array_xy[:,:,(0,1)] = feature_pupcandi_array_xy[:,:,(0,1)] / 50
+
+
+
+    # Exclude Gen met < +TarMET_cut+ GeV events
+    # Set Gen MET min, max cut
+    '''
+    TarMET_cut = 5
+    TarMET_cut_max = 100
+
+    mask1 = ((target_array_xy[:,0]*target_array_xy[:,0]+target_array_xy[:,1]*target_array_xy[:,1]) < TarMET_cut_max*TarMET_cut_max)
+    feature_MET_array_xy = feature_MET_array_xy[mask1]
+    feature_jet_array_xy = feature_jet_array_xy[mask1]
+    #feature_PFcandi_array = feature_PFcandi_array[mask1]
+    feature_pupcandi_array_xy = feature_pupcandi_array_xy[mask1]
+    target_array_xy = target_array_xy[mask1]
+    '''
 
     # Set number of jets and pupcandis you will use
     number_of_jets = feature_jet_array_xy.shape[1]
     number_of_pupcandis = feature_pupcandi_array_xy.shape[1]
-    number_of_PFcandis = feature_PFcandi_array_xy.shape[1]
+    #number_of_PFcandis = feature_PFcandi_array_xy.shape[1]
 
     nevents = target_array_xy.shape[0]
+    print(nevents)
+    print(nevents)
+    print(nevents)
+    print(nevents)
+    print(nevents)
+    print(nevents)
     nmetfeatures = feature_MET_array_xy.shape[1]
     njets = feature_jet_array_xy.shape[1]
     njetfeatures = feature_jet_array_xy.shape[2]
     npupcandis = feature_pupcandi_array_xy.shape[1]
     npupcandifeatures = feature_pupcandi_array_xy.shape[2]
-    nPFcandis = feature_PFcandi_array_xy.shape[1]
-    nPFcandifeatures = feature_PFcandi_array_xy.shape[2]
+    #nPFcandis = feature_PFcandi_array_xy.shape[1]
+    #nPFcandifeatures = feature_PFcandi_array_xy.shape[2]
     ntargets = target_array_xy.shape[1]
 
     
@@ -108,15 +133,18 @@ def main(args):
 
     X = [inputs]+[inputs_cat0]+[inputs_cat0]
 
-    embedding_input_dim = {i : int(np.max(Xc[i])) + 1 for i in range(2)}
+    #embedding_input_dim = {10}
 
     #X = [feature_MET_array_xy, feature_jet_array_xy, feature_pupcandi_array_xy[:,:,(0,1)]]
     y = target_array_xy
     A = feature_MET_array[:,(6,7)]
     
-    fulllen = nevents
+    #fulllen = 150000
+    fulllen =nevents
+    #fulllen =args.entry 
     tv_frac = 0.10
     tv_num = math.ceil(fulllen*tv_frac)
+    #splits = np.cumsum([800000,90000,90000])
     splits = np.cumsum([fulllen-2*tv_num,tv_num,tv_num])
     splits = [int(s) for s in splits]
 
@@ -168,7 +196,7 @@ def main(args):
 
     # test!!! Dense embedding ############
     print('feature number = {}'.format(inputs.shape[-1]))
-    keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim)
+    keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = [10, 10])
     #keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim, number_of_pupcandis=700)
 
 
@@ -176,7 +204,8 @@ def main(args):
     print()
     print("# \t\tGen MET cut\t :\t %.1f" % TarMET_cut)
     print("# \t\tPUPPI MET cut\t :\t %.1f" % PupMET_cut)
-    print("# \t\tNumber of event\t : \t %d" % nevents)
+    print("# \t\tNumber of event(total)\t : \t %d" % nevents)
+    print("# \t\tNumber of event(used)\t : \t %d" % fulllen)
     print("# \t\tNumber of training event\t : \t %d" % A_train.shape[0])
     print("# \t\tNumber of test event\t : \t %d" % A_test.shape[0])
     print()
@@ -184,8 +213,9 @@ def main(args):
     
     # path for various GenMET cut
     # path for various PuppiMET cut
-    path='./result/result_'+time_path+'_with_PUPPIcandis_1M/DNN_absolute_loss/'+str(PupMET_cut)+'-'+str(PupMET_cut_max)+'/'
+    #path='./result/result_'+time_path+'_with_PUPPIcandis_1M_200kto/DNN_absolute_error/'+str(PupMET_cut)+'-'+str(PupMET_cut_max)+'/'
     #path='./result/result_'+time_path+'_with_PFcandis_1M/DNN/'+str(PupMET_cut)+'-'+str(PupMET_cut_max)+'/'
+    path = args.output
     try:
         if not os.path.exists(path):
             os.makedirs(path)
@@ -193,20 +223,24 @@ def main(args):
         print ('Creating directory' + path)
 
 
-    keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_absolute_error'])
+    keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
     #keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_squared_error', 'mean_squared_error'])
     print(keras_model.summary())
+
+    lr_scale = 1.
+    batch_size=64
+    clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(y)/batch_size, mode='triangular2')
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=10)
     model_checkpoint = ModelCheckpoint(''+path+'keras_model_best.h5', monitor='val_loss', save_best_only=True)
     csv_logger = CSVLogger('loss_data.log')
-    callbacks = [early_stopping, model_checkpoint, csv_logger]
+    callbacks = [early_stopping, model_checkpoint, csv_logger, clr]
 
 
     # fit keras
     
     keras_model.fit(X_train, y_train, 
-                    batch_size=1024, 
+                    batch_size=batch_size, 
                     #sample_weight=[weight_array, weight_array], 
                     epochs=200, 
                     validation_data=(X_val, y_val), 
@@ -226,10 +260,10 @@ def main(args):
     predict_phi = np.zeros((test_events, 2))
     y_test_phi = np.zeros((test_events, 2))
 	
-    predict_phi[:,0] = np.sqrt((predict_test[:,0]**2 + predict_test[:,1]**2))
+    predict_phi[:,0] = np.sqrt((predict_test[:,0]**2 + predict_test[:,1]**2)) * 50
     predict_phi[:,1] = np.sign(predict_test[:,1])*np.arccos(predict_test[:,0]/predict_phi[:,0])
 
-    y_test_phi[:,0] = np.sqrt((y_test[:,0]**2 + y_test[:,1]**2))
+    y_test_phi[:,0] = np.sqrt((y_test[:,0]**2 + y_test[:,1]**2)) * 50
     y_test_phi[:,1] = np.sign(y_test[:,1])*np.arccos(y_test[:,0]/y_test_phi[:,0])
 
 
@@ -239,14 +273,14 @@ def main(args):
 
 
     # Create rootfile with histograms to make resolution plot
-    Write_MET_binned_histogram(predict_phi, y_test_phi, 20, 0, 100, 300, name=''+path+'histogram_predicted_'+str(PupMET_cut)+'.root')
-    Write_MET_binned_histogram(A_test, y_test_phi, 20, 0, 100, 300, name=''+path+'histogram_puppi_'+str(PupMET_cut)+'.root')
+    #Write_MET_binned_histogram(predict_phi, y_test_phi, 20, 0, 100, 300, name=''+path+'histogram_predicted_'+str(PupMET_cut)+'.root')
+    #Write_MET_binned_histogram(A_test, y_test_phi, 20, 0, 100, 300, name=''+path+'histogram_puppi_'+str(PupMET_cut)+'.root')
 
     # For plots
     MET_rel_error_opaque(predict_phi[:,0], A_test[:,0], y_test_phi[:,0], name=''+path+'rel_error_opaque.png')
     #MET_rel_error(predict_phi[:,0], y_test_phi[:,0], name=''+path+'rel_error.png')
     #MET_abs_error(predict_phi[:,0], y_test_phi[:,0], name=''+path+'rel_abs.png')
-    Phi_abs_error(predict_phi[:,1], y_test_phi[:,1], name=''+path+'Phi_error.png')
+    #Phi_abs_error(predict_phi[:,1], y_test_phi[:,1], name=''+path+'Phi_error.png')
     Phi_abs_error_opaque(predict_phi[:,1], y_test_phi[:,1], A_test[:,1], name=''+path+'Phi_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_phi[:,0], A_test[:,0], y_test_phi[:,0], 20, 0, 500, 0, '.', name=''+path+'PrVSGen.png')
     #dist(predict_phi[:,0], name=''+path+'predict_dist.png')
@@ -260,7 +294,13 @@ def main(args):
 
 if __name__ == "__main__":
 
+    time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+    path = "./result/"+time_path+"_PUPPICandidates/"
+
     parser = argparse.ArgumentParser()
+    parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
+    parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
+    #parser.add_argument('--entry', action='store', type=int, required=True, help='set number of events')
         
     args = parser.parse_args()
     main(args)
