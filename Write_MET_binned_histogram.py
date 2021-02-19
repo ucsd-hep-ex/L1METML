@@ -68,7 +68,244 @@ def Write_MET_binned_histogram(Predict_array, Gen_array, bin_number, bin_minimum
     for n in hists:
         hists[n].Write()
 
+def response_ab(predict_met, gen_met, bin_number, bin_minimum, bin_median, bin_maximum, path_, name='response.pdf'):
 
+
+    # Separate MET-bin
+    bin_ = bin_number
+    bin_mini = bin_minimum
+    bin_medi = bin_median
+    bin_maxi = bin_maximum
+
+    binning_le = (bin_medi - bin_mini)/(bin_/2.)
+    binning_gr = (bin_maxi - bin_medi)/(bin_/2.)
+
+    predict_array = np.zeros(bin_)
+    predict_RMS = np.zeros(bin_)
+    gen_array = np.zeros(bin_)
+    gen_RMS = np.zeros(bin_)
+    gen_array_number = np.zeros(bin_)
+
+    for i in range(int(bin_/2.)):
+        print(i)
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_le) < gen_met[j, 0] <= ((i + 1) * binning_le)):
+                predict_array[i] += predict_met[j, 0]
+                gen_array[i] += gen_met[j, 0]
+                gen_array_number[i] += 1
+
+    for i in range(int(bin_/2.)):
+        print(i)
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_gr) + 100 < gen_met[j, 0] <= ((i + 1) * binning_gr) + 100):
+                predict_array[i + 10] += predict_met[j, 0]
+                gen_array[i + 10] += gen_met[j, 0]
+                gen_array_number[i + 10] += 1
+
+    predict_mean = predict_array / gen_array_number
+    gen_mean = gen_array / gen_array_number
+
+
+    for i in range(int(bin_/2.)):
+        print(i)
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_le) < gen_met[j, 0] <= ((i + 1) * binning_le)):
+                predict_RMS[i] += (predict_mean[i] - predict_met[j, 0]) ** 2
+                gen_RMS[i] += (gen_mean[i] - gen_met[j, 0]) ** 2
+
+    for i in range(int(bin_/2.)):
+        print(i)
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_gr) + 100 < gen_met[j, 0] <= ((i + 1) * binning_gr) + 100):
+                predict_RMS[i + 10] += (predict_mean[i + 10] - predict_met[j, 0]) ** 2
+                gen_RMS[i + 10] += (gen_mean[i + 10] - gen_met[j, 0]) ** 2
+
+    predict_RMS = np.sqrt(predict_RMS / gen_array_number)
+    gen_RMS = np.sqrt(gen_RMS / gen_array_number)
+
+    response = predict_mean / gen_mean
+    response_error = response * np.sqrt((predict_RMS/predict_mean) ** 2 + (gen_RMS/gen_mean) ** 2)
+
+    plt.figure()
+    plt.errorbar(x = gen_mean, y = response, yerr = response_error, xerr = gen_RMS)
+    plt.xlabel("Gen MET [GeV]", fontsize=16)
+    plt.ylabel("response", fontsize=16)
+    plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
+    plt.savefig(name)
+    plt.show()
+
+    feat = open(''+path_+'response_dat.txt', 'w')
+    for i in range(bin_):
+        data = '%f, %f, %f, %f' % (gen_mean[i], gen_RMS[i], response[i], response_error[i])
+        feat.write(data)
+        feat.write('\n')
+
+def response_parallel(predict_met, gen_met, bin_number, bin_minimum, bin_median, bin_maximum, path_,  name='response.pdf'):
+
+    # phi calc
+    def phidiff(phi1, phi2):
+        phi_r = phi1 - phi2
+        if phi_r > math.pi : phi_r = phi_r - 2 * math.pi
+        if phi_r < -math.pi : phi_r = phi_r + 2 * math.pi
+        return phi_r
+
+    # Separate MET-bin
+    bin_ = bin_number
+    bin_mini = bin_minimum
+    bin_medi = bin_median
+    bin_maxi = bin_maximum
+
+    binning_le = (bin_medi - bin_mini)/(bin_/2.)
+    binning_gr = (bin_maxi - bin_medi)/(bin_/2.)
+
+    predict_array = np.zeros(bin_)
+    predict_RMS = np.zeros(bin_)
+    gen_array = np.zeros(bin_)
+    gen_RMS = np.zeros(bin_)
+    gen_array_number = np.zeros(bin_)
+
+    for i in range(int(bin_/2.)):
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_le) < gen_met[j, 0] <= ((i + 1) * binning_le)):
+                predict_array[i] += predict_met[j, 0] * abs(math.cos(phidiff(predict_met[j,1], gen_met[j,1])))
+                gen_array[i] += gen_met[j, 0]
+                gen_array_number[i] += 1
+
+    for i in range(int(bin_/2.)):
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_gr) + 100 < gen_met[j, 0] <= ((i + 1) * binning_gr) + 100):
+                predict_array[i + 10] += predict_met[j, 0] * abs(math.cos(phidiff(predict_met[j,1], gen_met[j,1])))
+                gen_array[i + 10] += gen_met[j, 0]
+                gen_array_number[i + 10] += 1
+
+    predict_mean = predict_array / gen_array_number
+    gen_mean = gen_array / gen_array_number
+
+
+    for i in range(int(bin_/2.)):
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_le) < gen_met[j, 0] <= ((i + 1) * binning_le)):
+                predict_RMS[i] += (predict_mean[i] - predict_met[j, 0] * abs(math.cos(phidiff(predict_met[j,1], gen_met[j,1])))) ** 2
+                gen_RMS[i] += (gen_mean[i] - gen_met[j, 0]) ** 2
+
+    for i in range(int(bin_/2.)):
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_gr) + 100 < gen_met[j, 0] <= ((i + 1) * binning_gr) + 100):
+                predict_RMS[i + 10] += (predict_mean[i + 10] - predict_met[j, 0] * abs(math.cos(phidiff(predict_met[j,1], gen_met[j,1])))) ** 2
+                gen_RMS[i + 10] += (gen_mean[i + 10] - gen_met[j, 0]) ** 2
+
+    predict_RMS = np.sqrt(predict_RMS / gen_array_number)
+    gen_RMS = np.sqrt(gen_RMS / gen_array_number)
+
+    response = predict_mean / gen_mean
+    response_error = response * np.sqrt((predict_RMS/predict_mean) ** 2 + (gen_RMS/gen_mean) ** 2)
+
+    plt.figure()
+    plt.errorbar(x = gen_mean, y =  response, yerr = response_error, xerr = gen_RMS, color='r')
+    plt.xlabel("Gen MET [GeV]", fontsize=16)
+    plt.ylabel("response", fontsize=16)
+    plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
+    plt.grid(True)
+    plt.savefig(''+name+'.png')
+    plt.show()
+
+    feat = open(''+name+'.txt', 'w')
+    for i in range(bin_):
+        data = '%f, %f, %f, %f' % (gen_mean[i], gen_RMS[i], response[i], response_error[i])
+        feat.write(data)
+        feat.write('\n')
+
+
+def response_parallel_opaque(predict_met, puppi_met, gen_met, bin_number, bin_minimum, bin_median, bin_maximum, path_,  name='response.pdf'):
+
+    # phi calc
+    def phidiff(phi1, phi2):
+        phi_r = phi1 - phi2
+        if phi_r > math.pi : phi_r = phi_r - 2 * math.pi
+        if phi_r < -math.pi : phi_r = phi_r + 2 * math.pi
+        return phi_r
+
+    # Separate MET-bin
+    bin_ = bin_number
+    bin_mini = bin_minimum
+    bin_medi = bin_median
+    bin_maxi = bin_maximum
+
+    binning_le = (bin_medi - bin_mini)/(bin_/2.)
+    binning_gr = (bin_maxi - bin_medi)/(bin_/2.)
+
+    predict_array = np.zeros(bin_)
+    predict_RMS = np.zeros(bin_)
+    puppi_array = np.zeros(bin_)
+    puppi_RMS = np.zeros(bin_)
+    gen_array = np.zeros(bin_)
+    gen_RMS = np.zeros(bin_)
+    gen_array_number = np.zeros(bin_)
+
+    for i in range(int(bin_/2.)):
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_le) < gen_met[j, 0] <= ((i + 1) * binning_le)):
+                predict_array[i] += predict_met[j, 0] * abs(math.cos(phidiff(predict_met[j,1], gen_met[j,1])))
+                puppi_array[i] += puppi_met[j, 0] * abs(math.cos(phidiff(puppi_met[j,1], gen_met[j,1])))
+                gen_array[i] += gen_met[j, 0]
+                gen_array_number[i] += 1
+
+    for i in range(int(bin_/2.)):
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_gr) + 100 < gen_met[j, 0] <= ((i + 1) * binning_gr) + 100):
+                predict_array[i + 10] += predict_met[j, 0] * abs(math.cos(phidiff(predict_met[j,1], gen_met[j,1])))
+                puppi_array[i + 10] += puppi_met[j, 0] * abs(math.cos(phidiff(puppi_met[j,1], gen_met[j,1])))
+                gen_array[i + 10] += gen_met[j, 0]
+                gen_array_number[i + 10] += 1
+
+    predict_mean = predict_array / gen_array_number
+    puppi_mean = puppi_array / gen_array_number
+    gen_mean = gen_array / gen_array_number
+
+
+    for i in range(int(bin_/2.)):
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_le) < gen_met[j, 0] <= ((i + 1) * binning_le)):
+                predict_RMS[i] += (predict_mean[i] - predict_met[j, 0] * abs(math.cos(phidiff(predict_met[j,1], gen_met[j,1])))) ** 2
+                puppi_RMS[i] += (puppi_mean[i] - puppi_met[j, 0] * abs(math.cos(phidiff(puppi_met[j,1], gen_met[j,1])))) ** 2
+                gen_RMS[i] += (gen_mean[i] - gen_met[j, 0]) ** 2
+
+    for i in range(int(bin_/2.)):
+        for j in range(gen_met.shape[0]):
+            if ((i * binning_gr) + 100 < gen_met[j, 0] <= ((i + 1) * binning_gr) + 100):
+                predict_RMS[i + 10] += (predict_mean[i + 10] - predict_met[j, 0] * abs(math.cos(phidiff(predict_met[j,1], gen_met[j,1])))) ** 2
+                puppi_RMS[i + 10] += (puppi_mean[i + 10] - puppi_met[j, 0] * abs(math.cos(phidiff(puppi_met[j,1], gen_met[j,1])))) ** 2
+                gen_RMS[i + 10] += (gen_mean[i + 10] - gen_met[j, 0]) ** 2
+
+    predict_RMS = np.sqrt(predict_RMS / gen_array_number)
+    puppi_RMS = np.sqrt(puppi_RMS / gen_array_number)
+    gen_RMS = np.sqrt(gen_RMS / gen_array_number)
+
+    response = predict_mean / gen_mean
+    response_puppi = puppi_mean / gen_mean
+    response_error = response * np.sqrt((predict_RMS/predict_mean) ** 2 + (gen_RMS/gen_mean) ** 2)
+    response_puppi_error = response_puppi * np.sqrt((puppi_RMS/puppi_mean) ** 2 + (gen_RMS/gen_mean) ** 2)
+
+    plt.figure()
+    plt.errorbar(x = gen_mean, y =  response, yerr = response_error, xerr = gen_RMS, color='g', label='Predicted MET')
+    plt.errorbar(x = gen_mean, y =  response_puppi, yerr = response_puppi_error, xerr = gen_RMS, color='r', label='PUPPI MET')
+    plt.xlabel("Gen MET [GeV]", fontsize=16)
+    plt.ylabel("response", fontsize=16)
+    plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
+    plt.ylim(0,4)
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(''+name+'.png')
+    plt.show()
+
+    feat = open(''+name+'.txt', 'w')
+    for i in range(bin_):
+        data = '%f, %f, %f, %f' % (gen_mean[i], gen_RMS[i], response[i], response_error[i])
+        feat.write(data)
+        feat.write('\n')
 
 def MET_rel_error_bad(predict_met, gen_met, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)/gen_met
@@ -230,9 +467,10 @@ def Phi_abs_error_opaque(predict_met, gen_met, predict_met2, name='Met_res.pdf')
 def dist(predict_met, name='dist.pdf'):
     rel_err = predict_met
     plt.figure()
-    plt.hist(rel_err, bins=np.linspace(0, 500, 50+1))
+    plt.hist(rel_err, bins=np.linspace(0, 150, 50+1))
     plt.xlabel("MET [GeV]")
     plt.ylabel("Events")
+    plt.yscale("log")
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)

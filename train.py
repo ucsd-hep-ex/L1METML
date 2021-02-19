@@ -11,7 +11,7 @@ import math
 #import setGPU
 import time
 import os
-from Write_MET_binned_histogram import MET_rel_error_opaque, Phi_abs_error, Phi_abs_error_opaque
+from Write_MET_binned_histogram import *#MET_rel_error_opaque, Phi_abs_error, Phi_abs_error_opaque, response_ab, response_parallel
 from cyclical_learning_rate import CyclicLR
 from models import *# dense, dense_conv, conv, deepmetlike
 from utils import custom_loss, flatting
@@ -61,14 +61,21 @@ def main(args):
     target_array_xy = np.load(""+preprocessed+"targ_MET_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
     feature_MET_array_xy = np.load(""+preprocessed+"feat_MET_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
     feature_MET_array = np.load(""+preprocessed+"feat_MET_array_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
+    #feature_MET_array = np.load("./preprocessed/TTbar_1M/2021-01-12/feat_MET_array_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
     feature_jet_array_xy = np.load(""+preprocessed+"feat_jet_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max)) 
     feature_pupcandi_array_xy = np.load(""+preprocessed+"feat_Pup_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
     #feature_PFcandi_array_xy = np.load(""+preprocessed+"feat_PF_array_xy_{}-{}.npy".format(PupMET_cut, PupMET_cut_max))
 
+    #feature_pupcandi_array_xy, target_array_xy = read_input(args.input)
+
+    #Y = Y / -50
+
+
+    
 
     # Test for Normalization
-    target_array_xy = target_array_xy / 50
-    feature_pupcandi_array_xy[:,:,(0,1)] = feature_pupcandi_array_xy[:,:,(0,1)] / 50
+    #target_array_xy = target_array_xy / 50
+    #feature_pupcandi_array_xy[:,:,(0,1)] = feature_pupcandi_array_xy[:,:,(0,1)] / 50
 
 
 
@@ -133,7 +140,9 @@ def main(args):
 
     X = [inputs]+[inputs_cat0]+[inputs_cat0]
 
-    #embedding_input_dim = {10}
+    #embedding_input_dim = {i : int(np.max(Xc[i])) + 1 for i in range(2)}
+    #embedding_input_dim = [int(np.max(Xc[i])) + 1 for i in range(2)]
+    embedding_input_dim = [11, 11]
 
     #X = [feature_MET_array_xy, feature_jet_array_xy, feature_pupcandi_array_xy[:,:,(0,1)]]
     y = target_array_xy
@@ -196,8 +205,7 @@ def main(args):
 
     # test!!! Dense embedding ############
     print('feature number = {}'.format(inputs.shape[-1]))
-    keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = [10, 10])
-    #keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim, number_of_pupcandis=700)
+    keras_model = dense_embedding(n_features=inputs.shape[-1], n_features_cat=2, n_dense_layers=3, activation='tanh', embedding_input_dim = embedding_input_dim, number_of_pupcandis=100)
 
 
     # print variables
@@ -236,9 +244,9 @@ def main(args):
     csv_logger = CSVLogger('loss_data.log')
     callbacks = [early_stopping, model_checkpoint, csv_logger, clr]
 
-
+    '''
     # fit keras
-    
+     
     keras_model.fit(X_train, y_train, 
                     batch_size=batch_size, 
                     #sample_weight=[weight_array, weight_array], 
@@ -246,7 +254,7 @@ def main(args):
                     validation_data=(X_val, y_val), 
                     shuffle=True,
                     callbacks=callbacks)
-    
+    ''' 
 
     # load created weights
     keras_model.load_weights(''+path+'keras_model_best.h5')
@@ -260,10 +268,10 @@ def main(args):
     predict_phi = np.zeros((test_events, 2))
     y_test_phi = np.zeros((test_events, 2))
 	
-    predict_phi[:,0] = np.sqrt((predict_test[:,0]**2 + predict_test[:,1]**2)) * 50
+    predict_phi[:,0] = np.sqrt((predict_test[:,0]**2 + predict_test[:,1]**2))
     predict_phi[:,1] = np.sign(predict_test[:,1])*np.arccos(predict_test[:,0]/predict_phi[:,0])
 
-    y_test_phi[:,0] = np.sqrt((y_test[:,0]**2 + y_test[:,1]**2)) * 50
+    y_test_phi[:,0] = np.sqrt((y_test[:,0]**2 + y_test[:,1]**2))
     y_test_phi[:,1] = np.sign(y_test[:,1])*np.arccos(y_test[:,0]/y_test_phi[:,0])
 
 
@@ -273,8 +281,13 @@ def main(args):
 
 
     # Create rootfile with histograms to make resolution plot
-    #Write_MET_binned_histogram(predict_phi, y_test_phi, 20, 0, 100, 300, name=''+path+'histogram_predicted_'+str(PupMET_cut)+'.root')
-    #Write_MET_binned_histogram(A_test, y_test_phi, 20, 0, 100, 300, name=''+path+'histogram_puppi_'+str(PupMET_cut)+'.root')
+    Write_MET_binned_histogram(predict_phi, y_test_phi, 20, 0, 100, 300, name=''+path+'histogram_predicted_'+str(PupMET_cut)+'.root')
+    Write_MET_binned_histogram(A_test, y_test_phi, 20, 0, 100, 300, name=''+path+'histogram_puppi_'+str(PupMET_cut)+'.root')
+
+    # plot response
+    response_ab(predict_phi, y_test_phi, 20, 0, 100, 300, path_ = path, name=''+path+'response_'+str(PupMET_cut)+'.png')
+    response_parallel_opaque(predict_phi, A_test, y_test_phi, 20, 0, 100, 300, path_ = path, name=''+path+'response_'+str(PupMET_cut)+'')
+    response_parallel(A_test, y_test_phi, 20, 0, 100, 300, path_ = path, name=''+path+'response_PUPPI'+str(PupMET_cut)+'')
 
     # For plots
     MET_rel_error_opaque(predict_phi[:,0], A_test[:,0], y_test_phi[:,0], name=''+path+'rel_error_opaque.png')

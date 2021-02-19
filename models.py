@@ -2,7 +2,7 @@ import keras
 from keras.models import Model
 from keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape
 import keras.backend as K
-from keras.backend import slice
+from tensorflow import slice
 from keras import initializers
 
 from weighted_sum_layer import weighted_sum_layer
@@ -228,9 +228,10 @@ def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation
     return keras_model 
 
 
-def CNN_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim=0):
+def CNN_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim=0, with_bias=True):
 
     inputs_cont = Input(shape=(number_of_pupcandis, n_features), name='input')
+    pxpy = Lambda(lambda x: slice(x, (0, 0, n_features-2), (-1, -1, -1)))(inputs_cont)
 
     embeddings = []
     for i_emb in range(n_features_cat):

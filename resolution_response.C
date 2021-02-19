@@ -1,6 +1,7 @@
 void resolution(){
 
 	TFile *file = new TFile("./result/result_2021-02-16/noFlat_response/histogram_predicted_0.root", "read");
+	FILE *fp1 = fopen("./result/result_2021-02-16/noFlat_response/response_0.txt", "r");
 	const int bin = 20;
 	float mini = 0;
 	float medi = 100;
@@ -24,6 +25,16 @@ void resolution(){
 	float hPr_pe_RMSError[bin];
 	float hGe_RMSError[bin];
 
+	float res_p[bin][4];
+	if( fp1 != NULL){
+
+		for (int ij = 0 ; ij < 20 ; ij++){
+			cout<<ij<<endl;
+			fscanf(fp1, "%f, %f, %f, %f", &res_p[ij][0], &res_p[ij][1], &res_p[ij][2], &res_p[ij][3]);
+		}
+	}
+	else cout<<"No predicted response File!!"<<endl;
+
 	for (int i = 0 ; i < bin/2 ; i++){
 
 		sprintf(predict_para, "predict_para_%d-%d", i*10, (i+1)*10);
@@ -36,11 +47,11 @@ void resolution(){
 
 		hGe_Mean[i] = hGe->GetMean();
 
-		hPr_pa_RMS[i] = hPr_pa->GetStdDev();
-		hPr_pe_RMS[i] = hPr_pe->GetStdDev();
+		hPr_pa_RMS[i] = (hPr_pa->GetStdDev()) / res_p[i][2];
+		hPr_pe_RMS[i] = (hPr_pe->GetStdDev());
 		hGe_RMS[i] = hGe->GetStdDev();
 
-		hPr_pa_RMSError[i] = hPr_pa->GetRMSError();
+		hPr_pa_RMSError[i] = (hPr_pa->GetRMSError()/hPr_pa_RMS[i]) * (hPr_pa->GetRMSError()/hPr_pa_RMS[i]) + (res_p[i][3]/res_p[i][2]) * (res_p[i][3]/res_p[i][2]);
 		hPr_pe_RMSError[i] = hPr_pe->GetRMSError();
 		hGe_RMSError[i] = hGe->GetRMSError();
 	}
@@ -57,11 +68,11 @@ void resolution(){
 
 		hGe_Mean[i] = hGe->GetMean();
 
-		hPr_pa_RMS[i] = hPr_pa->GetStdDev();
+		hPr_pa_RMS[i] = (hPr_pa->GetStdDev()) / res_p[i][2];
 		hPr_pe_RMS[i] = hPr_pe->GetStdDev();
 		hGe_RMS[i] = hGe->GetStdDev();
 
-		hPr_pa_RMSError[i] = hPr_pa->GetRMSError();
+		hPr_pa_RMSError[i] = (hPr_pa->GetRMSError()/hPr_pa_RMS[i]) * (hPr_pa->GetRMSError()/hPr_pa_RMS[i]) + (res_p[i][3]/res_p[i][2]) * (res_p[i][3]/res_p[i][2]);
 		hPr_pe_RMSError[i] = hPr_pe->GetRMSError();
 		hGe_RMSError[i] = hGe->GetRMSError();
 	}
@@ -69,6 +80,7 @@ void resolution(){
 
 
 	TFile *file1 = new TFile("./result/result_2021-02-16/noFlat_response/histogram_puppi_0.root", "read");
+	FILE *fp2 = fopen("./result/result_2021-02-16/noFlat_response/response_PUPPI0.txt", "r");
 
 	float hPu_pa_Mean[bin];
 	float hPu_pe_Mean[bin];
@@ -79,6 +91,16 @@ void resolution(){
 	float hPu_pa_RMSError[bin];
 	float hPu_pe_RMSError[bin];
 
+	float res_pup[bin][4];
+
+	if( fp2 != NULL){
+
+		for (int ij = 0 ; ij < 20 ; ij++){
+			cout<<ij<<endl;
+			fscanf(fp2, "%f, %f, %f, %f", &res_pup[ij][0], &res_pup[ij][1], &res_pup[ij][2], &res_pup[ij][3]);
+		}
+	}
+
 	for (int i = 0 ; i < bin/2 ; i++){
 
 		sprintf(predict_para, "predict_para_%d-%d", i*10, (i+1)*10);
@@ -87,10 +109,11 @@ void resolution(){
 		TH1F * hPu_pa = (TH1F*) file1 ->Get(predict_para);
 		TH1F * hPu_pe = (TH1F*) file1 ->Get(predict_perp);
 
-		hPu_pa_RMS[i] = hPu_pa->GetStdDev();
+		hPu_pa_RMS[i] = (hPu_pa->GetStdDev()) / res_pup[i][2];
 		hPu_pe_RMS[i] = hPu_pe->GetStdDev();
 
-		hPu_pa_RMSError[i] = hPu_pa->GetRMSError();
+		// hPu_pa_RMSError[i] = hPu_pa->GetRMSError();
+		hPu_pa_RMSError[i] = (hPu_pa->GetRMSError()/hPu_pa_RMS[i]) * (hPu_pa->GetRMSError()/hPu_pa_RMS[i]) + (res_pup[i][3]/res_pup[i][2]) * (res_pup[i][3]/res_pup[i][2]);
 		hPu_pe_RMSError[i] = hPu_pe->GetRMSError();
 	}
 
@@ -102,10 +125,10 @@ void resolution(){
 		TH1F * hPu_pa = (TH1F*) file1 ->Get(predict_para);
 		TH1F * hPu_pe = (TH1F*) file1 ->Get(predict_perp);
 
-		hPu_pa_RMS[i] = hPu_pa->GetStdDev();
+		hPu_pa_RMS[i] = (hPu_pa->GetStdDev()) / res_pup[i][2];
 		hPu_pe_RMS[i] = hPu_pe->GetStdDev();
 
-		hPu_pa_RMSError[i] = hPu_pa->GetRMSError();
+		hPu_pa_RMSError[i] = (hPu_pa->GetRMSError()/hPu_pa_RMS[i]) * (hPu_pa->GetRMSError()/hPu_pa_RMS[i]) + (res_pup[i][3]/res_pup[i][2]) * (res_pup[i][3]/res_pup[i][2]);
 		hPu_pe_RMSError[i] = hPu_pe->GetRMSError();
 	}
 
@@ -131,7 +154,7 @@ void resolution(){
 	gPr_pa->GetXaxis()->SetTitle("Gen MET [GeV]");
 	gPr_pa->GetXaxis()->SetTitleSize(0.05);
 	gPr_pa->GetYaxis()->SetRangeUser(0,140);
-	gPr_pa->GetYaxis()->SetTitle("#sigma(MET_{#parallel})");
+	gPr_pa->GetYaxis()->SetTitle("#sigma(MET_{#parallel})/response_{#parallel}");
 	gPr_pa->GetYaxis()->SetTitleSize(0.05);
 	gPr_pa->SetTitle("Predict Para Res");
 	gPr_pa->Draw("APL");
