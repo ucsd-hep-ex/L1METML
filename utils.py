@@ -1,5 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from glob import glob
+
+def load_input(path):
+		file_list_gen = glob('{}*targ*.npy'.format(path))
+		file_list_MET = glob('{}*MET*.npy'.format(path))
+		file_list_MET_xy = glob('{}*MET*xy*.npy'.format(path))
+		file_list_Pup = glob('{}*Pup*.npy'.format(path))
+
+		target_array_xy = np.load('{}'.format(file_list_gen[0]))
+		feature_MET_array = np.load('{}'.format(file_list_MET[0]))
+		feature_MET_array_xy = np.load('{}'.format(file_list_MET_xy[0]))
+		feature_pupcandi_array_xy = np.load('{}'.format(file_list_Pup[0]))
+
+		return target_array_xy, feature_MET_array, feature_MET_array_xy, feature_pupcandi_array_xy
+
 
 def custom_loss(y_true, y_pred):
     '''
