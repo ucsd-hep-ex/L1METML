@@ -3,7 +3,7 @@ import tables
 import argparse
 from tqdm import tqdm, tnrange
 import math
-import setGPU
+#import setGPU
 import os
 import time
 from get_jet import get_features_targets, get_jet_features
@@ -65,11 +65,11 @@ def main(args):
     # Exclude puppi met < +PupMET_cut+ GeV events
     # Set PUPPI MET min, max cut
 
-    PupMET_cut = 0
+    PupMET_cut = -500
     PupMET_cut_max = 500
     weights_path = ''+str(PupMET_cut)+'cut'
 
-    mask = (feature_MET_array[:,6] > PupMET_cut) & (feature_MET_array[:,0] < PupMET_cut_max)
+    mask = (feature_MET_array[:,6] > PupMET_cut) & (feature_MET_array[:,6] < PupMET_cut_max)
     #print("mask : {}".format(mask))
     feature_MET_array = feature_MET_array[mask]
     feature_jet_array = feature_jet_array[mask]
@@ -83,7 +83,7 @@ def main(args):
     # Exclude Gen met < +TarMET_cut+ GeV events
     # Set Gen MET min, max cut
 
-    TarMET_cut = 5
+    TarMET_cut = -500
     TarMET_cut_max = 500
 
     mask1 = (target_array[:,0] > TarMET_cut) & (target_array[:,0] < TarMET_cut_max)
@@ -109,6 +109,8 @@ def main(args):
     target_array = target_array[mask2]
 
     nevents = target_array.shape[0]
+    print("Flatting complite")
+		'''
 
     # Shuffle again
     shuffler = np.random.permutation(len(target_array))
@@ -119,8 +121,9 @@ def main(args):
     #feature_PFcandi_array = feature_PFcandi_array[shuffler,:,:]
     target_array = target_array[shuffler]
 
-    print("Flatting complite")
-    '''
+    print("Shuflled")
+
+    
 
 
     # Convert feature from pt, phi to px, py
