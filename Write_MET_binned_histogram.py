@@ -464,10 +464,10 @@ def Phi_abs_error_opaque(predict_met, gen_met, predict_met2, name='Met_res.pdf')
     #plt.show()
 
 
-def dist(predict_met, name='dist.pdf'):
+def dist(predict_met, min_, max_, bin_, name='dist.pdf'):
     rel_err = predict_met
     plt.figure()
-    plt.hist(rel_err, bins=np.linspace(0, 150, 50+1))
+    plt.hist(rel_err, bins=np.linspace(min_, max_, bin_))
     plt.xlabel("MET [GeV]")
     plt.ylabel("Events")
     plt.yscale("log")
@@ -572,7 +572,7 @@ def MET_binned_predict_mean_opaque(predict_met, predict_met2, gen_met, binning, 
     ##
 
     plt.xlim(mini, maxi)
-    plt.ylim(mini, 700)
+    plt.ylim(mini, maxi)
     plt.xlabel('Gen MET mean [GeV]', fontsize = 16)
     #plt.ylabel('PUPPI MET mean [GeV]', fontsize = 16)
     plt.ylabel('predicted MET mean [GeV]', fontsize = 16)
