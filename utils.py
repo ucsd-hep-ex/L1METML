@@ -4,8 +4,8 @@ from glob import glob
 
 def load_input(path):
 		file_list_gen = glob('{}*targ*.npy'.format(path))
-		file_list_MET = glob('{}*MET*.npy'.format(path))
-		file_list_MET_xy = glob('{}*MET*xy*.npy'.format(path))
+		file_list_MET = glob('{}feat*MET*array_-500*.npy'.format(path))
+		file_list_MET_xy = glob('{}feat*MET*xy*.npy'.format(path))
 		file_list_Pup = glob('{}*Pup*.npy'.format(path))
 
 		target_array_xy = np.load('{}'.format(file_list_gen[0]))

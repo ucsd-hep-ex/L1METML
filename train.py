@@ -66,8 +66,8 @@ def main(args):
     pupcandi_phi = convertXY2PtPhi(pupcandi_phi)
 
 		# Test plot for gen MET dist
-    dist(target_array_xy_phi[:,0], -150, 150, 100, name=''+path+'Gen_dist_before_training.png')
-    dist(feature_MET_array[:,6], -150, 150, 100, name=''+path+'Gen_dist_before_training.png')
+    dist(target_array_xy_phi[:,0], -150, 500, 100, name=''+path+'Gen_dist_before_training.png')
+    dist(feature_MET_array[:,6], -150, 500, 100, name=''+path+'Gen_dist_before_training.png')
     MET_rel_error(pupcandi_phi[:,0], target_array_xy_phi[:,0], name=''+path+'rel_error_before_training.png')
     MET_rel_error(feature_MET_array[:,6], target_array_xy_phi[:,0], name=''+path+'rel_error_before_training.png')
 
@@ -82,7 +82,7 @@ def main(args):
     TarMET_cut = -500
     TarMET_cut_max = 500
 
-    mask1 = ((pupcandi_phi[:,0]) < TarMET_cut_max*TarMET_cut_max)
+    mask1 = ((target_array_xy_phi[:,0]) < TarMET_cut_max)
     feature_MET_array = feature_MET_array[mask1]
     feature_MET_array_xy = feature_MET_array_xy[mask1]
     #feature_PFcandi_array = feature_PFcandi_array[mask1]
@@ -110,7 +110,7 @@ def main(args):
     
     #inputs = np.concatenate((feature_pupcandi_array[:,:,0:1], feature_pupcandi_array_xy[:,:,0:2]), axis=-1)
     
-    inputs = feature_pupcandi_array_xy
+    inputs = feature_pupcandi_array_xy[:,:,:4]
     inputs_cat0 = feature_pupcandi_array_xy[:,:,4:5]
     inputs_cat1 = feature_pupcandi_array_xy[:,:,5:]
     
@@ -118,7 +118,7 @@ def main(args):
     
     #inputs = np.concatenate((feature_PFcandi_array[:,:,0:1], feature_PFcandi_array_xy[:,:,0:2]), axis=-1)
     '''
-    inputs = feature_PFcandi_array_xy
+    inputs = feature_PFcandi_array_xy[:,:,:4]
     inputs_cat0 = feature_PFcandi_array_xy[:,:,4:5]
     inputs_cat1 = feature_PFcandi_array_xy[:,:,5:]
     '''
@@ -136,7 +136,7 @@ def main(args):
     A = feature_MET_array[:,(6,7)]
     
     fulllen = 170000
-    fulllen =nevents
+    #fulllen =nevents
     #fulllen =args.entry 
     tv_frac = 0.10
     tv_num = math.ceil(fulllen*tv_frac)
@@ -207,12 +207,12 @@ def main(args):
 
     
 
-    keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
-    #keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_squared_error', 'mean_squared_error'])
+    #keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
+    keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_squared_error', 'mean_squared_error'])
     print(keras_model.summary())
 
-    lr_scale = 1.
-    batch_size=64
+    lr_scale = 0.5
+    batch_size=1024
     clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(y)/batch_size, mode='triangular2')
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=10)
@@ -273,7 +273,7 @@ def main(args):
     Phi_abs_error_opaque(predict_phi[:,1], y_test_phi[:,1], A_test[:,1], name=''+path+'Phi_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_phi[:,0], A_test[:,0], y_test_phi[:,0], 20, 0, 150, 0, '.', name=''+path+'PrVSGen.png')
     #dist(predict_phi[:,0], name=''+path+'predict_dist.png')
-    dist(y_test_phi[:,0], -150, 150, 100, name=''+path+'Gen_dist.png')
+    dist(y_test_phi[:,0], -150, 500, 100, name=''+path+'Gen_dist.png')
     histo_2D(predict_phi[:,0], y_test_phi[:,0], name=''+path+'2D_histo.png')
 
     #MET_rel_error(A_test[:,0], y_test_phi[:,0], name='rel_error_weight.png')
