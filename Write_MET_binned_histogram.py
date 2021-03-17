@@ -414,7 +414,7 @@ def MET_rel_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf')
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.legend()
     plt.savefig(name)
-    #plt.show()
+    plt.show()
 
 
 
@@ -448,7 +448,7 @@ def Phi_abs_error(predict_met, gen_met, name='Met_res.pdf'):
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
-    #plt.show()
+    plt.show()
 
 def Phi_abs_error_opaque(predict_met, gen_met, predict_met2, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)
@@ -461,7 +461,7 @@ def Phi_abs_error_opaque(predict_met, gen_met, predict_met2, name='Met_res.pdf')
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
-    #plt.show()
+    plt.show()
 
 
 def dist(predict_met, min_, max_, bin_, name='dist.pdf'):
@@ -611,7 +611,7 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
     plt.ylabel('(predicted MET/Gen MET) mean [GeV]', fontsize = 16)
     plt.legend()
     plt.savefig(name)
-    #plt.show()
+    plt.show()
 
 
 def extract_result(feat_array, targ_array, path, genMET_cut, max_genMET_cut):
@@ -641,14 +641,14 @@ def extract_result(feat_array, targ_array, path, genMET_cut, max_genMET_cut):
     targ_phi.close()
 
 
-def histo_2D(predict_pT, gen_pT, name = '2D_histo.png'):
+def histo_2D(predict_pT, gen_pT,min_, max_, name = '2D_histo.png'):
     X_hist = np.arange(0,500, 20)
     Y_hist = X_hist#1.25*X_hist
     #Y_hist_1 = 0.75*X_hist
     plt.plot(X_hist, Y_hist, '-r')
     #plt.plot(X_hist, Y_hist_1, '-r')
-    x_bins = np.linspace(0, 500, 50)
-    y_bins = np.linspace(0, 500, 50)
+    x_bins = np.linspace(min_, max_, 50)
+    y_bins = np.linspace(min_, max_, 50)
     plt.hist2d(gen_pT, predict_pT,  bins=[x_bins, y_bins], cmap=plt.cm.jet)
     plt.colorbar()
     plt.xlabel('gen MET [GeV]')
