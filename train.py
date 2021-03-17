@@ -51,6 +51,8 @@ def main(args):
     preprocessed = args.input 
     target_array_xy, feature_MET_array, feature_MET_array_xy, feature_pupcandi_array_xy = load_input(preprocessed)
 		
+    print(feature_pupcandi_array_xy)
+    print(target_array_xy)
     path = args.output
     try:
         if not os.path.exists(path):
@@ -207,8 +209,8 @@ def main(args):
 
     
 
-    #keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
-    keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_squared_error', 'mean_squared_error'])
+    keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
+    #keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_squared_error', 'mean_squared_error'])
     print(keras_model.summary())
 
     lr_scale = 0.5
@@ -222,7 +224,7 @@ def main(args):
 
     
     # fit keras
-     
+    ''' 
     keras_model.fit(X_train, y_train, 
                     batch_size=batch_size, 
                     #sample_weight=[weight_array, weight_array], 
@@ -230,7 +232,7 @@ def main(args):
                     validation_data=(X_val, y_val), 
                     shuffle=True,
                     callbacks=callbacks)
-     
+    '''
 
     # load created weights
     keras_model.load_weights(''+path+'keras_model_best.h5')
@@ -271,10 +273,10 @@ def main(args):
     #MET_abs_error(predict_phi[:,0], y_test_phi[:,0], name=''+path+'rel_abs.png')
     #Phi_abs_error(predict_phi[:,1], y_test_phi[:,1], name=''+path+'Phi_error.png')
     Phi_abs_error_opaque(predict_phi[:,1], y_test_phi[:,1], A_test[:,1], name=''+path+'Phi_error_opaque.png')
-    MET_binned_predict_mean_opaque(predict_phi[:,0], A_test[:,0], y_test_phi[:,0], 20, 0, 150, 0, '.', name=''+path+'PrVSGen.png')
+    MET_binned_predict_mean_opaque(predict_phi[:,0], A_test[:,0], y_test_phi[:,0], 20, 0, 500, 0, '.', name=''+path+'PrVSGen.png')
     #dist(predict_phi[:,0], name=''+path+'predict_dist.png')
-    dist(y_test_phi[:,0], -150, 500, 100, name=''+path+'Gen_dist.png')
-    histo_2D(predict_phi[:,0], y_test_phi[:,0], name=''+path+'2D_histo.png')
+    dist(y_test_phi[:,0], 0, 500, 100, name=''+path+'Gen_dist.png')
+    histo_2D(predict_phi[:,0], y_test_phi[:,0], 0, 500, name=''+path+'2D_histo.png')
 
     #MET_rel_error(A_test[:,0], y_test_phi[:,0], name='rel_error_weight.png')
     #MET_binned_predict_mean(A_test[:,0], y_test_phi[:,0], 20, 0, 500, 0, '.', name='predict_mean.png')

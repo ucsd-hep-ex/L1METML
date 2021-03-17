@@ -136,18 +136,18 @@ def main(args):
     for i in tqdm(range(number_of_jets)):
         feature_jet_array_xy[:,i,0] = feature_jet_array[:,i,0] * np.cos(feature_jet_array[:,i,1])
         feature_jet_array_xy[:,i,1] = feature_jet_array[:,i,0] * np.sin(feature_jet_array[:,i,1])
-        #feature_jet_array_xy[:,i,2] = feature_jet_array[:,i,2]
-        #feature_jet_array_xy[:,i,3] = feature_jet_array[:,i,3]
+        feature_jet_array_xy[:,i,2] = feature_jet_array[:,i,2]
+        feature_jet_array_xy[:,i,3] = feature_jet_array[:,i,3]
 
     
     feature_pupcandi_array_xy = np.zeros((nevents, npupcandis, npupcandifeatures))
     for i in tqdm(range(number_of_pupcandis)):
         feature_pupcandi_array_xy[:,i,0] = feature_pupcandi_array[:,i,0] * np.cos(feature_pupcandi_array[:,i,1])
         feature_pupcandi_array_xy[:,i,1] = feature_pupcandi_array[:,i,0] * np.sin(feature_pupcandi_array[:,i,1])
-        #feature_pupcandi_array_xy[:,i,2] = feature_pupcandi_array[:,i,2]
-        #feature_pupcandi_array_xy[:,i,3] = feature_pupcandi_array[:,i,3]
-        #feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
-        #feature_pupcandi_array_xy[:,i,5] = feature_pupcandi_array[:,i,5]
+        feature_pupcandi_array_xy[:,i,2] = feature_pupcandi_array[:,i,2]
+        feature_pupcandi_array_xy[:,i,3] = feature_pupcandi_array[:,i,3]
+        feature_pupcandi_array_xy[:,i,4] = feature_pupcandi_array[:,i,4]
+        feature_pupcandi_array_xy[:,i,5] = feature_pupcandi_array[:,i,5]
     ''' 
     feature_PFcandi_array_xy = np.zeros((nevents, nPFcandis, nPFcandifeatures))
     for i in range(number_of_PFcandis):
@@ -212,12 +212,12 @@ def main(args):
         print ('Creating directory' + args.ouput)
 
 
-    np.save(""+args.output+"feat_MET_array_xy_{}-{}".format(PupMET_cut, PupMET_cut_max), feature_MET_array_xy)
-    np.save(""+args.output+"feat_MET_array_{}-{}".format(PupMET_cut, PupMET_cut_max), feature_MET_array)
-    np.save(""+args.output+"feat_jet_array_xy_{}-{}".format(PupMET_cut, PupMET_cut_max), feature_jet_array_xy)
-    np.save(""+args.output+"feat_Pup_array_xy_{}-{}".format(PupMET_cut, PupMET_cut_max), feature_pupcandi_array_xy)
-    #np.save(""+args.output+"feat_PF_array_xy_{}-{}".format(PupMET_cut, PupMET_cut_max), feature_PFcandi_array_xy)
-    np.save(""+args.output+"targ_MET_array_xy_{}-{}".format(PupMET_cut, PupMET_cut_max), target_array_xy)
+    np.save(""+args.output+"feat_MET_array_xy", feature_MET_array_xy)
+    np.save(""+args.output+"feat_MET_array", feature_MET_array)
+    np.save(""+args.output+"feat_jet_array_xy", feature_jet_array_xy)
+    np.save(""+args.output+"feat_Pup_array_xy", feature_pupcandi_array_xy)
+    #np.save(""+args.output+"feat_PF_array_xy", feature_PFcandi_array_xy)
+    np.save(""+args.output+"targ_MET_array_xy", target_array_xy)
 
 
 
