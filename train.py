@@ -224,7 +224,7 @@ def main(args):
 
     
     # fit keras
-    ''' 
+    
     keras_model.fit(X_train, y_train, 
                     batch_size=batch_size, 
                     #sample_weight=[weight_array, weight_array], 
@@ -232,7 +232,7 @@ def main(args):
                     validation_data=(X_val, y_val), 
                     shuffle=True,
                     callbacks=callbacks)
-    '''
+    
 
     # load created weights
     keras_model.load_weights(''+path+'keras_model_best.h5')
