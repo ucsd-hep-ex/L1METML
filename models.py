@@ -2,6 +2,7 @@ import keras
 from keras.models import Model
 from keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape
 import keras.backend as K
+import tensorflow as tf
 from tensorflow import slice
 from keras import initializers
 
@@ -219,7 +220,8 @@ def dense_embedding(n_features=4, n_features_cat=2, n_dense_layers=3, activation
 
     x = Concatenate()([x, pxpy])
 
-    x = weighted_sum_layer(with_bias=False, name="weighted_sum")(x)#name = "output")(x)
+    x = tf.reduce_sum(x, axis=1)
+    #x = weighted_sum_layer(with_bias=False, name="weighted_sum")(x)#name = "output")(x)
 
     outputs = Dense(2, name = 'output', activation='linear')(x)
 
