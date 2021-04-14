@@ -72,8 +72,8 @@ def MakePlots(truth_XY, predict_XY, baseline_XY, path_out):
     truth_PtPhi = convertXY2PtPhi(truth_XY)
     predict_PtPhi = convertXY2PtPhi(predict_XY)
     baseline_PtPhi = convertXY2PtPhi(baseline_XY)
-    Make1DHists(truth_XY[:,0], predict_XY[:,0], baseline_XY[:,0], -100, 100, 40, False, 'MET X [GeV]', 'A.U.', f'{path_out}MET_x.png')
-    Make1DHists(truth_XY[:,1], predict_XY[:,1], baseline_XY[:,1], -100, 100, 40, False, 'MET Y [GeV]', 'A.U.', f'{path_out}MET_y.png')
+    Make1DHists(truth_XY[:,0], predict_XY[:,0], baseline_XY[:,0], -400, 400, 40, False, 'MET X [GeV]', 'A.U.', f'{path_out}MET_x.png')
+    Make1DHists(truth_XY[:,1], predict_XY[:,1], baseline_XY[:,1], -400, 400, 40, False, 'MET Y [GeV]', 'A.U.', f'{path_out}MET_y.png')
     Make1DHists(truth_PtPhi[:,0], predict_PtPhi[:,0], baseline_PtPhi[:,0], 0, 400, 40, False, 'MET Pt [GeV]', 'A.U.', f'{path_out}MET_pt.png')
     # do statistics
     from scipy.stats import binned_statistic
