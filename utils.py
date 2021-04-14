@@ -1,73 +1,33 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from glob import glob
 
-def load_input(path):
-		file_list_gen = glob('{}*targ*.npy'.format(path))
-		file_list_MET = glob('{}feat*MET*array.npy'.format(path))
-		file_list_MET_xy = glob('{}feat*MET*xy*.npy'.format(path))
-		file_list_Pup = glob('{}*Pup*.npy'.format(path))
-
-		target_array_xy = np.load('{}'.format(file_list_gen[0]))
-		feature_MET_array = np.load('{}'.format(file_list_MET[0]))
-		feature_MET_array_xy = np.load('{}'.format(file_list_MET_xy[0]))
-		feature_pupcandi_array_xy = np.load('{}'.format(file_list_Pup[0]))
-
-		return target_array_xy, feature_MET_array, feature_MET_array_xy, feature_pupcandi_array_xy
-
-
-def custom_loss(y_true, y_pred):
-    '''
-    cutmoized loss function to improve the recoil response,
-    by balancing the response above one and below one
-    '''
-    import keras.backend as K
-    import tensorflow as tf
-
-    px_truth = K.flatten(y_true[:,0])
-    py_truth = K.flatten(y_true[:,1])
-    px_pred = K.flatten(y_pred[:,0])
-    py_pred = K.flatten(y_pred[:,1])
-
-    pt_truth = K.sqrt(px_truth*px_truth + py_truth*py_truth)
-
-    px_truth1 = px_truth / pt_truth
-    py_truth1 = py_truth / pt_truth
-
-    # using absolute response
-    # upar_pred = (px_truth1 * px_pred + py_truth1 * py_pred)/pt_truth
-    upar_pred = (px_truth1 * px_pred + py_truth1 * py_pred) - pt_truth
-    pt_cut = pt_truth > 0./50.
-    upar_pred = tf.boolean_mask(upar_pred, pt_cut)
-    pt_truth_filtered = tf.boolean_mask(pt_truth, pt_cut)
-
+def read_input(inputfile):
+    import h5py
+    import os
+    list_input = open("%s"%inputfile)
+    nfiles=0
+    for line in list_input:
+        fname = line.rstrip()
+        if fname.startswith('#'):
+            continue
+        if not os.path.getsize(fname):
+            continue
+        print("read file", fname)
+        h5f = h5py.File( fname, 'r')
+        if nfiles == 0:
+           X = h5f['X'][:]
+           Y = h5f['Y'][:]
     
-    '''
-    filter_bin0 = pt_truth_filtered < 5./50.
-    filter_bin1 = tf.logical_and(pt_truth_filtered > 5./50., pt_truth_filtered < 10./50.)
-    filter_bin2 = pt_truth_filtered > 10./50.
-    '''
-    filter_bin0 = pt_truth_filtered < 20.
-    filter_bin1 = tf.logical_and(pt_truth_filtered > 20., pt_truth_filtered < 50.)
-    filter_bin2 = pt_truth_filtered > 50.
-
-    upar_pred_pos_bin0 = tf.boolean_mask(upar_pred, tf.logical_and(filter_bin0, upar_pred > 0.))
-    upar_pred_neg_bin0 = tf.boolean_mask(upar_pred, tf.logical_and(filter_bin0, upar_pred < 0.))
-    upar_pred_pos_bin1 = tf.boolean_mask(upar_pred, tf.logical_and(filter_bin1, upar_pred > 0.))
-    upar_pred_neg_bin1 = tf.boolean_mask(upar_pred, tf.logical_and(filter_bin1, upar_pred < 0.))
-    upar_pred_pos_bin2 = tf.boolean_mask(upar_pred, tf.logical_and(filter_bin2, upar_pred > 0.))
-    upar_pred_neg_bin2 = tf.boolean_mask(upar_pred, tf.logical_and(filter_bin2, upar_pred < 0.))
-    norm = tf.reduce_sum(pt_truth_filtered)
-    dev = tf.abs(tf.reduce_sum(upar_pred_pos_bin0) + tf.reduce_sum(upar_pred_neg_bin0))
-    dev += tf.abs(tf.reduce_sum(upar_pred_pos_bin1) + tf.reduce_sum(upar_pred_neg_bin1))
-    dev += tf.abs(tf.reduce_sum(upar_pred_pos_bin2) + tf.reduce_sum(upar_pred_neg_bin2))
-    dev /= norm
-
-    loss = 0.5*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
-
-    #loss += 200.*dev
-    loss += 10.*dev
-    return loss
+        else:
+           X = np.concatenate((X, h5f['X']), axis=0)
+           Y = np.concatenate((Y, h5f['Y']), axis=0)
+        h5f.close()
+        nfiles += 1
+    
+    print("finish reading files")
+    A = X[:, :, :]
+    B = Y[:, :]
+    return A, B
 
 def convertXY2PtPhi(arrayXY):
     # convert from array with [:,0] as X and [:,1] as Y to [:,0] as pt and [:,1] as phi
@@ -77,36 +37,116 @@ def convertXY2PtPhi(arrayXY):
     arrayPtPhi[:,1] = np.sign(arrayXY[:,1])*np.arccos(arrayXY[:,0]/arrayPtPhi[:,0])
     return arrayPtPhi
 
-def flatting(GenMET):
-    bin_width = 5
-    min_ = 0
-    max_ = 1000
+def preProcessing(X, EVT=None):
+    """ pre-processing input """
+    A = X[:, :, :]
 
-    bin_number = int((max_ - min_)/bin_width)
-    bin_ = np.linspace(0,300, num = bin_number)
+    norm = 50.0
 
-    MET_interval = np.histogram(GenMET[:,0], bin_)
+    pt = A[:,:,0:1] / norm
+    px = A[:,:,1:2] / norm
+    py = A[:,:,2:3] / norm
+    eta = A[:,:,3:4]
+    phi = A[:,:,4:5]
+    puppi = A[:,:,5:6]
 
-    bin_indices = np.digitize(GenMET[:,0], bin_)
+    # remove outliers
+    pt[ np.where(np.abs(pt>500)) ] = 0.
+    px[ np.where(np.abs(px>500)) ] = 0.
+    py[ np.where(np.abs(py>500)) ] = 0.
 
-    bin_size = np.zeros(bin_number)
-    mask = [True]
+    inputs = np.concatenate((pt, eta, phi, puppi, px, py), axis=2)
 
-    for i in range(GenMET.shape[0]):
-        for j in range(bin_number):
-            if (bin_width*(j + 0) + min_ <= GenMET[i,0] < bin_width*(j + 1) + min_):
-                bin_size[j] = bin_size[j] + 1
-                if bin_size[j] >= 3000:
-                    mask.append(bool(False))
-                else:
-                    if (i == 0):
-                        1
-                    else:
-                        mask.append(bool(True))
+    inputs_cat0 = A[:,:,6:7] # encoded PF pdgId
+    inputs_cat1 = A[:,:,7:8] # encoded PF charge
 
-    GenMET = GenMET[mask]
-    plt.hist(GenMET[:,0], bins=np.linspace(0, 500, 100))
-    plt.savefig('flat.png')
-    plt.show()
+    return inputs, inputs_cat0, inputs_cat1
 
-    return mask
+def MakePlots(truth_XY, predict_XY, baseline_XY, path_out):
+    # make the 1d distribution, response, resolution, 
+    # and response-corrected resolution plots
+    # assume the input has [:,0] as X and [:,1] as Y
+    import matplotlib.pyplot as plt
+    import mplhep as hep
+    plt.style.use(hep.style.CMS)
+    truth_PtPhi = convertXY2PtPhi(truth_XY)
+    predict_PtPhi = convertXY2PtPhi(predict_XY)
+    baseline_PtPhi = convertXY2PtPhi(baseline_XY)
+    Make1DHists(truth_XY[:,0], predict_XY[:,0], baseline_XY[:,0], -100, 100, 40, False, 'MET X [GeV]', 'A.U.', f'{path_out}MET_x.png')
+    Make1DHists(truth_XY[:,1], predict_XY[:,1], baseline_XY[:,1], -100, 100, 40, False, 'MET Y [GeV]', 'A.U.', f'{path_out}MET_y.png')
+    Make1DHists(truth_PtPhi[:,0], predict_PtPhi[:,0], baseline_PtPhi[:,0], 0, 400, 40, False, 'MET Pt [GeV]', 'A.U.', f'{path_out}MET_pt.png')
+    # do statistics
+    from scipy.stats import binned_statistic
+    binnings = np.linspace(0, 400, num=21)
+    print(binnings)
+    truth_means,    bin_edges, binnumber = binned_statistic(truth_PtPhi[:,0], truth_PtPhi[:,0],    statistic='mean', bins=binnings, range=(0,400))
+    predict_means,  _,         _ = binned_statistic(truth_PtPhi[:,0], predict_PtPhi[:,0],  statistic='mean', bins=binnings, range=(0,400))
+    baseline_means, _,         _ = binned_statistic(truth_PtPhi[:,0], baseline_PtPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
+    # plot response
+    plt.figure()
+    plt.hlines(truth_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='k', lw=5,
+           label='Truth', linestyles='solid')
+    plt.hlines(predict_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
+           label='Predict', linestyles='solid')
+    plt.hlines(baseline_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
+           label='Baseline', linestyles='solid')
+    plt.xlim(0,400.0)
+    plt.ylim(0,1.1)
+    plt.xlabel('Truth MET [GeV]')
+    plt.legend(loc='lower right')
+    plt.ylabel('<MET Estimation>/<MET Truth>')
+    plt.savefig(f"{path_out}MET_response.png")
+    plt.close()
+    # response correction factors
+    sfs_truth    = np.take(truth_means/truth_means,    np.digitize(truth_PtPhi[:,0], binnings)-1, mode='clip')
+    sfs_predict  = np.take(predict_means/truth_means,  np.digitize(truth_PtPhi[:,0], binnings)-1, mode='clip')
+    sfs_baseline = np.take(baseline_means/truth_means, np.digitize(truth_PtPhi[:,0], binnings)-1, mode='clip')
+    # resolution defined as (q84-q16)/2.0
+    def resolqt(y):
+        return(np.percentile(y,84)-np.percentile(y,16))/2.0
+    bin_resolX_predict, bin_edges, binnumber = binned_statistic(truth_PtPhi[:,0], truth_XY[:,0] - predict_XY[:,0] * sfs_predict, statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolY_predict, _, _                 = binned_statistic(truth_PtPhi[:,0], truth_XY[:,1] - predict_XY[:,1] * sfs_predict, statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolX_baseline, _, _                = binned_statistic(truth_PtPhi[:,0], truth_XY[:,0] - baseline_XY[:,0] * sfs_predict, statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolY_baseline, _, _                = binned_statistic(truth_PtPhi[:,0], truth_XY[:,1] - baseline_XY[:,1] * sfs_predict, statistic=resolqt, bins=binnings, range=(0,400))
+    plt.figure()
+    plt.hlines(bin_resolX_predict, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
+           label='Predict', linestyles='solid')
+    plt.hlines(bin_resolX_baseline, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
+           label='Baseline', linestyles='solid')
+    plt.legend(loc='lower right')
+    plt.xlim(0,400.0)
+    plt.ylim(0,200.0)
+    plt.xlabel('Truth MET [GeV]')
+    plt.ylabel('RespCorr $\sigma$(METX) [GeV]')
+    plt.savefig(f"{path_out}resolution_metx.png")
+    plt.close()
+    plt.figure()
+    plt.hlines(bin_resolY_predict, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
+           label='Predict', linestyles='solid')
+    plt.hlines(bin_resolY_baseline, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
+           label='Baseline', linestyles='solid')
+    plt.legend(loc='lower right')
+    plt.xlim(0,400.0)
+    plt.ylim(0,200.0)
+    plt.xlabel('Truth MET [GeV]')
+    plt.ylabel('RespCorr $\sigma$(METY) [GeV]')
+    plt.savefig(f"{path_out}resolution_mety.png")
+    plt.close()
+
+
+
+
+def Make1DHists(truth, predict, baseline, xmin=0, xmax=400, nbins=100, density=False, xname="pt [GeV]", yname = "A.U.", outputname="1ddistribution.png"):
+    import matplotlib.pyplot as plt
+    import mplhep as hep
+    plt.style.use(hep.style.CMS)
+    plt.figure(figsize=(10,8))
+    plt.hist(truth,    bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='k', label='Truth')
+    plt.hist(predict,  bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='r', label='Predict')
+    plt.hist(baseline, bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='g', label='Baseline')
+    plt.yscale('log')
+    plt.legend(loc='upper right')
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.savefig(outputname)
+    plt.close()
