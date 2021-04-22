@@ -6,4 +6,7 @@ conda install -c anaconda tensorflow-gpu
 conda install keras
 conda install pandas
 conda install -c conda-forge matplotlib
+conda install h5py
+conda install tqdm
+conda install scikit-learn
 pip install setGPU
