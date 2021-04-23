@@ -10,3 +10,5 @@ conda install h5py
 conda install tqdm
 conda install scikit-learn
 pip install setGPU
+pip install mplhep
+pip install uproot3
