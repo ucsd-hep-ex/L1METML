@@ -126,6 +126,7 @@ def main(args):
     print(Xr_train[1].shape[-1])
     print(Xr_train[2].shape[-1])
     # Run training
+    
     '''
     history = keras_model.fit(Xr_train, 
                         Yr_train,
@@ -141,21 +142,14 @@ def main(args):
 
     predict_test = keras_model.predict(Xr_valid)
     #predict_test = convertXY2PtPhi(predict_test)
-    PUPPI_pt = 50 * np.sum(Xr_valid[0][:,:,3:5], axis=1)
-    PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
-
-    gen_test = convertXY2PtPhi(Yr_valid * 50)
-    
+    PUPPI_pt = 50 * np.sum(Xr_valid[0][:,:,4:6], axis=1)
     predict_test = predict_test *50
     Yr_valid = 50 * Yr_valid
     Xr_valid = 50 * Xr_valid
 
     test_events = Xr_valid[0].shape[0]
-    baseline_xy = np.zeros((test_events, 2))
-    baseline_xy[:,0] = np.sum(Xr_valid[0][:,:,4]*Xr_valid[0][:,:,0], axis=1) * (-1)
-    baseline_xy[:,1] = np.sum(Xr_valid[0][:,:,5]*Xr_valid[0][:,:,0], axis=1) * (-1)
 
-    MakePlots(Yr_valid, predict_test, baseline_xy, path_out = path_out)
+    MakePlots(Yr_valid, predict_test, PUPPI_pt, path_out = path_out)
 
     
 # Configuration

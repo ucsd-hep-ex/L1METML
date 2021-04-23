@@ -29,9 +29,9 @@ python convertNanoToHDF5_L1triggerToDeepMET.py -i [input .root file path] -o [ou
 
 ### Train
 ```
-python train.py --input [.txt file with input files list] --output [output path (plot and weight will be stored)]
+python train.py --input [.txt file with input files list] --output [output path (plot and weight will be stored)] --mode [0 or 1 (0 for L1MET model, 1 for DeepMET model)]
 ```
 For example,
 ```
-python train.py --input ./preprocessed/input.txt --output ./result/
+python train.py --input ./preprocessed/input.txt --output ./result/ --mode 0
 ```
