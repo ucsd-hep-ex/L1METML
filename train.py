@@ -6,6 +6,7 @@ import keras.backend as K
 from keras import optimizers, initializers
 from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
 from keras.utils import plot_model
+from keras.utils.vis_utils import plot_model
 from keras.models import Model
 from sklearn.model_selection import train_test_split
 
@@ -66,7 +67,14 @@ def main(args):
     Yr = Y
     Xr = [Xi] + Xc
 
+    # remove events True pT < 50 GeV
+    #Yr_pt = convertXY2PtPhi(Yr)
+    #mask1 = (Yr_pt[:,0] > 1)
+    #Yr = Yr[mask1]
+    #Xr = [x[mask1] for x in Xr]
+
     indices = np.array([i for i in range(len(Yr))])
+    print(indices)
     indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
     indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
 
@@ -80,20 +88,18 @@ def main(args):
     # Load training model
 
     keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode)
-    #keras_model = create_model(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh', emb_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
 
     if t_mode == 0:
-        #keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
-        keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], metrics=['mean_absolute_error', 'mean_squared_error'])
+        keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
+        #keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
 
     if t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        #keras_model.compile(loss=custom_loss, optimizer=optimizer, 
-        keras_model.compile(loss=['mean_squared_error', 'mean_squared_error'], optimizer=optimizer, 
+        keras_model.compile(loss=custom_loss, optimizer=optimizer, 
                        metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
@@ -130,6 +136,9 @@ def main(args):
     # Run training
     
     
+    print(keras_model.summary())
+    #plot_model(keras_model, to_file=f'{path_out}/model_plot.png', show_shapes=True, show_layer_names=True)
+    
     history = keras_model.fit(Xr_train, 
                         Yr_train,
                         epochs=epochs,
@@ -138,6 +147,7 @@ def main(args):
                         validation_data=(Xr_test, Yr_test),
                         callbacks=[early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint],#, reduce_lr], #, lr,   reduce_lr],
                        )
+    
     
 
     keras_model.load_weights(f'{path_out}/model.h5')
@@ -159,7 +169,7 @@ def main(args):
 
     MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], name=''+path_out+'rel_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
-    extract_result(predict_test, Yr_valid, path, PupMET_cut, PupMET_cut_max)
+    extract_result(predict_test, Yr_valid, path_out, 0, 500)
 
 
 # Configuration
