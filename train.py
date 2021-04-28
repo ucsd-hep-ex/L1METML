@@ -86,12 +86,14 @@ def main(args):
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
 
     if t_mode == 0:
-        keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
+        #keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
+        keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
 
     if t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=custom_loss, optimizer=optimizer, 
+        #keras_model.compile(loss=custom_loss, optimizer=optimizer, 
+        keras_model.compile(loss=['mean_squared_error', 'mean_squared_error'], optimizer=optimizer, 
                        metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
@@ -127,7 +129,7 @@ def main(args):
     print(Xr_train[2].shape[-1])
     # Run training
     
-    '''
+    
     history = keras_model.fit(Xr_train, 
                         Yr_train,
                         epochs=epochs,
@@ -136,7 +138,7 @@ def main(args):
                         validation_data=(Xr_test, Yr_test),
                         callbacks=[early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint],#, reduce_lr], #, lr,   reduce_lr],
                        )
-    '''
+    
 
     keras_model.load_weights(f'{path_out}/model.h5')
 
@@ -150,8 +152,16 @@ def main(args):
     test_events = Xr_valid[0].shape[0]
 
     MakePlots(Yr_valid, predict_test, PUPPI_pt, path_out = path_out)
-
     
+    Yr_valid = convertXY2PtPhi(Yr_valid)
+    predict_test = convertXY2PtPhi(predict_test)
+    PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
+
+    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], name=''+path_out+'rel_error_opaque.png')
+    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
+    extract_result(predict_test, Yr_valid, path, PupMET_cut, PupMET_cut_max)
+
+
 # Configuration
 
 if __name__ == "__main__":
