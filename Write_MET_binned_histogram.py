@@ -133,7 +133,10 @@ def response_ab(predict_met, gen_met, bin_number, bin_minimum, bin_median, bin_m
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
+
 
     feat = open(''+path_+'response_dat.txt', 'w')
     for i in range(bin_):
@@ -209,7 +212,9 @@ def response_parallel(predict_met, gen_met, bin_number, bin_minimum, bin_median,
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.grid(True)
     plt.savefig(''+name+'.png')
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
     feat = open(''+name+'.txt', 'w')
     for i in range(bin_):
@@ -299,7 +304,9 @@ def response_parallel_opaque(predict_met, puppi_met, gen_met, bin_number, bin_mi
     plt.grid(True)
     plt.legend()
     plt.savefig(''+name+'.png')
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
     feat = open(''+name+'.txt', 'w')
     for i in range(bin_):
@@ -339,7 +346,9 @@ def MET_rel_error_bad(predict_met, gen_met, name='Met_res.pdf'):
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.legend()
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 
 
@@ -372,7 +381,9 @@ def MET_rel_error(predict_met, gen_met, name='Met_res.pdf'):
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.legend()
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 
 
@@ -414,7 +425,9 @@ def MET_rel_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf')
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.legend()
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 
 
@@ -448,7 +461,9 @@ def Phi_abs_error(predict_met, gen_met, name='Met_res.pdf'):
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 def Phi_abs_error_opaque(predict_met, gen_met, predict_met2, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)
@@ -461,7 +476,9 @@ def Phi_abs_error_opaque(predict_met, gen_met, predict_met2, name='Met_res.pdf')
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 
 def dist(predict_met, min_, max_, bin_, name='dist.pdf'):
@@ -474,7 +491,9 @@ def dist(predict_met, min_, max_, bin_, name='dist.pdf'):
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 def dist_opaque(predict_met1, predict_met2, name='dist.pdf'):
     rel_err1 = predict_met1
@@ -488,7 +507,9 @@ def dist_opaque(predict_met1, predict_met2, name='dist.pdf'):
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
     plt.legend()
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 def dist_xy(predict_met, name='dist.pdf'):
     rel_err = predict_met
@@ -499,7 +520,9 @@ def dist_xy(predict_met, name='dist.pdf'):
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, genMET_cut, corr_check, name='predict_mean.pdf'):
     bin_ = int((maxi - mini)/binning)
@@ -530,7 +553,9 @@ def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, genMET_cu
     plt.ylabel('predicted MET mean [GeV]', fontsize = 16)
     plt.legend()
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 
 def MET_binned_predict_mean_opaque(predict_met, predict_met2, gen_met, binning, mini, maxi, genMET_cut, corr_check, name='predict_mean.pdf'):
@@ -578,7 +603,9 @@ def MET_binned_predict_mean_opaque(predict_met, predict_met2, gen_met, binning, 
     plt.ylabel('predicted MET mean [GeV]', fontsize = 16)
     plt.legend()
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 
 def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_cut, comment, name='predict_mean.pdf'):
@@ -611,7 +638,9 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
     plt.ylabel('(predicted MET/Gen MET) mean [GeV]', fontsize = 16)
     plt.legend()
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
 
 
 def extract_result(feat_array, targ_array, path, genMET_cut, max_genMET_cut):
@@ -654,4 +683,6 @@ def histo_2D(predict_pT, gen_pT,min_, max_, name = '2D_histo.png'):
     plt.xlabel('gen MET [GeV]')
     plt.ylabel('predicted MET [GeV]')
     plt.savefig(name)
-    plt.show()
+    plt.show(block=False)
+    plt.pause(5)
+    plt.close("all")
