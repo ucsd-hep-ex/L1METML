@@ -1,13 +1,10 @@
 # Import libraries
-
-import tensorflow as tk
-import keras
-import keras.backend as K
-from keras import optimizers, initializers
-from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
-from keras.utils import plot_model
-from keras.utils.vis_utils import plot_model
-from keras.models import Model
+import tensorflow
+import tensorflow.keras.backend as K
+from tensorflow.keras import optimizers, initializers
+from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
+from tensorflow.keras.utils import plot_model
+from tensorflow.keras.models import Model
 from sklearn.model_selection import train_test_split
 
 import numpy as np
@@ -61,6 +58,7 @@ def main(args):
     emb_input_dim = {
         i:int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
     }
+    print(emb_input_dim)
 
 
     # Prepare training/val data
@@ -125,7 +123,7 @@ def main(args):
     lr_scale = 1.
     clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(Y)/batch_size, mode='triangular2')
 
-    stop_on_nan = keras.callbacks.TerminateOnNaN()
+    stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
 
     epochs=100
 
@@ -150,7 +148,7 @@ def main(args):
     
     
 
-    keras_model.load_weights(f'{path_out}/model.h5')
+    #keras_model.load_weights(f'{path_out}/model.h5')
 
     predict_test = keras_model.predict(Xr_valid)
     #predict_test = convertXY2PtPhi(predict_test)
