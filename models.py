@@ -29,19 +29,15 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation
         x = Dense(8*2**(n_dense_layers-i_dense), activation = activation, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
 
-    x = Dense(3 if with_bias else 1, activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
-
     if t_mode == 0:
         x = tf.keras.layers.GlobalAveragePooling1D(name='pool')(x)
+        outputs = Dense(2, name = 'output', activation='linear')(x)
 
     if t_mode == 1:
+        x = Dense(3 if with_bias else 1, activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         x = Concatenate()([x, pxpy])
-
-        x = weighted_sum_layer(with_bias=False, name="weighted_sum")(x)#name = "output")(x)
-
-    outputs = Dense(2, name = 'output', activation='linear')(x)
+        outputs = weighted_sum_layer(with_bias=False, name="output")(x)
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
-    return keras_model 
-		
+    return keras_model
