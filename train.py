@@ -36,7 +36,7 @@ def main(args):
     maxNPF = 100
     n_features_pf = 6
     n_features_pf_cat = 2
-    normFac = 50.
+    normFac = 1.
     epochs = 100
     batch_size = 1024
     preprocessed = True
@@ -154,10 +154,10 @@ def main(args):
 
     predict_test = keras_model.predict(Xr_valid)
     #predict_test = convertXY2PtPhi(predict_test)
-    PUPPI_pt = 50 * np.sum(Xr_valid[0][:,:,4:6], axis=1)
-    predict_test = predict_test *50
-    Yr_valid = 50 * Yr_valid
-    Xr_valid = 50 * Xr_valid
+    PUPPI_pt = 1. * np.sum(Xr_valid[0][:,:,4:6], axis=1)
+    predict_test = predict_test *1.
+    Yr_valid = 1. * Yr_valid
+    Xr_valid = 1. * Xr_valid
 
     test_events = Xr_valid[0].shape[0]
 
