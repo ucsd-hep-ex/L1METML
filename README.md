@@ -17,8 +17,9 @@ sh conda_setup.sh
 The TTBar sample used in 'convert-uproot.py' is located in
 ```
 /afs/cern.ch/work/d/daekwon/public/L1PF_110X/CMSSW_11_1_2/src/FastPUPPI/NtupleProducer/python/TTbar_PU200_110X_1M/
-
 ```
+or at this CERNBox link: https://cernbox.cern.ch/index.php/s/JK2InUjatHFxFbf
+
 Convert into hdf5
 ```
 python convertNanoToHDF5_L1triggerToDeepMET.py -i [input .root file path] -o [output file path]
