@@ -134,7 +134,7 @@ def response_ab(predict_met, gen_met, bin_number, bin_minimum, bin_median, bin_m
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 
@@ -213,7 +213,7 @@ def response_parallel(predict_met, gen_met, bin_number, bin_minimum, bin_median,
     plt.grid(True)
     plt.savefig(''+name+'.png')
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
     feat = open(''+name+'.txt', 'w')
@@ -305,7 +305,7 @@ def response_parallel_opaque(predict_met, puppi_met, gen_met, bin_number, bin_mi
     plt.legend()
     plt.savefig(''+name+'.png')
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
     feat = open(''+name+'.txt', 'w')
@@ -347,7 +347,7 @@ def MET_rel_error_bad(predict_met, gen_met, name='Met_res.pdf'):
     plt.legend()
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 
@@ -382,7 +382,7 @@ def MET_rel_error(predict_met, gen_met, name='Met_res.pdf'):
     plt.legend()
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 
@@ -426,7 +426,7 @@ def MET_rel_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf')
     plt.legend()
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    ##plt.pause(5)
     plt.close("all")
 
 
@@ -462,7 +462,7 @@ def Phi_abs_error(predict_met, gen_met, name='Met_res.pdf'):
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 def Phi_abs_error_opaque(predict_met, gen_met, predict_met2, name='Met_res.pdf'):
@@ -477,7 +477,7 @@ def Phi_abs_error_opaque(predict_met, gen_met, predict_met2, name='Met_res.pdf')
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 
@@ -492,7 +492,7 @@ def dist(predict_met, min_, max_, bin_, name='dist.pdf'):
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 def dist_opaque(predict_met1, predict_met2, name='dist.pdf'):
@@ -508,7 +508,7 @@ def dist_opaque(predict_met1, predict_met2, name='dist.pdf'):
     plt.savefig(name)
     plt.legend()
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 def dist_xy(predict_met, name='dist.pdf'):
@@ -521,7 +521,7 @@ def dist_xy(predict_met, name='dist.pdf'):
     plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, genMET_cut, corr_check, name='predict_mean.pdf'):
@@ -554,7 +554,7 @@ def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, genMET_cu
     plt.legend()
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 
@@ -604,7 +604,7 @@ def MET_binned_predict_mean_opaque(predict_met, predict_met2, gen_met, binning, 
     plt.legend()
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 
@@ -639,7 +639,7 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
     plt.legend()
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
 
 
@@ -684,5 +684,5 @@ def histo_2D(predict_pT, gen_pT,min_, max_, name = '2D_histo.png'):
     plt.ylabel('predicted MET [GeV]')
     plt.savefig(name)
     plt.show(block=False)
-    plt.pause(5)
+    #plt.pause(5)
     plt.close("all")
