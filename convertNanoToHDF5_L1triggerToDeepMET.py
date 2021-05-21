@@ -50,19 +50,19 @@ varList_mc = [
 ]
 
 d_encoding = {
-    b'L1PuppiCands_charge':{-1.0: 0, 0.0: 1, 1.0: 2},
-	b'L1PuppiCands_pdgId':{-211.0: 0, -130.0: 1, -22.0: 2, -13.0: 3, -11.0: 4, 0.0: 5, 1.0: 6, 2.0: 7, 11.0: 8, 13.0: 9, 22.0: 10, 130.0: 11, 211.0: 12}#,
+    'L1PuppiCands_charge':{-1.0: 0, 0.0: 1, 1.0: 2},
+    'L1PuppiCands_pdgId':{-211.0: 0, -130.0: 1, -22.0: 2, -13.0: 3, -11.0: 4, 0.0: 5, 1.0: 6, 2.0: 7, 11.0: 8, 13.0: 9, 22.0: 10, 130.0: 11, 211.0: 12}#,
 }
 
 if not opt.data:
     varList = varList + varList_mc
     
 upfile = uproot.open(opt.input)
-tree = upfile['Events'].arrays( varList )
+tree = upfile['Events'].arrays( varList, entry_stop =opt.maxevents)
 # general setup
 maxNPuppi = 100
 nFeatures = 8
-maxEntries = len(tree[b'nL1PuppiCands']) if opt.maxevents==-1 else opt.maxevents
+maxEntries = len(tree['nL1PuppiCands']) 
 # input Puppi candidates
 X = np.zeros(shape=(maxEntries,maxNPuppi,nFeatures), dtype=float, order='F')
 # recoil estimators
@@ -77,15 +77,15 @@ for e in tqdm(range(maxEntries)):
     # get momenta
     ipuppi = 0
     ilep = 0
-    for j in range(tree[b'nL1PuppiCands'][e]):
+    for j in range(tree['nL1PuppiCands'][e]):
         if ipuppi == maxNPuppi:
             break
 
-        pt = tree[b'L1PuppiCands_pt'][e][j]
+        pt = tree['L1PuppiCands_pt'][e][j]
         #if pt < 0.5:
         #    continue
-        eta = tree[b'L1PuppiCands_eta'][e][j]
-        phi = tree[b'L1PuppiCands_phi'][e][j]
+        eta = tree['L1PuppiCands_eta'][e][j]
+        phi = tree['L1PuppiCands_phi'][e][j]
        
         puppi = X[e][ipuppi]
 
@@ -99,15 +99,15 @@ for e in tqdm(range(maxEntries)):
         puppi[2] = pt * np.sin(phi)
         puppi[3] = eta
         puppi[4] = phi
-        puppi[5] = tree[b'L1PuppiCands_puppiWeight'][e][j]
+        puppi[5] = tree['L1PuppiCands_puppiWeight'][e][j]
         # encoding
-        puppi[6] = d_encoding[b'L1PuppiCands_pdgId' ][float(tree[b'L1PuppiCands_pdgId' ][e][j])]
-        puppi[7] = d_encoding[b'L1PuppiCands_charge'][float(tree[b'L1PuppiCands_charge'][e][j])]
+        puppi[6] = d_encoding['L1PuppiCands_pdgId' ][float(tree['L1PuppiCands_pdgId' ][e][j])]
+        puppi[7] = d_encoding['L1PuppiCands_charge'][float(tree['L1PuppiCands_charge'][e][j])]
 
     # truth info
     if not opt.data:
-        Y[e][0] += tree[b'genMet_pt'][e] * np.cos(tree[b'genMet_phi'][e])
-        Y[e][1] += tree[b'genMet_pt'][e] * np.sin(tree[b'genMet_phi'][e])
+        Y[e][0] += tree['genMet_pt'][e] * np.cos(tree['genMet_phi'][e])
+        Y[e][1] += tree['genMet_pt'][e] * np.sin(tree['genMet_phi'][e])
 
 
 with h5py.File(opt.output, 'w') as h5f:

@@ -3,7 +3,7 @@ def custom_loss(y_true, y_pred):
     cutmoized loss function to improve the recoil response,
     by balancing the response above one and below one
     '''
-    import keras.backend as K
+    import tensorflow.keras.backend as K
     import tensorflow as tf
 
     px_truth = K.flatten(y_true[:,0])

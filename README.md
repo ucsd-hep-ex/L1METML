@@ -2,10 +2,7 @@
 
 ### Setup
 ```
-cmsrel CMSSW_10_6_1_patch2
-cd CMSSW_10_6_1_patch2/src
-cmsenv
-git clone -b DeepMET_merge git@github.com:jmduarte/L1METML.git
+git clone -b DeepMET_merge_tf2 git@github.com:jmduarte/L1METML.git
 cd L1METML
 ```
 

@@ -1,0 +1,18 @@
+name: l1metml
+channels:
+  - defaults
+  - conda-forge
+  - anaconda
+dependencies:
+  - python=3.6
+  - pytables
+  - uproot
+  - tensorflow
+  - pandas
+  - h5py
+  - tqdm
+  - scikit-learn
+  - pip
+  - pip:
+    - setGPU
+    - mplhep
