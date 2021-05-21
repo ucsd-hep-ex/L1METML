@@ -2,36 +2,33 @@
 
 ### Setup
 ```
-cmsrel CMSSW_10_6_1_patch2
-cd CMSSW_10_6_1_patch2/src
-cmsenv
-git clone https://github.com/jmduarte/L1METML
+git clone -b DeepMET_merge_tf2 git@github.com:jmduarte/L1METML.git
 cd L1METML
 ```
-Create an anaconda environment with Python 3.5-3.7   
-In order to run 'convert-uproot.py', you need to install [uproot](https://github.com/scikit-hep/uproot "uproot link").
+
+#Caution : You need ROOT version over 6.22 to use pyROOT on python 3.
+
+Create an anaconda environment with Python 3.6 and install packages needed to run train.py.
 ```
-conda config --add channels conda-forge
-conda install uproot
+sh conda_setup.sh
 ```
-And you need to install following packages.
-These can be installed by "conda install [package name]"
-* [numpy](https://scipy.org/install.html)
-* [matplotlib](https://matplotlib.org/)
-* [awkward-array](https://github.com/scikit-hep/awkward-array)
-* [uproot-methods](https://github.com/scikit-hep/uproot-methods)
-* [cachetools](https://pypi.org/project/cachetools/)
-* [pandas](https://pandas.pydata.org/)
-* [tables](https://pypi.org/project/tables/)
-* [tensorflow](https://www.tensorflow.org/install)
-* [keras](https://keras.io/#installation)
 
 ### Convert
+The TTBar sample used in 'convert-uproot.py' is located in
 ```
-python convert-uproot.py
+/afs/cern.ch/work/d/daekwon/public/L1PF_110X/CMSSW_11_1_2/src/FastPUPPI/NtupleProducer/python/TTbar_PU200_110X_1M/
+
+```
+Convert into hdf5
+```
+python convertNanoToHDF5_L1triggerToDeepMET.py -i [input .root file path] -o [output file path]
 ```
 
 ### Train
 ```
-python train.py
+python train.py --input [.txt file with input files list] --output [output path (plot and weight will be stored)] --mode [0 or 1 (0 for L1MET model, 1 for DeepMET model)]
+```
+For example,
+```
+python train.py --input ./preprocessed/input.txt --output ./result/ --mode 0
 ```

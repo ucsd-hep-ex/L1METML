@@ -1,192 +1,186 @@
-import tensorflow as tf
-from tensorflow.python.ops import math_ops
-from tensorflow.python import ops
-import keras
+# Import libraries
+import tensorflow
+import tensorflow.keras.backend as K
+from tensorflow.keras import optimizers, initializers
+from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
+from tensorflow.keras.utils import plot_model
+from tensorflow.keras.models import Model
+from sklearn.model_selection import train_test_split
+
 import numpy as np
 import tables
-from keras.callbacks import ModelCheckpoint, EarlyStopping
-from sklearn.metrics import roc_curve, auc
-from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import argparse
-from models import dense
 import math
-import keras.backend as K
+#import setGPU
+import time
+import os
+import pathlib
+import datetime
 
-def huber_loss(y_true, y_pred, delta=1.0):
-    error = y_pred - y_true
-    abs_error = K.abs(error)
-    quadratic = K.minimum(abs_error, delta)
-    linear = abs_error - quadratic
-    return 0.5 * K.square(quadratic) + delta * linear
+#Import custom modules
 
-def mean_absolute_relative_error(y_true, y_pred):
-    if not K.is_tensor(y_pred):
-        y_pred = K.constant(y_pred)
-    y_true = K.cast(y_true, y_pred.dtype)
-    diff = K.abs((y_true - y_pred) / K.clip(K.abs(y_true),
-                                            K.epsilon(),
-                                            None))
-    return K.mean(diff, axis=-1)
-
-def mean_squared_relative_error(y_true, y_pred):
-    if not K.is_tensor(y_pred):
-        y_pred = K.constant(y_pred)
-    y_true = K.cast(y_true, y_pred.dtype)
-    diff = K.square((y_true - y_pred) / K.clip(K.square(y_true),
-                                            K.epsilon(),
-                                            None))
-    return K.mean(diff, axis=-1)
-
-def get_features_targets(file_name, features, targets):
-    # load file
-    h5file = tables.open_file(file_name, 'r')
-    nevents = getattr(h5file.root,features[0]).shape[0]
-    ntargets = len(targets)
-    nfeatures = len(features)
-
-    # allocate arrays
-    feature_array = np.zeros((nevents,nfeatures))
-    target_array = np.zeros((nevents,ntargets))
-
-    # load feature arrays
-    for (i, feat) in enumerate(features):
-        feature_array[:,i] = getattr(h5file.root,feat)[:]
-    # load target arrays
-    for (i, targ) in enumerate(targets):
-        target_array[:,i] = getattr(h5file.root,targ)[:]
-
-    h5file.close()
-    return feature_array,target_array
+from Write_MET_binned_histogram import *
+from cyclical_learning_rate import CyclicLR
+from models import *
+from utils import *
+from loss import custom_loss
 
 def main(args):
-    file_path = 'input_MET.h5'
-    features = ['L1CHSMet_pt', 'L1CHSMet_phi',
-                'L1CaloMet_pt', 'L1CaloMet_phi',
-                'L1PFMet_pt', 'L1PFMet_phi',
-                'L1PuppiMet_pt', 'L1PuppiMet_phi',
-                'L1TKMet_pt', 'L1TKMet_phi',
-                'L1TKV5Met_pt', 'L1TKV5Met_phi',
-                'L1TKV6Met_pt', 'L1TKV6Met_phi']
 
-    targets = ['genMet_pt', 'genMet_phi']
+    # general setup
 
-    feature_array, target_array = get_features_targets(file_path, features, targets)
-    nevents_1 = feature_array.shape[0]
-    nfeatures = feature_array.shape[1]
-    ntargets = target_array.shape[1]
+    maxNPF = 100
+    n_features_pf = 6
+    n_features_pf_cat = 2
+    normFac = 50.
+    epochs = 100
+    batch_size = 1024
+    preprocessed = True
+    t_mode = args.mode
+    path_out = args.output
 
-	# Exclude met, phi = 0 events
-    event_zero = 0
-    skip = 0
-    for i in range(nevents_1):
-        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):
-            event_zero = event_zero + 1
-    feature_array_without0 = np.zeros((nevents_1 - event_zero, 14))
-    target_array_without0 = np.zeros((nevents_1 - event_zero, 2))
-    for i in range(nevents_1):
-        if (feature_array[i,10] == 0 and feature_array[i,11] == 0) or (feature_array[i,12] ==0 and feature_array[i,13] ==0):
-            skip = skip + 1
-            continue
-        feature_array_without0[i - skip,:] = feature_array[i,:]
-        target_array_without0[i - skip,:] = target_array[i,:]
-    print(feature_array_without0)
-    print(target_array_without0)
-    nevents = feature_array_without0.shape[0]
+    # Make directory for output
+    try:
+        if not os.path.exists(path_out):
+            os.makedirs(path_out)
+    except OSError:
+        print ('Creating directory' + path_out)
 
+    # Read inputs
 
-    # fit keras model
-    X = feature_array_without0
-    y = target_array_without0
+    Xorg, Y = read_input(args.input)
+    Y = Y / -normFac
 
-    fulllen = nevents
-    tv_frac = 0.10
-    tv_num = math.ceil(fulllen*tv_frac)
-    splits = np.cumsum([fulllen-2*tv_num,tv_num,tv_num])
-    splits = [int(s) for s in splits]
-
-    X_train = X[0:splits[0]]
-    X_val = X[splits[1]:splits[2]]
-    X_test = X[splits[0]:splits[1]]
-
-    y_train = y[0:splits[0]]
-    y_val = y[splits[1]:splits[2]]
-    y_test = y[splits[0]:splits[1]]
+    Xi, Xc1, Xc2 = preProcessing(Xorg)
+    Xc = [Xc1, Xc2]
+    
+    emb_input_dim = {
+        i:int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
+    }
+    print(emb_input_dim)
 
 
-    # Set parameters for weight function
-    number_of_interval = 100
-    mean = y_val.shape[0]/number_of_interval
+    # Prepare training/val data
+    Yr = Y
+    Xr = [Xi] + Xc
+
+    # remove events True pT < 50 GeV
+    #Yr_pt = convertXY2PtPhi(Yr)
+    #mask1 = (Yr_pt[:,0] > 1)
+    #Yr = Yr[mask1]
+    #Xr = [x[mask1] for x in Xr]
+
+    indices = np.array([i for i in range(len(Yr))])
+    print(indices)
+    indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
+    indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
+
+    Xr_train = [x[indices_train] for x in Xr]
+    Xr_test = [x[indices_test] for x in Xr]
+    Xr_valid = [x[indices_valid] for x in Xr]
+    Yr_train = Yr[indices_train]
+    Yr_test = Yr[indices_test]
+    Yr_valid = Yr[indices_valid]
+
+    # Load training model
+
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode)
 
 
-    # Devide interval
-    MET_interval = np.zeros(number_of_interval)
-    for i in range(y_val.shape[0]):
-        for j in range(number_of_interval):
-            if (5 * j <= y_val[i,0] < 5 * (j+1)):
-               MET_interval[j] = MET_interval[j]+1
-               
-    def weight_array_function_MET(y_true):
-        k = 0
-        for i in range(number_of_interval):
-            if 5 * i <= y_true < 5 * (j+1):
-                break
-            k = MET_interval[j]
-        if k == 0:
-            k = 1
-        return mean/k
+    # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
 
-    weight_array_MET= np.zeros(y_test.shape[0])
-    for i in range(y_test.shape[0]):
-        weight_array_MET[i] = weight_array_function_MET(y_val[i,0])
+    if t_mode == 0:
+        keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
+        #keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], metrics=['mean_absolute_error', 'mean_squared_error'])
+        verbose = 1
 
-    def weight_loss_MET(y_true, y_pred):
-        return K.mean(math_ops.square((y_pred - y_true)*weight_array_MET), axis=-1)
+    if t_mode == 1:
+        optimizer = optimizers.Adam(lr=1., clipnorm=1.)
+        keras_model.compile(loss=custom_loss, optimizer=optimizer, 
+                       metrics=['mean_absolute_error', 'mean_squared_error'])
+        verbose = 1
+        
 
-    def mean_squared_phi_error(y_true, y_pred):
-        error = tf.atan2(tf.sin(y_pred - y_true), tf.cos(y_pred - y_true)) - math.pi
-        return K.mean(math_ops.square(error), axis=-1)
+    # Set model config
 
-    keras_model = dense(nfeatures, ntargets)
+      # early stopping callback
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
 
-    keras_model.compile(optimizer='adam', loss=[weight_loss_MET, mean_squared_phi_error], 
-                        loss_weights = [10., 1.], metrics=['mean_absolute_error'])
+    csv_logger = CSVLogger(f"{path_out}loss_history.log")
+
+      # model checkpoint callback
+      # this saves our model architecture + parameters into model.h5
+
+    model_checkpoint = ModelCheckpoint(f'{path_out}/model.h5', monitor='val_loss',
+                                       verbose=0, save_best_only=True,
+                                       save_weights_only=False, mode='auto',
+                                       period=1)
+
+    reduce_lr = ReduceLROnPlateau(
+        monitor='val_loss', factor=0.5, patience=4, min_lr=0.000001, cooldown=3, verbose=1)
+
+    lr_scale = 1.
+    clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(Y)/batch_size, mode='triangular2')
+
+    stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
+
+    epochs=100
+
+    
+    print(Xr_train[0].shape[-1])
+    print(Xr_train[1].shape[-1])
+    print(Xr_train[2].shape[-1])
+    # Run training
+    
+    
     print(keras_model.summary())
-
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10)
-    model_checkpoint = ModelCheckpoint('keras_model_best.h5', monitor='val_loss', save_best_only=True)
-    callbacks = [early_stopping, model_checkpoint]
-    def mean_squared_phi_error(y_true, y_pred):
-        error = tf.atan2(tf.sin(y_pred - y_true), tf.cos(y_pred - y_true)) - math.pi
-        return K.mean(math_ops.square(error), axis=-1)
-    keras_model.fit(X_train, [y_train[:,:1], y_train[:,1:]], batch_size=1024, 
-                    epochs=100, validation_data=(X_val, [y_val[:,:1], y_val[:,1:]]), shuffle=True,
-                    callbacks = callbacks)
-
-    keras_model.load_weights('keras_model_best.h5')
+    #plot_model(keras_model, to_file=f'{path_out}/model_plot.png', show_shapes=True, show_layer_names=True)
     
-    predict_test = keras_model.predict(X_test)
-    predict_test = np.concatenate(predict_test,axis=1)
-    print(y_test)
-    print(predict_test)
-
-    def print_res(gen_met, predict_met, name='Met_res.pdf'):
-		rel_err = (predict_met - gen_met)/np.clip(gen_met, 1e-6, None)
-		plt.figure()          
-		plt.hist(rel_err, bins=np.linspace(-1., 1., 50+1))
-		plt.xlabel("Rel. err.")
-		plt.ylabel("Events")
-		plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
-		plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
-		plt.savefig(name)
-	
-    print_res(y_test[:,0], predict_test[:,0], name = 'MET_pt_res.pdf')
-    print_res(y_test[:,1], predict_test[:,1], name = 'MET_phi_res.pdf')
+    history = keras_model.fit(Xr_train, 
+                        Yr_train,
+                        epochs=epochs,
+                        batch_size = batch_size,
+                        verbose=verbose,  # switch to 1 for more verbosity
+                        validation_data=(Xr_test, Yr_test),
+                        callbacks=[early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint],#, reduce_lr], #, lr,   reduce_lr],
+                       )
     
+    
+
+    #keras_model.load_weights(f'{path_out}/model.h5')
+
+    predict_test = keras_model.predict(Xr_valid)
+    #predict_test = convertXY2PtPhi(predict_test)
+    PUPPI_pt = 50 * np.sum(Xr_valid[0][:,:,4:6], axis=1)
+    predict_test = predict_test *50
+    Yr_valid = 50 * Yr_valid
+    Xr_valid = 50 * Xr_valid
+
+    test_events = Xr_valid[0].shape[0]
+
+    MakePlots(Yr_valid, predict_test, PUPPI_pt, path_out = path_out)
+    
+    Yr_valid = convertXY2PtPhi(Yr_valid)
+    predict_test = convertXY2PtPhi(predict_test)
+    PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
+
+    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], name=''+path_out+'rel_error_opaque.png')
+    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
+    extract_result(predict_test, Yr_valid, path_out, 0, 500)
+
+
+# Configuration
 
 if __name__ == "__main__":
 
+    time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+    path = "./result/"+time_path+"_PUPPICandidates/"
+
     parser = argparse.ArgumentParser()
+    parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
+    parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
+    parser.add_argument('--mode', action='store', type=int, required=True, help='0 for L1MET, 1 for DeepMET')
         
     args = parser.parse_args()
     main(args)
