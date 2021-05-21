@@ -1,5 +1,5 @@
 import tensorflow as tf
-from keras.engine.topology import Layer
+from tensorflow.keras.layers import Layer
 
 class weighted_sum_layer(Layer):
     '''Either does weight times inputs
