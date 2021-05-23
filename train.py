@@ -24,7 +24,7 @@ from Write_MET_binned_histogram import *
 from cyclical_learning_rate import CyclicLR
 from models import *
 from utils import *
-from loss_v1 import custom_loss
+from loss import custom_loss
 
 def main(args):
 
