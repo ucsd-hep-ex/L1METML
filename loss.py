@@ -24,11 +24,11 @@ def custom_loss(y_true, y_pred):
     pt_truth_filtered = tf.boolean_mask(pt_truth, pt_cut)
 
     #filter_bin0 = pt_truth_filtered < 50.
-    filter_bin0 = tf.logical_and(pt_truth_filtered > 50./50.,  pt_truth_filtered < 100./50.)
-    filter_bin1 = tf.logical_and(pt_truth_filtered > 100./50., pt_truth_filtered < 200./50.)
-    filter_bin2 = tf.logical_and(pt_truth_filtered > 200./50., pt_truth_filtered < 300./50.)
-    filter_bin3 = tf.logical_and(pt_truth_filtered > 300./50., pt_truth_filtered < 400./50.)
-    filter_bin4 = pt_truth_filtered > 400./50.
+    filter_bin0 = tf.logical_and(pt_truth_filtered > 50.,  pt_truth_filtered < 100.)
+    filter_bin1 = tf.logical_and(pt_truth_filtered > 100., pt_truth_filtered < 200.)
+    filter_bin2 = tf.logical_and(pt_truth_filtered > 200., pt_truth_filtered < 300.)
+    filter_bin3 = tf.logical_and(pt_truth_filtered > 300., pt_truth_filtered < 400.)
+    filter_bin4 = pt_truth_filtered > 400.
 
     upar_pred_pos_bin0 = tf.boolean_mask(upar_pred, tf.logical_and(filter_bin0, upar_pred > 0.))
     upar_pred_neg_bin0 = tf.boolean_mask(upar_pred, tf.logical_and(filter_bin0, upar_pred < 0.))

@@ -24,7 +24,7 @@ from Write_MET_binned_histogram import *
 from cyclical_learning_rate import CyclicLR
 from models import *
 from utils import *
-from loss import custom_loss
+from loss_v1 import custom_loss
 
 def main(args):
 
@@ -33,7 +33,7 @@ def main(args):
     maxNPF = 100
     n_features_pf = 6
     n_features_pf_cat = 2
-    normFac = 50.
+    normFac = 1.
     epochs = 100
     batch_size = 1024
     preprocessed = True
@@ -52,7 +52,7 @@ def main(args):
     Xorg, Y = read_input(args.input)
     Y = Y / -normFac
 
-    Xi, Xc1, Xc2 = preProcessing(Xorg)
+    Xi, Xc1, Xc2 = preProcessing(Xorg, normFac)
     Xc = [Xc1, Xc2]
     
     emb_input_dim = {
@@ -148,16 +148,16 @@ def main(args):
     
     
 
-    #keras_model.load_weights(f'{path_out}/model.h5')
+    keras_model.load_weights(f'{path_out}/model.h5')
 
     predict_test = keras_model.predict(Xr_valid)
     #predict_test = convertXY2PtPhi(predict_test)
-    PUPPI_pt = 50 * np.sum(Xr_valid[0][:,:,4:6], axis=1)
-    predict_test = predict_test *50
-    Yr_valid = 50 * Yr_valid
-    Xr_valid = 50 * Xr_valid
+    PUPPI_pt = normFac * np.sum(Xr_valid[0][:,:,4:6], axis=1)
+    predict_test = predict_test *normFac
+    Yr_valid = normFac * Yr_valid
+    #Xr_valid = normFac * Xr_valid
 
-    test_events = Xr_valid[0].shape[0]
+    #test_events = Xr_valid[0].shape[0]
 
     MakePlots(Yr_valid, predict_test, PUPPI_pt, path_out = path_out)
     
