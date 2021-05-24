@@ -36,8 +36,12 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation
     if t_mode == 1:
         x = Dense(3 if with_bias else 1, activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         x = Concatenate()([x, pxpy])
-        x = weighted_sum_layer(with_bias=False, name="weighted_sum")(x)
-        outputs = Dense(2, name = 'output', activation='linear')(x)
+        x = weighted_sum_layer(with_bias, name="weighted_sum" if with_bias else "output")(x)
+
+        if with_bias:
+            x = Dense(2, name = 'output', activation='linear')(x)
+
+        outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
