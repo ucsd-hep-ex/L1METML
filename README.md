@@ -2,7 +2,7 @@
 
 ### Setup
 ```
-git clone -b DeepMET_merge_tf2 git@github.com:jmduarte/L1METML.git
+git clone git@github.com:jmduarte/L1METML.git
 cd L1METML
 ```
 
