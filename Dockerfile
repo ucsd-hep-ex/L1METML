@@ -1,8 +1,11 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-FROM gitlab-registry.nautilus.optiputer.net/prp/jupyter-stack/tensorflow:latest
+FROM jupyter/tensorflow-notebook:latest
 
 LABEL maintainer="Javier Duarte <jduarte@ucsd.edu>"
+
+
+USER ${NB_UID}
 
 # Install Tensorflow
 RUN pip install --quiet --no-cache-dir \
@@ -12,6 +15,4 @@ RUN pip install --quiet --no-cache-dir \
     tqdm \
     scikit-learn \
     setGPU \
-    mplhep \
-    fix-permissions "${CONDA_DIR}" && \
-    fix-permissions "/home/${NB_USER}"
+    mplhep
