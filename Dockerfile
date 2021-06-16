@@ -9,7 +9,7 @@ USER ${NB_UID}
 
 # Install Tensorflow
 RUN pip install --quiet --no-cache-dir \
-    pytables \
+    tables \
     pandas \
     h5py \
     tqdm \
