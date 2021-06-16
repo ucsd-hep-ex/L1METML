@@ -4,6 +4,9 @@ FROM jupyter/tensorflow-notebook:latest
 
 LABEL maintainer="Javier Duarte <jduarte@ucsd.edu>"
 
+USER root
+
+RUN apt-get update && apt-get -y install openssh-client
 
 USER ${NB_UID}
 
