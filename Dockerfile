@@ -1,7 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-ARG BASE_CONTAINER=prp/jupyter-stack/tensorflow
-gitlab-registry.nautilus.optiputer.net/prp/jupyter-stack/tensorflow:latest
+ARG BASE_CONTAINER=gitlab-registry.nautilus.optiputer.net/prp/jupyter-stack/tensorflow:latest
 FROM $BASE_CONTAINER
 
 LABEL maintainer="Javier Duarte <jduarte@ucsd.edu>"
