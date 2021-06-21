@@ -25,8 +25,10 @@ from cyclical_learning_rate import CyclicLR
 from models import *
 from utils import *
 from loss import custom_loss
+#from epoch_all import epoch_all
 
 def main(args):
+
 
     # general setup
 
@@ -66,10 +68,15 @@ def main(args):
     Xr = [Xi] + Xc
 
     # remove events True pT < 50 GeV
-    #Yr_pt = convertXY2PtPhi(Yr)
-    #mask1 = (Yr_pt[:,0] > 1)
+    Yr_pt = convertXY2PtPhi(Yr)
+    #mask1 = (Yr_pt[:,0] > 50.)
     #Yr = Yr[mask1]
     #Xr = [x[mask1] for x in Xr]
+
+    # check the number of events higher than 300 GeV
+    mask2 = (Yr_pt[:,0] > 300)
+    Yr_pt = Yr_pt[mask2]
+    print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
 
     indices = np.array([i for i in range(len(Yr))])
     print(indices)
@@ -85,7 +92,7 @@ def main(args):
 
     # Load training model
 
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
@@ -97,7 +104,8 @@ def main(args):
 
     if t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=custom_loss, optimizer=optimizer, 
+        #keras_model.compile(loss=custom_loss, optimizer=optimizer, 
+        keras_model.compile(loss=['mean_absolute_error', 'mean_squared_error'], optimizer=optimizer, 
                        metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
@@ -136,7 +144,9 @@ def main(args):
     
     print(keras_model.summary())
     #plot_model(keras_model, to_file=f'{path_out}/model_plot.png', show_shapes=True, show_layer_names=True)
-    
+
+    start_time = time.time() # check start time
+    '''
     history = keras_model.fit(Xr_train, 
                         Yr_train,
                         epochs=epochs,
@@ -145,7 +155,8 @@ def main(args):
                         validation_data=(Xr_test, Yr_test),
                         callbacks=[early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint],#, reduce_lr], #, lr,   reduce_lr],
                        )
-    
+    '''
+    end_time = time.time() # check end time
     
 
     keras_model.load_weights(f'{path_out}/model.h5')
@@ -167,7 +178,13 @@ def main(args):
 
     MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], name=''+path_out+'rel_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
-    extract_result(predict_test, Yr_valid, path_out, 0, 500)
+    extract_result(predict_test, Yr_valid, path_out)
+    fi = open("{}time.txt".format(path_out), 'w')
+
+    fi.write("Working Time (s) : {}".format(end_time - start_time))
+    fi.write("Working Time (m) : {}".format((end_time - start_time)/60.))
+
+    fi.close()
 
 
 # Configuration
