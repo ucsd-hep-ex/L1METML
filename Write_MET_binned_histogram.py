@@ -417,8 +417,8 @@ def MET_rel_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf')
     std = float(std) / 1000
 
     #plt.figure()
-    plt.hist(rel_err, bins=np.linspace(-3., 3., 50+1), label='Predicted MET', alpha=0.5)
-    plt.hist(rel_err2, bins=np.linspace(-3., 3., 50+1), label='PUPPI MET', alpha=0.5)
+    plt.hist(rel_err, bins=np.linspace(-3., 3., 50+1), label='Predicted MET', alpha=0.5, color='red')
+    plt.hist(rel_err2, bins=np.linspace(-3., 3., 50+1), label='PUPPI MET', alpha=0.5, color='green')
     plt.xlabel("relative error (predict - true)/true", fontsize=16)
     plt.ylabel("Events", fontsize=16)
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
@@ -585,11 +585,12 @@ def MET_binned_predict_mean_opaque(predict_met, predict_met2, gen_met, binning, 
         y_error2[j] = np.std(predict_met2[mask2])
 
 
-    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, 
-                 label='Predicted MET')
-
     plt.errorbar(X_genMET2, y_predict2, xerr = X_error2, yerr = y_error2, 
-                 label='PUPPI MET')
+                 label='PUPPI MET', color='green', uplims=y_error2, lolims=y_error2)
+     
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, 
+                 label='Predicted MET', color='red', uplims=y_error, lolims=y_error)
+
 
     ## x = y plot
     X = np.arange(mini, maxi, binning)
@@ -646,28 +647,16 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
 def extract_result(feat_array, targ_array, path, genMET_cut, max_genMET_cut):
     feat = open(''+path+'feature_array_MET_'+str(genMET_cut)+'-'+str(max_genMET_cut)+'.txt', 'w')
     for i in range(feat_array.shape[0]):
-        data = '%f' %feat_array[i,0]
+        data = '%f, %f' %(feat_array[i,0],feat_array[i,1])
         feat.write(data)
         feat.write('\n')
-    feat_phi = open(''+path+'feature_array_phi_'+str(genMET_cut)+'-'+str(max_genMET_cut)+'.txt', 'w')
-    for i in range(feat_array.shape[0]):
-        data = '%f' %feat_array[i,1]
-        feat_phi.write(data)
-        feat_phi.write('\n')
     targ = open(''+path+'target_array_MET_'+str(genMET_cut)+'-'+str(max_genMET_cut)+'.txt', 'w')
     for i in range(feat_array.shape[0]):
-        data = '%f' %targ_array[i,0]
+        data = '%f, %f' %(targ_array[i,0], targ_array[i,1])
         targ.write(data)
         targ.write('\n')
-    targ_phi = open(''+path+'target_array_phi_'+str(genMET_cut)+'-'+str(max_genMET_cut)+'.txt', 'w')
-    for i in range(feat_array.shape[0]):
-        data = '%f' %targ_array[i,1]
-        targ_phi.write(data)
-        targ_phi.write('\n')
     feat.close()
     targ.close()
-    feat_phi.close()
-    targ_phi.close()
 
 
 def histo_2D(predict_pT, gen_pT,min_, max_, name = '2D_histo.png'):
