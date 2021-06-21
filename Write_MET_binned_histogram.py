@@ -644,9 +644,9 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
     plt.close("all")
 
 
-def extract_result(feat_array, targ_array, path):
-    np.save(''+path+'feature_array_MET.txt', feat_array)
-    np.save(''+path+'target_array_MET.txt', targ_array)
+def extract_result(feat_array, targ_array, path, name, mode):
+    np.save(''+path+''+name+'_feature_array_MET', feat_array)
+    np.save(''+path+''+name+'_target_array_MET', targ_array)
 
 
 def histo_2D(predict_pT, gen_pT,min_, max_, name = '2D_histo.png'):

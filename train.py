@@ -175,10 +175,12 @@ def main(args):
     Yr_valid = convertXY2PtPhi(Yr_valid)
     predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
+    Xr_valid = convertXY2PtPhi(Xr_valid)
 
     MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], name=''+path_out+'rel_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
-    extract_result(predict_test, Yr_valid, path_out)
+    extract_result(predict_test, Yr_valid, path_out, 'TTbar', 'ML')
+    extract_result(Xr_valid, Yr_valid, path_out, 'TTbar', 'PU')
     fi = open("{}time.txt".format(path_out), 'w')
 
     fi.write("Working Time (s) : {}".format(end_time - start_time))
