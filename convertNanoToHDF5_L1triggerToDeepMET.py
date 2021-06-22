@@ -68,42 +68,28 @@ X = np.zeros(shape=(maxEntries,maxNPuppi,nFeatures), dtype=float, order='F')
 # recoil estimators
 Y = np.zeros(shape=(maxEntries,2), dtype=float, order='F')
 
-print(X.shape)
-
 # loop over events
 #for e in progressbar.progressbar(range(maxEntries), widgets=widgets):
 for e in tqdm(range(maxEntries)):
 
     # get momenta
-    ipuppi = 0
-    ilep = 0
-    for j in range(tree['nL1PuppiCands'][e]):
-        if ipuppi == maxNPuppi:
-            break
+    npuppi = min(tree['nL1PuppiCands'][e],maxNPuppi)
+    pt = tree['L1PuppiCands_pt'][e][:npuppi]
+    eta = tree['L1PuppiCands_eta'][e][:npuppi]
+    phi = tree['L1PuppiCands_phi'][e][:npuppi]
+    pdgid = tree['L1PuppiCands_pdgId'][e][:npuppi].to_numpy()
+    charge = tree['L1PuppiCands_charge'][e][:npuppi].to_numpy()
 
-        pt = tree['L1PuppiCands_pt'][e][j]
-        #if pt < 0.5:
-        #    continue
-        eta = tree['L1PuppiCands_eta'][e][j]
-        phi = tree['L1PuppiCands_phi'][e][j]
-       
-        puppi = X[e][ipuppi]
-
-        isLep = False
-        if not isLep:
-            ipuppi += 1
-                 
-        # 4-momentum
-        puppi[0] = pt
-        puppi[1] = pt * np.cos(phi)
-        puppi[2] = pt * np.sin(phi)
-        puppi[3] = eta
-        puppi[4] = phi
-        puppi[5] = tree['L1PuppiCands_puppiWeight'][e][j]
-        # encoding
-        puppi[6] = d_encoding['L1PuppiCands_pdgId' ][float(tree['L1PuppiCands_pdgId' ][e][j])]
-        puppi[7] = d_encoding['L1PuppiCands_charge'][float(tree['L1PuppiCands_charge'][e][j])]
-
+    X[e,:npuppi,0] = pt
+    X[e,:npuppi,1] = pt * np.cos(phi)
+    X[e,:npuppi,2] = pt * np.sin(phi)
+    X[e,:npuppi,3] = eta
+    X[e,:npuppi,4] = phi
+    X[e,:npuppi,5] = tree['L1PuppiCands_puppiWeight'][e][:npuppi]
+    # encoding
+    X[e,:npuppi,6] = np.vectorize(d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
+    X[e,:npuppi,7] = np.vectorize(d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
+    
     # truth info
     if not opt.data:
         Y[e][0] += tree['genMet_pt'][e] * np.cos(tree['genMet_phi'][e])
