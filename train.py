@@ -162,7 +162,6 @@ def main(args):
     keras_model.load_weights(f'{path_out}/model.h5')
 
     predict_test = keras_model.predict(Xr_valid)
-    #predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = normFac * np.sum(Xr_valid[0][:,:,4:6], axis=1)
     predict_test = predict_test *normFac
     Yr_valid = normFac * Yr_valid
@@ -175,12 +174,11 @@ def main(args):
     Yr_valid = convertXY2PtPhi(Yr_valid)
     predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
-    Xr_valid = convertXY2PtPhi(Xr_valid)
 
     MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], name=''+path_out+'rel_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
     extract_result(predict_test, Yr_valid, path_out, 'TTbar', 'ML')
-    extract_result(Xr_valid, Yr_valid, path_out, 'TTbar', 'PU')
+    extract_result(PUPPI_pt, Yr_valid, path_out, 'TTbar', 'PU')
     fi = open("{}time.txt".format(path_out), 'w')
 
     fi.write("Working Time (s) : {}".format(end_time - start_time))
