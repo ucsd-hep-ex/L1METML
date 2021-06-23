@@ -1,3 +1,5 @@
+from sklearn.metrics import auc
+
 import h5py
 import os
 import numpy as np
@@ -71,6 +73,7 @@ def main(args):
 
         ML_TPR[i] = TP_dict[1.0] / (TP_dict[1.0] + FN_dict[1.0])
         ML_FPR[i] = TP_dict[0.0] / (TP_dict[0.0] + FN_dict[0.0])
+        ML_AUC = auc(ML_FPR, ML_TPR)
 
 
         mask_PU = array_PU[:,0] > 2*i
@@ -92,10 +95,21 @@ def main(args):
 
         PU_TPR[i] = TP_dict[1.0] / (TP_dict[1.0] + FN_dict[1.0])
         PU_FPR[i] = TP_dict[0.0] / (TP_dict[0.0] + FN_dict[0.0])
+        PU_AUC = auc(PU_FPR, PU_TPR)
+
+    print("ML AUC : {}".format(ML_AUC))
+    print("PU AUC : {}".format(PU_AUC))
         
-    plt.plot(ML_FPR, ML_TPR)
-    plt.plot(PU_FPR, PU_TPR, '-r')
+    plt.plot(ML_FPR, ML_TPR, label='ML ROC, AUC = {}'.format(round(ML_AUC,3)))
+    plt.plot(PU_FPR, PU_TPR, '-r', label='PUPPI ROC, AUC = {}'.format(round(PU_AUC,3)))
+    plt.grid(True, axis='x', color='gray', alpha=0.5, linestyle='--')
+    plt.xlabel('FPR')
+    plt.grid(True, axis='y', color='gray', alpha=0.5, linestyle='--')
+    plt.ylabel('TPR')
+    plt.title('ROC')
+    plt.legend()
     plt.show()
+    plt.savefig('{}ROC_curve.png')
 
     
 
