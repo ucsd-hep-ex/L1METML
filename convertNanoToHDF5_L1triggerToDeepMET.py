@@ -3,6 +3,7 @@
 import sys
 import uproot
 import numpy as np
+import awkward as ak
 import h5py
 #import progressbar
 from tqdm import tqdm
@@ -50,8 +51,24 @@ varList_mc = [
 ]
 
 d_encoding = {
-    'L1PuppiCands_charge':{-1.0: 0, 0.0: 1, 1.0: 2},
-    'L1PuppiCands_pdgId':{-211.0: 0, -130.0: 1, -22.0: 2, -13.0: 3, -11.0: 4, 0.0: 5, 1.0: 6, 2.0: 7, 11.0: 8, 13.0: 9, 22.0: 10, 130.0: 11, 211.0: 12}#,
+    'L1PuppiCands_charge':{-999.0: 0,
+                           -1.0: 0, 
+                           0.0: 1, 
+                           1.0: 2},
+    'L1PuppiCands_pdgId':{-999.0: 0,
+                          -211.0: 0, 
+                          -130.0: 1, 
+                          -22.0: 2, 
+                          -13.0: 3, 
+                          -11.0: 4,
+                          0.0: 5, 
+                          1.0: 6, 
+                          2.0: 7, 
+                          11.0: 8, 
+                          13.0: 9, 
+                          22.0: 10, 
+                          130.0: 11, 
+                          211.0: 12}#,
 }
 
 if not opt.data:
@@ -68,33 +85,31 @@ X = np.zeros(shape=(maxEntries,maxNPuppi,nFeatures), dtype=float, order='F')
 # recoil estimators
 Y = np.zeros(shape=(maxEntries,2), dtype=float, order='F')
 
-# loop over events
-#for e in progressbar.progressbar(range(maxEntries), widgets=widgets):
-for e in tqdm(range(maxEntries)):
-
-    # get momenta
-    npuppi = min(tree['nL1PuppiCands'][e],maxNPuppi)
-    pt = tree['L1PuppiCands_pt'][e][:npuppi]
-    eta = tree['L1PuppiCands_eta'][e][:npuppi]
-    phi = tree['L1PuppiCands_phi'][e][:npuppi]
-    pdgid = tree['L1PuppiCands_pdgId'][e][:npuppi].to_numpy()
-    charge = tree['L1PuppiCands_charge'][e][:npuppi].to_numpy()
-
-    X[e,:npuppi,0] = pt
-    X[e,:npuppi,1] = pt * np.cos(phi)
-    X[e,:npuppi,2] = pt * np.sin(phi)
-    X[e,:npuppi,3] = eta
-    X[e,:npuppi,4] = phi
-    X[e,:npuppi,5] = tree['L1PuppiCands_puppiWeight'][e][:npuppi]
-    # encoding
-    X[e,:npuppi,6] = np.vectorize(d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
-    X[e,:npuppi,7] = np.vectorize(d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
+def to_np_array(ak_array, maxN=100, pad=0):
+    return ak.fill_none(ak.pad_none(ak_array,maxN,clip=True,axis=-1),pad).to_numpy()
     
-    # truth info
-    if not opt.data:
-        Y[e][0] += tree['genMet_pt'][e] * np.cos(tree['genMet_phi'][e])
-        Y[e][1] += tree['genMet_pt'][e] * np.sin(tree['genMet_phi'][e])
+pt = to_np_array(tree['L1PuppiCands_pt'],maxN=maxNPuppi)
+eta = to_np_array(tree['L1PuppiCands_eta'],maxN=maxNPuppi)
+phi = to_np_array(tree['L1PuppiCands_phi'],maxN=maxNPuppi)
+pdgid = to_np_array(tree['L1PuppiCands_pdgId'],maxN=maxNPuppi,pad=-999)
+charge = to_np_array(tree['L1PuppiCands_charge'],maxN=maxNPuppi,pad=-999)
+puppiw = to_np_array(tree['L1PuppiCands_puppiWeight'],maxN=maxNPuppi)
 
+X[:,:,0] = pt
+X[:,:,1] = pt * np.cos(phi)
+X[:,:,2] = pt * np.sin(phi)
+X[:,:,3] = eta
+X[:,:,4] = phi
+X[:,:,5] = puppiw
+
+# encoding
+X[:,:,6] = np.vectorize(d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
+X[:,:,7] = np.vectorize(d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
+    
+# truth info
+if not opt.data:
+    Y[:,0] += tree['genMet_pt'].to_numpy() * np.cos(tree['genMet_phi'].to_numpy())
+    Y[:,1] += tree['genMet_pt'].to_numpy() * np.sin(tree['genMet_phi'].to_numpy())
 
 with h5py.File(opt.output, 'w') as h5f:
     h5f.create_dataset('X',    data=X,   compression='lzf')
