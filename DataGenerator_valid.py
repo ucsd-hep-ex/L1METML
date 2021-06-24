@@ -6,7 +6,7 @@ import awkward as ak
 from utils import convertXY2PtPhi, preProcessing
 from sklearn.model_selection import train_test_split
 
-class DataGenerator(tensorflow.keras.utils.Sequence):
+class DataGenerator_valid(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, list_files, batch_size=1024, n_dim=100, 
                  max_entry = 100000000):
@@ -135,30 +135,16 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         mask2 = (Yr_pt[:,0] > 300)
         Yr_pt = Yr_pt[mask2]
         print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
-
         indices = np.array([i for i in range(len(Yr))])
         print(indices)
         indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
         indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
 
-        Xr_train = [x[indices_train] for x in Xr]
-        Xr_test = [x[indices_test] for x in Xr]
         Xr_valid = [x[indices_valid] for x in Xr]
-        Yr_train = Yr[indices_train]
-        Yr_test = Yr[indices_test]        
-        Yr_valid = Yr[indices_valid]            
-        return Xr_train, Xr_test, Xr_valid, Yr_train, Yr_test, Yr_valid
-            X, y = self.__get_features_labels(ifile, start, stop)
-            Xs.append(X)
-            ys.append(y)
-            
-        # Stack data if going over multiple files
-        if len(unique_files)>1:
-            X = np.concatenate(Xs,axis=0)
-            y = np.concatenate(ys,axis=0)
-            
-        return X, y
-                         
+        Yr_valid = Yr[indices_valid]
+
+        return Xr_valid, Yr_valid
+   
     def __get_features_labels(self, ifile, entry_start, entry_stop):
         'Loads data from one file'
         
