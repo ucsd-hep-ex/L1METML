@@ -46,10 +46,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             root_file = uproot.open(file_name)
             self.open_files.append(root_file)
             tree = root_file['Events']
-            tree_length = min(len(tree),max_entry)
+            tree_length = min(tree.num_entries,self.max_entry)
             self.global_IDs.append(np.arange(running_total,running_total+tree_length))
-            self.local_IDs.append(np.arange(tree_length))
-            self.file_mapping.append(np.repeat(i,tree_length))
+            self.local_IDs.append(np.arange(0,tree_length))
+            self.file_mapping.append(np.repeat([i],tree_length))
             running_total += tree_length
             root_file.close()
         self.global_IDs = np.concatenate(self.global_IDs)
@@ -59,7 +59,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.global_IDs) / self.batch_size))
+        return int(np.ceil(len(self.global_IDs) / self.batch_size))
 
     def __getitem__(self, index):
         'Generate one batch of data'
