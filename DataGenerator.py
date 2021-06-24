@@ -148,6 +148,17 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         Yr_test = Yr[indices_test]        
         Yr_valid = Yr[indices_valid]            
         return Xr_train, Xr_test, Xr_valid, Yr_train, Yr_test, Yr_valid
+            X, y = self.__get_features_labels(ifile, start, stop)
+            Xs.append(X)
+            ys.append(y)
+            
+        # Stack data if going over multiple files
+        if len(unique_files)>1:
+            X = np.concatenate(Xs,axis=0)
+            y = np.concatenate(ys,axis=0)
+            
+        return X, y
+                         
     def __get_features_labels(self, ifile, entry_start, entry_stop):
         'Loads data from one file'
         
