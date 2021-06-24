@@ -17,6 +17,8 @@ import time
 import os
 import pathlib
 import datetime
+import tqdm
+import h5py
 
 #Import custom modules
 
@@ -26,7 +28,9 @@ from models import *
 from utils import *
 from loss import custom_loss
 #from epoch_all import epoch_all
-from DataGenerator import DataGenerator
+from DataGenerator_train import DataGenerator_train
+from DataGenerator_test import DataGenerator_test
+from DataGenerator_valid import DataGenerator_valid
 
 def main(args):
 
@@ -51,10 +55,10 @@ def main(args):
         print ('Creating directory' + path_out)
 	
     data = '/afs/cern.ch/work/d/daekwon/public/L1PF_110X/CMSSW_11_1_2/src/FastPUPPI/NtupleProducer/python/TTbar_PU200_110X_1M'
-    train_generator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root',f'{data}/perfNano_TTbar_PU200.110X_set1.root'],batch_size=128)
-    Xr_train, Xr_test, Xr_valid, Yr_train, Yr_test, Yr_valid = train_generator[0]
-
-
+    train_generator = DataGenerator_train(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root'],batch_size=128)
+    test_generator = DataGenerator_test(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root'],batch_size=128)
+    valid_generator = DataGenerator_valid(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root'],batch_size=128)
+    Xr_train, Yr_train = train_generator[0]
     # Load training model
 
     keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = train_generator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
@@ -112,21 +116,33 @@ def main(args):
 
     start_time = time.time() # check start time
     '''
-    history = keras_model.fit_generator(Xr_train, 
-                        Yr_train,
+    history = keras_model.fit_generator(train_generator
                         epochs=epochs,
                         batch_size = batch_size,
                         verbose=verbose,  # switch to 1 for more verbosity
-                        validation_data=(Xr_test, Yr_test),
+                        validation_data=test_generator,
                         callbacks=[early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint],#, reduce_lr], #, lr,   reduce_lr],
                        )
     '''
     end_time = time.time() # check end time
     
     os.makedirs(path_out,exist_ok=True)
+    hf = h5py.File('model.h5', 'w')
+    hf.Close()
     keras_model.load_weights(f'{path_out}/model.h5')
 
     predict_test = keras_model.predict(Xr_valid)
+    all_met_x = []
+    all_met_y = []
+    for (X, y) in tqdm.tqdm(valid_generator):
+        met_x = -np.sum(X[:,:,1],axis=1)
+        met_y = -np.sum(y[:,:,2],axis=1)
+        all_met_x.append(met_x)
+        all_met_y.append(met_y)
+    all_met_x = np.concatenate(all_met_x)
+    all_met_y = np.concatenate(all_met_y) 
+    print(all_met_x.shape)
+    print(all_met_y.shape)
     PUPPI_pt = normFac * np.sum(Xr_valid[0][:,:,4:6], axis=1)
     predict_test = predict_test *normFac
     Yr_valid = normFac * Yr_valid
