@@ -26,6 +26,7 @@ from models import *
 from utils import *
 from loss import custom_loss
 #from epoch_all import epoch_all
+from DataGenerator import DataGenerator
 
 def main(args):
 
@@ -48,51 +49,15 @@ def main(args):
             os.makedirs(path_out)
     except OSError:
         print ('Creating directory' + path_out)
+	
+    data = '/afs/cern.ch/work/d/daekwon/public/L1PF_110X/CMSSW_11_1_2/src/FastPUPPI/NtupleProducer/python/TTbar_PU200_110X_1M'
+    train_generator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root',f'{data}/perfNano_TTbar_PU200.110X_set1.root'],batch_size=128)
+    Xr_train, Xr_test, Xr_valid, Yr_train, Yr_test, Yr_valid = train_generator[0]
 
-    # Read inputs
-
-    Xorg, Y = read_input(args.input)
-    Y = Y / -normFac
-
-    Xi, Xc1, Xc2 = preProcessing(Xorg, normFac)
-    Xc = [Xc1, Xc2]
-    
-    emb_input_dim = {
-        i:int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
-    }
-    print(emb_input_dim)
-
-
-    # Prepare training/val data
-    Yr = Y
-    Xr = [Xi] + Xc
-
-    # remove events True pT < 50 GeV
-    Yr_pt = convertXY2PtPhi(Yr)
-    #mask1 = (Yr_pt[:,0] > 50.)
-    #Yr = Yr[mask1]
-    #Xr = [x[mask1] for x in Xr]
-
-    # check the number of events higher than 300 GeV
-    mask2 = (Yr_pt[:,0] > 300)
-    Yr_pt = Yr_pt[mask2]
-    print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
-
-    indices = np.array([i for i in range(len(Yr))])
-    print(indices)
-    indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
-    indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
-
-    Xr_train = [x[indices_train] for x in Xr]
-    Xr_test = [x[indices_test] for x in Xr]
-    Xr_valid = [x[indices_valid] for x in Xr]
-    Yr_train = Yr[indices_train]
-    Yr_test = Yr[indices_test]
-    Yr_valid = Yr[indices_valid]
 
     # Load training model
 
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = train_generator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
@@ -129,7 +94,7 @@ def main(args):
         monitor='val_loss', factor=0.5, patience=4, min_lr=0.000001, cooldown=3, verbose=1)
 
     lr_scale = 1.
-    clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(Y)/batch_size, mode='triangular2')
+    clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(train_generator.y)/batch_size, mode='triangular2')
 
     stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
 
@@ -147,7 +112,7 @@ def main(args):
 
     start_time = time.time() # check start time
     '''
-    history = keras_model.fit(Xr_train, 
+    history = keras_model.fit_generator(Xr_train, 
                         Yr_train,
                         epochs=epochs,
                         batch_size = batch_size,
@@ -158,7 +123,7 @@ def main(args):
     '''
     end_time = time.time() # check end time
     
-
+    os.makedirs(path_out,exist_ok=True)
     keras_model.load_weights(f'{path_out}/model.h5')
 
     predict_test = keras_model.predict(Xr_valid)
@@ -195,7 +160,7 @@ if __name__ == "__main__":
     path = "./result/"+time_path+"_PUPPICandidates/"
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
+    # parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, help='0 for L1MET, 1 for DeepMET')
         

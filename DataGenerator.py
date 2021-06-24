@@ -3,12 +3,17 @@ import tensorflow.keras as keras
 import numpy as np
 import uproot
 import awkward as ak
+from utils import convertXY2PtPhi, preProcessing
+from sklearn.model_selection import train_test_split
 
 class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, list_files, batch_size=1024, n_dim=100, 
                  max_entry = 100000000):
         'Initialization'
+        self.n_features_pf = 6
+        self.n_features_pf_cat = 2
+        self.normFac = 1.
         self.batch_size = batch_size
         self.list_files = list_files
         self.n_dim = n_dim
@@ -98,17 +103,51 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         
         # Generate data
         for ifile, start, stop in zip(unique_files, starts, stops):
-            X, y = self.__get_features_labels(ifile, start, stop)
-            Xs.append(X)
-            ys.append(y)
+            self.X, self.y = self.__get_features_labels(ifile, start, stop)
+            Xs.append(self.X)
+            ys.append(self.y)
             
         # Stack data if going over multiple files
         if len(unique_files)>1:
-            X = np.concatenate(Xs,axis=0)
-            y = np.concatenate(ys,axis=0)
-            
-        return X, y
-                         
+            self.X = np.concatenate(Xs,axis=0)
+            self.y = np.concatenate(ys,axis=0)
+	
+	#process inputs
+        Y = self.y /(-self.normFac)
+        Xi, Xc1, Xc2 = preProcessing(self.X, self.normFac)
+        Xc = [Xc1, Xc2]
+    
+        self.emb_input_dim = {i:int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
+        print(self.emb_input_dim)
+
+
+    	# Prepare training/val data
+        Yr = Y
+        Xr = [Xi] + Xc
+
+    	# remove events True pT < 50 GeV
+        Yr_pt = convertXY2PtPhi(Yr)
+    	#mask1 = (Yr_pt[:,0] > 50.)
+    	#Yr = Yr[mask1]
+    	#Xr = [x[mask1] for x in Xr]
+
+    	# check the number of events higher than 300 GeV
+        mask2 = (Yr_pt[:,0] > 300)
+        Yr_pt = Yr_pt[mask2]
+        print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
+
+        indices = np.array([i for i in range(len(Yr))])
+        print(indices)
+        indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
+        indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
+
+        Xr_train = [x[indices_train] for x in Xr]
+        Xr_test = [x[indices_test] for x in Xr]
+        Xr_valid = [x[indices_valid] for x in Xr]
+        Yr_train = Yr[indices_train]
+        Yr_test = Yr[indices_test]        
+        Yr_valid = Yr[indices_valid]            
+        return Xr_train, Xr_test, Xr_valid, Yr_train, Yr_test, Yr_valid
     def __get_features_labels(self, ifile, entry_start, entry_stop):
         'Loads data from one file'
         
@@ -154,7 +193,3 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         return X, y
 
-train_generator = DataGenerator(list_files=['data/perfNano_TTbar_PU200.110X_set0.root','data/perfNano_TTbar_PU200.110X_set1.root'],batch_size=128)
-X, y = train_generator[0]
-print(X.shape)
-print(y.shape)
