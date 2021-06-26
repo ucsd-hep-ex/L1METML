@@ -6,7 +6,7 @@ import awkward as ak
 from utils import convertXY2PtPhi, preProcessing
 from sklearn.model_selection import train_test_split
 
-class DataGenerator_valid(tensorflow.keras.utils.Sequence):
+class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, list_files, batch_size=1024, n_dim=100, 
                  max_entry = 100000000):
@@ -112,13 +112,12 @@ class DataGenerator_valid(tensorflow.keras.utils.Sequence):
             self.X = np.concatenate(Xs,axis=0)
             self.y = np.concatenate(ys,axis=0)
 	
-	#process inputs
+        #process inputs
         Y = self.y /(-self.normFac)
         Xi, Xc1, Xc2 = preProcessing(self.X, self.normFac)
         Xc = [Xc1, Xc2]
     
         self.emb_input_dim = {i:int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
-        print(self.emb_input_dim)
 
 
     	# Prepare training/val data
@@ -127,6 +126,7 @@ class DataGenerator_valid(tensorflow.keras.utils.Sequence):
 
     	# remove events True pT < 50 GeV
         Yr_pt = convertXY2PtPhi(Yr)
+        # uncomment this out??
     	#mask1 = (Yr_pt[:,0] > 50.)
     	#Yr = Yr[mask1]
     	#Xr = [x[mask1] for x in Xr]
@@ -135,15 +135,18 @@ class DataGenerator_valid(tensorflow.keras.utils.Sequence):
         mask2 = (Yr_pt[:,0] > 300)
         Yr_pt = Yr_pt[mask2]
         print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
-        indices = np.array([i for i in range(len(Yr))])
-        print(indices)
-        indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
-        indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
+        
+        #Split batch into 3 subsets of the list files: train, valid, test
+        # for now we just choose different data files for each
+        
+        # indices = np.array([i for i in range(len(Yr))])
+        #indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
+        #indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
 
-        Xr_valid = [x[indices_valid] for x in Xr]
-        Yr_valid = Yr[indices_valid]
+        #Xr_valid = [x[indices_valid] for x in Xr]
+        #Yr_valid = Yr[indices_valid]
 
-        return Xr_valid, Yr_valid
+        return Xr_, Yr_valid
    
     def __get_features_labels(self, ifile, entry_start, entry_stop):
         'Loads data from one file'
