@@ -115,20 +115,14 @@ def main(args):
     #plot_model(keras_model, to_file=f'{path_out}/model_plot.png', show_shapes=True, show_layer_names=True)
 
     start_time = time.time() # check start time
-    '''
-    history = keras_model.fit_generator(train_generator
+    history = keras_model.fit(train_generator,
                         epochs=epochs,
-                        batch_size = batch_size,
                         verbose=verbose,  # switch to 1 for more verbosity
                         validation_data=test_generator,
                         callbacks=[early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint],#, reduce_lr], #, lr,   reduce_lr],
                        )
-    '''
     end_time = time.time() # check end time
     
-    os.makedirs(path_out,exist_ok=True)
-    hf = h5py.File('model.h5', 'w')
-    hf.Close()
     keras_model.load_weights(f'{path_out}/model.h5')
 
     predict_test = keras_model.predict(Xr_valid)
@@ -143,6 +137,8 @@ def main(args):
     all_met_y = np.concatenate(all_met_y) 
     print(all_met_x.shape)
     print(all_met_y.shape)
+    Xr_valid = all_met_x
+    y = all_met_y
     PUPPI_pt = normFac * np.sum(Xr_valid[0][:,:,4:6], axis=1)
     predict_test = predict_test *normFac
     Yr_valid = normFac * Yr_valid
