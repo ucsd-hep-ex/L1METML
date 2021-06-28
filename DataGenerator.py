@@ -8,9 +8,10 @@ from sklearn.model_selection import train_test_split
 
 class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_files, batch_size=1024, n_dim=100, 
+    def __init__(self, list_files, dataSetType='training', batch_size=1024, n_dim=100, 
                  max_entry = 100000000):
         'Initialization'
+        self.dataSetType = dataSetType
         self.n_features_pf = 6
         self.n_features_pf_cat = 2
         self.normFac = 1.
@@ -26,7 +27,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                                    -1.0: 0, 
                                    0.0: 1, 
                                    1.0: 2},
-            'L1PuppiCands_pdgId':{-999.0: 0,
+           'L1PuppiCands_pdgId':{-999.0: 0,
                                   -211.0: 0, 
                                   -130.0: 1, 
                                   -22.0: 2, 
@@ -51,10 +52,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             root_file = uproot.open(file_name)
             self.open_files.append(root_file)
             tree = root_file['Events']
-            tree_length = min(len(tree),max_entry)
+            tree_length = min(tree.num_entries,self.max_entry)
             self.global_IDs.append(np.arange(running_total,running_total+tree_length))
-            self.local_IDs.append(np.arange(tree_length))
-            self.file_mapping.append(np.repeat(i,tree_length))
+            self.local_IDs.append(np.arange(0,tree_length))
+            self.file_mapping.append(np.repeat([i],tree_length))
             running_total += tree_length
             root_file.close()
         self.global_IDs = np.concatenate(self.global_IDs)
@@ -64,7 +65,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.global_IDs) / self.batch_size))
+        return int(np.ceil(len(self.global_IDs) / self.batch_size))
 
     def __getitem__(self, index):
         'Generate one batch of data'
@@ -116,7 +117,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         Y = self.y /(-self.normFac)
         Xi, Xc1, Xc2 = preProcessing(self.X, self.normFac)
         Xc = [Xc1, Xc2]
-    
+        
+	# dimension parameter for keras model
         self.emb_input_dim = {i:int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
 
 
@@ -143,10 +145,20 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         #indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
         #indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
 
-        #Xr_valid = [x[indices_valid] for x in Xr]
-        #Yr_valid = Yr[indices_valid]
+	# form the data subsets by selecting indicies
+       	#if self.dataSetType == 'train':
+            #Xr = [x[indices_train] for x in Xr]
+            #Yr = Yr[indices_train]
 
-        return Xr_, Yr_valid
+       	#if self.dataSetType == 'test':
+            #Xr = [x[indices_test] for x in Xr]
+            #Yr = Yr[indices_test]
+
+        #if self.dataSetType == 'valid':
+            #Xr = [x[indices_valid] for x in Xr]
+            #Yr = Yr[indices_valid]
+
+        return Xr, Yr
    
     def __get_features_labels(self, ifile, entry_start, entry_stop):
         'Loads data from one file'

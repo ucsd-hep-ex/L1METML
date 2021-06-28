@@ -28,9 +28,7 @@ from models import *
 from utils import *
 from loss import custom_loss
 #from epoch_all import epoch_all
-from DataGenerator_train import DataGenerator_train
-from DataGenerator_test import DataGenerator_test
-from DataGenerator_valid import DataGenerator_valid
+from DataGenerator import DataGenerator
 
 def main(args):
 
@@ -58,13 +56,13 @@ def main(args):
     # load in data 3 generators; each recieve different data sets
 
     data = '/afs/cern.ch/work/d/daekwon/public/L1PF_110X/CMSSW_11_1_2/src/FastPUPPI/NtupleProducer/python/TTbar_PU200_110X_1M'
-    trainGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root', f'{data}/perfNano_TTbar_PU200.110X_set2.root',f'{data}/perfNano_TTbar_PU200.110X_set3.root',f'{data}/perfNano_TTbar_PU200.110X_set4.root',f'{data}/perfNano_TTbar_PU200.110X_set5.root'],batch_size=128)
-    validGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set6.root'],batch_size=128)
-    testGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set7.root'],batch_size=128)
-    Xr_train, Yr_train = train_generator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
+    trainGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root', f'{data}/perfNano_TTbar_PU200.110X_set2.root',f'{data}/perfNano_TTbar_PU200.110X_set3.root',f'{data}/perfNano_TTbar_PU200.110X_set4.root'],batch_size=128)
+    validGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set5.root'],batch_size=128)
+    testGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set6.root'],batch_size=128)
+    Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
     # Load training model
 
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = train_generator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
@@ -101,7 +99,7 @@ def main(args):
         monitor='val_loss', factor=0.5, patience=4, min_lr=0.000001, cooldown=3, verbose=1)
 
     lr_scale = 1.
-    clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(train_generator.y)/batch_size, mode='triangular2')
+    clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(trainGenerator.y)/batch_size, mode='triangular2')
 
     stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
 
@@ -112,6 +110,7 @@ def main(args):
     print(Xr_train[1].shape[-1])
     print(Xr_train[2].shape[-1])
     # Run training
+
     
     
     print(keras_model.summary())
@@ -132,8 +131,8 @@ def main(args):
     all_met_x = []
     all_met_y = []
     for (X, y) in tqdm.tqdm(testGenerator):
-        met_x = -np.sum(X[:,:,1],axis=1)
-        met_y = -np.sum(y[:,:,2],axis=1)
+        #met_x = -np.sum(X[:,:,1],axis=1)
+        met_y = -np.sum(y[:,2],axis=1)
         all_met_x.append(met_x)
         all_met_y.append(met_y)
     all_met_x = np.concatenate(all_met_x)
