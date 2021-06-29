@@ -13,6 +13,7 @@ USER ${NB_UID}
 # Install Tensorflow
 RUN pip install --quiet --no-cache-dir \
     tables \
+    awkward \
     uproot \
     pandas \
     h5py \
