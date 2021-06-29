@@ -1,33 +1,36 @@
-apiVersion: v1
+apiVersion: batch/v1
 kind: Job
 metadata:
   name: l1metml-training
 spec:
-  containers:
-  - name: gpu-container
-    image: gitlab-registry.nautilus.optiputer.net/jmduarte/l1metml:latest
-    command: ["sleep", "infinity"]
-    - "/bin/bash"
-    - "-c"
-    - " git clone https://github.com/hanhiller/L1METML &&
-        sh conda_setup.sh &&
-        conda activate l1metml &&
-        python train.py --output ../TTbar_PU200_110X_1M/Trainings --mode 0"
+  template:
+    spec:
+      containers:
+      - name: gpu-container
+        image: gitlab-registry.nautilus.optiputer.net/jmduarte/l1metml:latest
+        command:
+        - "/bin/bash"
+        - "-c"
+        - " git clone https://github.com/hanhiller/L1METML &&
+            sh conda_setup.sh &&
+            conda activate l1metml &&
+            python train.py --output ../TTbar_PU200_110X_1M/Trainings --mode 0"
+        volumeMounts:
+        - mountPath: /l1metmlvol
+          name: l1metmlvol
+        resources:
+          limits:
+            memory: 12Gi
+            cpu: "2"
+            nvidia.com/gpu: "1"
+          requests:
+            memory: 12Gi
+            cpu: "2"
+            nvidia.com/gpu: "1"
+      volumes:
+      - name: l1metmlvol
+        persistentVolumeClaim:
+          claimName: l1metmlvol
 
-    resources:
-      limits:
-        memory: 12Gi
-        cpu: "2"
-        nvidia.com/gpu: "1"
-      requests:
-        memory: 12Gi
-        cpu: "2"
-        nvidia.com/gpu: "1"
-    volumeMounts:
-    - mountPath: /l1metmlvol
-      name: l1metmlvol
-  restartPolicy: Never
-  volumes:
-    - name: l1metmlvol
-      persistentVolumeClaim:
-        claimName: l1metmlvol
+      restartPolicy: Never
+  backoffLimit: 0
