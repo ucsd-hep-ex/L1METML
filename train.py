@@ -55,10 +55,12 @@ def main(args):
 
     # load in data 3 generators; each recieve different data sets
 
-    
+    # on lxplus
     #data = '/afs/cern.ch/work/d/daekwon/public/L1PF_110X/CMSSW_11_1_2/src/FastPUPPI/NtupleProducer/python/TTbar_PU200_110X_1M'
+    # on prp
     data = '../../../l1metmlvol/TTbar_PU200_110X_1M'
-    trainGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root', f'{data}/perfNano_TTbar_PU200.110X_set2.root',f'{data}/perfNano_TTbar_PU200.110X_set3.root',f'{data}/perfNano_TTbar_PU200.110X_set4.root'],batch_size=128)
+
+    trainGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root', f'{data}/perfNano_TTbar_PU200.110X_set2.root',f'{data}/perfNano_TTbar_PU200.110X_set3.root',f'{data}/perfNano_TTbar_PU200.110X_set4.root'],batch_size=batch_size)
     validGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set5.root'],batch_size=128)
     testGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set6.root'],batch_size=128)
     Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
