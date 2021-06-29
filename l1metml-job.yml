@@ -13,9 +13,6 @@ spec:
         - "-c"
         - " git clone https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            sh conda_setup.sh &&
-            conda init bash &&
-            source activate l1metml &&
             python train.py --output ../TTbar_PU200_110X_1M/Trainings --mode 0"
         volumeMounts:
         - mountPath: /l1metmlvol
@@ -34,5 +31,5 @@ spec:
         persistentVolumeClaim:
           claimName: l1metmlvol
 
-      restartPolicy: Never
-  backoffLimit: 0
+      restartPolicy: OnFailure
+  backoffLimit: 3

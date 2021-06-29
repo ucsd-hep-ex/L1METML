@@ -12,10 +12,15 @@ USER ${NB_UID}
 
 # Install Tensorflow
 RUN pip install --quiet --no-cache-dir \
+    pytables \
+    tensorflow \
+    uproot \
     tables \
     pandas \
     h5py \
     tqdm \
     scikit-learn \
     setGPU \
-    mplhep
+    mplhep \
+    keras
+  
