@@ -1,2 +1,2 @@
 conda-env create -f environment.yml
-conda activate l1metml
+source activate l1metml
