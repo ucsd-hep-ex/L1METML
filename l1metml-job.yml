@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training
+  name: l1metml-training-1024
 spec:
   template:
     spec:

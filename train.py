@@ -40,7 +40,7 @@ def main(args):
     n_features_pf_cat = 2
     normFac = 1.
     epochs = 100
-    batch_size = 1024
+    batch_size = 2048
     preprocessed = True
     t_mode = args.mode
     path_out = args.output
