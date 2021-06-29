@@ -31,5 +31,5 @@ spec:
         persistentVolumeClaim:
           claimName: l1metmlvol
 
-      restartPolicy: OnFailure
-  backoffLimit: 3
+      restartPolicy: Never
+  backoffLimit: 0

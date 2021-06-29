@@ -12,8 +12,6 @@ USER ${NB_UID}
 
 # Install Tensorflow
 RUN pip install --quiet --no-cache-dir \
-    pytables \
-    tensorflow \
     uproot \
     tables \
     pandas \
@@ -22,5 +20,6 @@ RUN pip install --quiet --no-cache-dir \
     scikit-learn \
     setGPU \
     mplhep \
-    keras
+    keras \
+    awkward
   
