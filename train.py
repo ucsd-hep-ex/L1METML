@@ -14,7 +14,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataSetType', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--input', action='store', type=str, required=False, help='designate input file path')
-    parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
+    parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store',   type=int, required=True, help='0 for L1MET, 1 for DeepMET')
     args = parser.parse_args()
 
@@ -32,7 +32,7 @@ if dataSetType == 'h5':
             writeFile.write(f'{inputPath}/{file}\n')
     writeFile.close
     # this file is read in main()
-    h5files = f'{inputPath}/h5files.txt'}
+    h5files = f'{inputPath}/h5files.txt'
             
     from train_fromh5 import main
     main(args)
