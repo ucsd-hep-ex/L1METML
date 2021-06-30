@@ -54,7 +54,7 @@ def main(args):
     # It may be desireable to set specific files as the train, test, valid data sets
     # For now I keep train.py used: selection from a list of indicies
 
-    Xorg, Y = read_input(args.input)
+    Xorg, Y = read_input(h5files)
     Y = Y / -normFac
 
     Xi, Xc1, Xc2 = preProcessing(Xorg, normFac)
@@ -167,7 +167,7 @@ def main(args):
     predict_test = keras_model.predict(Xr_test)
     PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,4:6], axis=1)
     predict_test = predict_test *normFac
-    Yr_valid = normFac * Yr_test
+    Yr_test = normFac * Yr_test
     #Xr_valid = normFac * Xr_valid
 
     #test_events = Xr_valid[0].shape[0]
@@ -192,7 +192,7 @@ def main(args):
 
 # Configuration
 
-#if __name__ == "__main__":
+''' if __name__ == "__main__":
 
     time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
     path = "./result/"+time_path+"_PUPPICandidates/"
@@ -203,4 +203,4 @@ def main(args):
     parser.add_argument('--mode', action='store', type=int, required=True, help='0 for L1MET, 1 for DeepMET')
         
     args = parser.parse_args()
-    main(args)
+    main(args) '''

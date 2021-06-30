@@ -2,15 +2,16 @@ import argparse
 import time
 import os
 
-if __name == "__main__":
+if __name__ == "__main__":
     time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+    path = "./result/"+time_path+"_PUPPICandidates/"
     
     # 4 arguments
     # train from h5 or root?
     # root file location
     # output path
     # mode 0 or 1
-    path = "./result/"+time_path+"_PUPPICandidates/"
+    parser = argparse.ArgumentParser()
     parser.add_argument('--dataSetType', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--input', action='store', type=str, required=False, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
@@ -28,14 +29,14 @@ if dataSetType == 'h5':
     writeFile= open(f'{inputPath}/h5files.txt',"w+")
     for file in os.listdir(inputPath):
         if '.h5' in file:
-            writeFile.write(f'{inputPath}/{file}\n)
+            writeFile.write(f'{inputPath}/{file}\n')
     writeFile.close
     # this file is read in main()
-    h5files = f'{inputPath}/h5files.txt"
+    h5files = f'{inputPath}/h5files.txt'}
             
-    from train_fromRoot import main
+    from train_fromh5 import main
     main(args)
 
-if dataSetType == 'ROOT':
+if dataSetType == 'root':
     from train_fromRoot import main
     main(args)

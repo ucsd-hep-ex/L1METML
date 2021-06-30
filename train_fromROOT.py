@@ -172,15 +172,15 @@ def main(args):
 
 # Configuration
 
-#if __name__ == "__main__":
+'''if __name__ == "__main__":
 
     time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
     path = "./result/"+time_path+"_PUPPICandidates/"
 
     parser = argparse.ArgumentParser()
     #parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
-     parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
+    parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, help='0 for L1MET, 1 for DeepMET')
         
     args = parser.parse_args()
-    main(args)
+    main(args) '''
