@@ -14,7 +14,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataSetType', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--input', action='store', type=str, required=False, help='designate input file path')
-    parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
+    parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store',   type=int, required=True, help='0 for L1MET, 1 for DeepMET')
     args = parser.parse_args()
 
@@ -22,9 +22,15 @@ dataSetType = args.dataSetType
 if dataSetType == 'h5':
     inputPath = args.input
     # convert root files to h5 and store in same location
+    i =0
     for file in os.listdir(inputPath):
         if '.root' in file:
+<<<<<<< HEAD
                 os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {inputPath}')
+=======
+                i += 1
+                os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {inputPath}/set{i}.h5')
+>>>>>>> c80936f951b0f2020f7ea78fd6d42eb8995bceab
     # place h5 file names into a .txt file
     writeFile= open(f'{inputPath}/h5files.txt',"w+")
     for file in os.listdir(inputPath):
@@ -32,11 +38,16 @@ if dataSetType == 'h5':
             writeFile.write(f'{inputPath}/{file}\n')
     writeFile.close
     # this file is read in main()
+<<<<<<< HEAD
     h5files = f'{inputPath}/h5files.txt'}
     
     
+=======
+    h5filesList = f'{inputPath}/h5files.txt'
+            
+>>>>>>> c80936f951b0f2020f7ea78fd6d42eb8995bceab
     from train_fromh5 import main
-    main(args)
+    main(args, h5filesList)
 
 if dataSetType == 'root':
     from train_fromRoot import main

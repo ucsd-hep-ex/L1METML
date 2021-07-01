@@ -26,9 +26,15 @@ from models import *
 from utils import *
 from loss import custom_loss
 #from epoch_all import epoch_all
-print(h5files)
+<<<<<<< HEAD
 def main(args):
 
+=======
+
+def main(args, h5filesList):
+    '''here i cheat a little bit; the second variable is the list of 
+converted h5 files, and does not come from args, but we need to pass to main'''
+>>>>>>> c80936f951b0f2020f7ea78fd6d42eb8995bceab
 
     # general setup
 
@@ -54,7 +60,8 @@ def main(args):
     # It may be desireable to set specific files as the train, test, valid data sets
     # For now I keep train.py used: selection from a list of indicies
 
-    Xorg, Y = read_input(h5files)
+    #Xorg, Y = read_input(args.input)
+    Xorg, Y = read_input(h5filesList)
     Y = Y / -normFac
 
     Xi, Xc1, Xc2 = preProcessing(Xorg, normFac)
