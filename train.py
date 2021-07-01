@@ -25,9 +25,8 @@ if dataSetType == 'h5':
     i =0
     for file in os.listdir(inputPath):
         if '.root' in file:
-                os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {inputPath}')
-                i += 1
-                os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {inputPath}/set{i}.h5')
+            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {inputPath}/set{i}.h5')
+            i += 1
     # place h5 file names into a .txt file
     writeFile= open(f'{inputPath}/h5files.txt',"w+")
     for file in os.listdir(inputPath):

@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-root-1ephoch
+  name: l1metml-training-h5-1024
 spec:
   template:
     spec:
