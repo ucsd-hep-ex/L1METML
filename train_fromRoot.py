@@ -40,7 +40,7 @@ def main(args):
     n_features_pf_cat = 2
     normFac = 1.
     epochs = 1
-    batch_size = 2048
+    batch_size = 1024
     preprocessed = True
     t_mode = args.mode
     path_out = args.output
@@ -130,8 +130,8 @@ def main(args):
     all_met_x = []
     all_met_y = []
     for (X, y) in tqdm.tqdm(testGenerator):
-        met_x = -np.sum(X[:,1],axis=1)
-        met_y = -np.sum(y[:,1],axis=1)
+        met_x = -np.sum(X[:,:,1],axis=1)
+        met_y = -np.sum(X[:,:,2],axis=1)
         all_met_x.append(met_x)
         all_met_y.append(met_y)
     all_met_x = np.concatenate(all_met_x)
