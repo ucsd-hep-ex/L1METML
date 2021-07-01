@@ -32,7 +32,7 @@ if dataSetType == 'h5':
     for file in os.listdir(inputPath):
         if '.h5' in file:
             writeFile.write(f'{inputPath}/{file}\n')
-    writeFile.close
+    writeFile.close()
     # this file is read in main()
     h5files = f'{inputPath}/h5files.txt'
     h5filesList = f'{inputPath}/h5files.txt'
