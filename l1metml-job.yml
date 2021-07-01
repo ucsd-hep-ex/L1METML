@@ -13,7 +13,7 @@ spec:
         - "-c"
         - " git clone https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --dataSetType root --output ../Trainings --mode 0"
+            python train.py --dataSetType h5 --output ../Trainings --input ../../../l1metmlvol/TTbar_PU200_110X_1M --mode 0"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
