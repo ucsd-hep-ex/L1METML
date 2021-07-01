@@ -106,17 +106,12 @@ def main(args):
     clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(trainGenerator.y)/batch_size, mode='triangular2')
 
     stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
-
-    epochs=100
-
     
     print(Xr_train[0].shape[-1])
     print(Xr_train[1].shape[-1])
     print(Xr_train[2].shape[-1])
     # Run training
 
-    
-    
     print(keras_model.summary())
     #plot_model(keras_model, to_file=f'{path_out}/model_plot.png', show_shapes=True, show_layer_names=True)
 
