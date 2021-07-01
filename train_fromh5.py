@@ -26,15 +26,10 @@ from models import *
 from utils import *
 from loss import custom_loss
 #from epoch_all import epoch_all
-<<<<<<< HEAD
-def main(args):
-
-=======
 
 def main(args, h5filesList):
     '''here i cheat a little bit; the second variable is the list of 
 converted h5 files, and does not come from args, but we need to pass to main'''
->>>>>>> c80936f951b0f2020f7ea78fd6d42eb8995bceab
 
     # general setup
 
