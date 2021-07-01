@@ -61,8 +61,8 @@ def main(args):
     data = '../../../l1metmlvol/TTbar_PU200_110X_1M'
 
     trainGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root', f'{data}/perfNano_TTbar_PU200.110X_set2.root',f'{data}/perfNano_TTbar_PU200.110X_set3.root',f'{data}/perfNano_TTbar_PU200.110X_set4.root'],batch_size=batch_size)
-    validGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set5.root'],batch_size=128)
-    testGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set6.root'],batch_size=128)
+    validGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set5.root'],batch_size=batch_size)
+    testGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set6.root'],batch_size=batch_size)
     Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
     # Load training model
 
@@ -136,7 +136,7 @@ def main(args):
     all_met_y = []
     for (X, y) in tqdm.tqdm(testGenerator):
         #met_x = -np.sum(X[:,:,1],axis=1)
-        met_y = -np.sum(y[:,2],axis=1)
+        met_y = -np.sum(y[:,1],axis=1)
         all_met_x.append(met_x)
         all_met_y.append(met_y)
     all_met_x = np.concatenate(all_met_x)

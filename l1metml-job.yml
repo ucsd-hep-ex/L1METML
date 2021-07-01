@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-2048
+  name: l1metml-training-1024-fromh5
 spec:
   template:
     spec:
@@ -13,17 +13,17 @@ spec:
         - "-c"
         - " git clone https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --output ../TTbar_PU200_110X_1M/Trainings --mode 0"
+            python train.py --dataSetType h5 --output ../Trainings --input ../../../l1metmlvol/TTbar_PU200_110X_1M --mode 0"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
         resources:
           limits:
-            memory: 100Gi
+            memory: 12Gi
             cpu: "2"
             nvidia.com/gpu: "1"
           requests:
-            memory: 50Gi
+            memory: 12Gi
             cpu: "2"
             nvidia.com/gpu: "1"
       volumes:

@@ -26,7 +26,7 @@ from models import *
 from utils import *
 from loss import custom_loss
 #from epoch_all import epoch_all
-
+print(h5files)
 def main(args):
 
 
