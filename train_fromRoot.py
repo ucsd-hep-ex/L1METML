@@ -130,7 +130,7 @@ def main(args):
     all_met_x = []
     all_met_y = []
     for (X, y) in tqdm.tqdm(testGenerator):
-        met_x = -np.sum(X[:,:,1],axis=1)
+        met_x = -np.sum(X[:,1],axis=1)
         met_y = -np.sum(y[:,1],axis=1)
         all_met_x.append(met_x)
         all_met_y.append(met_y)
