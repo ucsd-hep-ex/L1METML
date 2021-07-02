@@ -60,9 +60,9 @@ def main(args):
     # on prp
     data = '../../../l1metmlvol/TTbar_PU200_110X_1M'
 
-    list_files_Train = [f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root', f'{data}/perfNano_TTbar_PU200.110X_set2.root',f'{data}/perfNano_TTbar_PU200.110X_set3.root',f'{data}/perfNano_TTbar_PU200.110X_set4.root']
-    list_files_Valid = [f'{data}/perfNano_TTbar_PU200.110X_set5.root']
-    list_files_Test = [f'{data}/perfNano_TTbar_PU200.110X_set6.root']
+    list_files_Train = [f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root', f'{data}/perfNano_TTbar_PU200.110X_set2.root',f'{data}/perfNano_TTbar_PU200.110X_set3.root',f'{data}/perfNano_TTbar_PU200.110X_set6.root']
+    list_files_Valid = [f'{data}/perfNano_TTbar_PU200.110X_set4.root']
+    list_files_Test = [f'{data}/perfNano_TTbar_PU200.110X_set5.root']
     
     trainGenerator = DataGenerator(list_files=list_files_Train,batch_size=batch_size)
     validGenerator = DataGenerator(list_files=list_files_Valid,batch_size=batch_size)
@@ -70,6 +70,8 @@ def main(args):
     Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
     # Load training model
 
+    print(tqdm.tqdm(testGenerator), "LOOK AT ME")
+        
     keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
 
 
@@ -135,16 +137,9 @@ def main(args):
     Yr_test = []
     all_px = []
     all_py = []
-    #print(tqdm.tqdm.testGenerator)
     for ifile in list_files_Test:
-        file = open(ifile, "r")
-        line_count = 0
-        for line in file:
-            if line != "\n":
-                line_count += 1
-        file.close()
-        XList.append(testGenerator.__get_features_labels(ifile, 0, line_count)[0])
-        Yr_test.append(testGenerator.__get_features_labels(ifile, 0, line_count)[1])
+        XList.append(testGenerator.__get_features_labels(ifile, 0, testGenerator.max_entry)[0])
+        Yr_test.append(testGenerator.__get_features_labels(ifile, 0, testGenerator.max_entry)[1])
     for X in XList:
         px = -np.sum(X[:,:,1],axis=1)
         py = -np.sum(X[:,:,2],axis=1)
