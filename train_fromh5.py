@@ -138,9 +138,6 @@ converted h5 files, and does not come from args, but we need to pass to main'''
 
     stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
 
-    epochs=100
-
-    
     print(Xr_train[0].shape[-1])
     print(Xr_train[1].shape[-1])
     print(Xr_train[2].shape[-1])
@@ -168,6 +165,8 @@ converted h5 files, and does not come from args, but we need to pass to main'''
 
     predict_test = keras_model.predict(Xr_test)
     PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,4:6], axis=1)
+    print('look here')
+    print('puppi_pt', PUPPI_pt)
     predict_test = predict_test *normFac
     Yr_test = normFac * Yr_test
     #Xr_valid = normFac * Xr_valid
@@ -175,10 +174,11 @@ converted h5 files, and does not come from args, but we need to pass to main'''
     #test_events = Xr_valid[0].shape[0]
 
     MakePlots(Yr_test, predict_test, PUPPI_pt, path_out = path_out)
-    
+
     Yr_test = convertXY2PtPhi(Yr_test)
     predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
+    print('converted_pT', PUPPI_pt)
 
     MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')

@@ -60,9 +60,13 @@ def main(args):
     # on prp
     data = '../../../l1metmlvol/TTbar_PU200_110X_1M'
 
-    trainGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root', f'{data}/perfNano_TTbar_PU200.110X_set2.root',f'{data}/perfNano_TTbar_PU200.110X_set3.root',f'{data}/perfNano_TTbar_PU200.110X_set4.root'],batch_size=batch_size)
-    validGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set5.root'],batch_size=batch_size)
-    testGenerator = DataGenerator(list_files=[f'{data}/perfNano_TTbar_PU200.110X_set6.root'],batch_size=batch_size)
+    list_files_Train = [f'{data}/perfNano_TTbar_PU200.110X_set0.root' ,f'{data}/perfNano_TTbar_PU200.110X_set1.root', f'{data}/perfNano_TTbar_PU200.110X_set2.root',f'{data}/perfNano_TTbar_PU200.110X_set3.root',f'{data}/perfNano_TTbar_PU200.110X_set4.root']
+    list_files_Valid = [f'{data}/perfNano_TTbar_PU200.110X_set5.root']
+    list_files_Test = [f'{data}/perfNano_TTbar_PU200.110X_set6.root']
+    
+    trainGenerator = DataGenerator(list_files=list_files_Train,batch_size=batch_size)
+    validGenerator = DataGenerator(list_files=list_files_Valid,batch_size=batch_size)
+    testGenerator = DataGenerator(list_files=list_files_Test,batch_size=batch_size)
     Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
     # Load training model
 
@@ -129,7 +133,11 @@ def main(args):
     predict_test = keras_model.predict(testGenerator)
     all_met_x = []
     all_met_y = []
-    for (X, y) in tqdm.tqdm(testGenerator):
+    print(tqdm.tqdm.testGenerator)
+    XList = []
+    for ifile in list_files_Test:
+        XList += [testGenerator.__get_features_labels(ifile, entry_start, entry_stop)[0]]
+    for X in XList:
         met_x = -np.sum(X[:,:,1],axis=1)
         met_y = -np.sum(X[:,:,2],axis=1)
         all_met_x.append(met_x)
@@ -138,25 +146,25 @@ def main(args):
     all_met_y = np.concatenate(all_met_y) 
     print(all_met_x.shape)
     print(all_met_y.shape)
-    Xr_valid = all_met_x
-    Yr_valid = all_met_y
-    PUPPI_pt = normFac * np.sum(Xr_valid[0][:,:,4:6], axis=1)
+    Xr_test = all_met_x
+    Yr_test = all_met_y
+    PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,4:6], axis=1)
     predict_test = predict_test *normFac
-    Yr_valid = normFac * Yr_valid
-    #Xr_valid = normFac * Xr_valid
+    Yr_test = normFac * Yr_test
+    #Xr_test = normFac * Xr_test
 
-    #test_events = Xr_valid[0].shape[0]
+    #test_events = Xr_test[0].shape[0]
 
-    MakePlots(Yr_valid, predict_test, PUPPI_pt, path_out = path_out)
+    MakePlots(Yr_test, predict_test, PUPPI_pt, path_out = path_out)
     
-    Yr_valid = convertXY2PtPhi(Yr_valid)
+    Yr_test = convertXY2PtPhi(Yr_test)
     predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
 
-    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], name=''+path_out+'rel_error_opaque.png')
-    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_valid[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
-    extract_result(predict_test, Yr_valid, path_out, 'TTbar', 'ML')
-    extract_result(PUPPI_pt, Yr_valid, path_out, 'TTbar', 'PU')
+    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
+    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
+    extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
+    extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
     fi = open("{}time.txt".format(path_out), 'w')
 
     fi.write("Working Time (s) : {}".format(end_time - start_time))
