@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 
 class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_files, dataSetType='training', batch_size=1024, n_dim=100,
+    def __init__(self, list_files, batch_size=1024, n_dim=100,
                  max_entry = 100000000):
         'Initialization'
         self.dataSetType = dataSetType
