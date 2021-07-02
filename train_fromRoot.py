@@ -131,34 +131,42 @@ def main(args):
     keras_model.load_weights(f'{path_out}/model.h5')
 
     predict_test = keras_model.predict(testGenerator)
-    all_met_x = []
-    all_met_y = []
-    print(tqdm.tqdm.testGenerator)
     XList = []
+    Yr_test = []
+    all_px = []
+    all_py = []
+    print(tqdm.tqdm.testGenerator)
     for ifile in list_files_Test:
-        XList += [testGenerator.__get_features_labels(ifile, entry_start, entry_stop)[0]]
+        file = open("sample.txt", "r")
+        line_count = 0
+        for line in file:
+            if line != "\n":
+                line_count += 1
+        file.close()
+        XList.append(testGenerator.__get_features_labels(ifile, 0, line_count)[0])
+        Yr_test.append(testGenerator.__get_features_labels(ifile, 0, line_count)[1])
     for X in XList:
-        met_x = -np.sum(X[:,:,1],axis=1)
-        met_y = -np.sum(X[:,:,2],axis=1)
-        all_met_x.append(met_x)
-        all_met_y.append(met_y)
-    all_met_x = np.concatenate(all_met_x)
-    all_met_y = np.concatenate(all_met_y) 
-    print(all_met_x.shape)
-    print(all_met_y.shape)
-    Xr_test = all_met_x
-    Yr_test = all_met_y
-    PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,4:6], axis=1)
+        px = -np.sum(X[:,:,1],axis=1)
+        py = -np.sum(X[:,:,2],axis=1)
+        all_px.append(px)
+        all_py.append(py)
+    for Y in YList:
+            Y = Y /(-self.normFac)
+    all_px = normFac * np.concatenate(all_px)
+    all_py = normFac * np.concatenate(all_py)
     predict_test = predict_test *normFac
-    Yr_test = normFac * Yr_test
+    print(all_px.shape)
+    print(all_py.shape)
+    
     #Xr_test = normFac * Xr_test
-
     #test_events = Xr_test[0].shape[0]
-
+    #Yr_test = normFac * Yr_test
+    
     MakePlots(Yr_test, predict_test, PUPPI_pt, path_out = path_out)
     
-    Yr_test = convertXY2PtPhi(Yr_test)
+    Yr_test = convertXY2PtPhi(-Yr_test)
     predict_test = convertXY2PtPhi(predict_test)
+    PUPPI_pt = np.array([all_met_x, all_met_y]).T
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
 
     MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
