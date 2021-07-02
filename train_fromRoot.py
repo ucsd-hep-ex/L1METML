@@ -137,7 +137,7 @@ def main(args):
     all_py = []
     #print(tqdm.tqdm.testGenerator)
     for ifile in list_files_Test:
-        file = open("sample.txt", "r")
+        file = open(ifile, "r")
         line_count = 0
         for line in file:
             if line != "\n":
