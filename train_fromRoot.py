@@ -135,7 +135,7 @@ def main(args):
     Yr_test = []
     all_px = []
     all_py = []
-    print(tqdm.tqdm.testGenerator)
+    #print(tqdm.tqdm.testGenerator)
     for ifile in list_files_Test:
         file = open("sample.txt", "r")
         line_count = 0
