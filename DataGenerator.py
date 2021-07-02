@@ -116,15 +116,15 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         #process inputs
         Y = self.y /(-self.normFac)
         Xi, Xc1, Xc2 = preProcessing(self.X, self.normFac)
-        Xc = [Xc1, Xc2]
         
+        Xc = [Xc1, Xc2]
 	# dimension parameter for keras model
         self.emb_input_dim = {i:int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
 
 
     	# Prepare training/val data
         Yr = Y
-        Xr = [Xi] + Xc
+        Xr = [Xi, Xc1, Xc2]
 
     	# remove events True pT < 50 GeV
         Yr_pt = convertXY2PtPhi(Yr)
@@ -136,7 +136,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     	# check the number of events higher than 300 GeV
         mask2 = (Yr_pt[:,0] > 300)
         Yr_pt = Yr_pt[mask2]
-        print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
+        #print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
         
         #Split batch into 3 subsets of the list files: train, valid, test
         # for now we just choose different data files for each
@@ -202,3 +202,19 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         return X, y
 
+train_generator = DataGenerator(['data/perfNano_TTbar_PU200.110X_set0.root'])
+import tqdm
+all_met_x = []
+all_met_y = []
+for Xr, y in tqdm.tqdm(train_generator):
+    Xi = Xr[0]
+    Xc1 = Xr[1]
+    Xc2 = Xr[2]
+    met_x = -np.sum(Xi[:,:,4],axis=1) #px
+    met_y = -np.sum(Xi[:,:,5],axis=1) #py
+    all_met_x.append(met_x)
+    all_met_y.append(met_y)
+all_met_x = np.concatenate(all_met_x)
+all_met_y = np.concatenate(all_met_y)
+print(all_met_x.shape)
+print(all_met_y.shape)

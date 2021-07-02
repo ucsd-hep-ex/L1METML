@@ -38,9 +38,8 @@ def convertXY2PtPhi(arrayXY):
     arrayPtPhi[:,1] = np.sign(arrayXY[:,1])*np.arccos(arrayXY[:,0]/arrayPtPhi[:,0])
     return arrayPtPhi
 
-def preProcessing(X, normFac, EVT=None):
+def preProcessing(A, normFac, EVT=None):
     """ pre-processing input """
-    A = X[:, :, :]
 
     norm = normFac
 
