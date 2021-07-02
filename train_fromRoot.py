@@ -138,8 +138,8 @@ def main(args):
     all_px = []
     all_py = []
     for ifile in list_files_Test:
-        XList.append(testGenerator.__get_features_labels(ifile, 0, testGenerator.max_entry)[0])
-        Yr_test.append(testGenerator.__get_features_labels(ifile, 0, testGenerator.max_entry)[1])
+        XList.append(testGenerator._DataGenerator.__get_features_labels(ifile, 0, testGenerator.max_entry)[0])
+        Yr_test.append(testGenerator._DataGenerator.__get_features_labels(ifile, 0, testGenerator.max_entry)[1])
     for X in XList:
         px = -np.sum(X[:,:,1],axis=1)
         py = -np.sum(X[:,:,2],axis=1)
