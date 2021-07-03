@@ -140,12 +140,12 @@ def trainFrom_Root(args):
 
     predict_test = keras_model.predict(testGenerator) * normFac
     all_PUPPI_pt = []
-    all_Yr_test = []
+    Yr_test = []
     for (Xr, Yr) in tqdm.tqdm(testGenerator):
         Xi = Xr[0]
         puppi_pt = -np.sum(Xi[:,:,4:6],axis=1)
         all_PUPPI_pt.append(puppi_pt)
-        all_Yr_test.append(Yr)
+        Yr_test.append(Yr)
 
     all_PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * Yr_test
