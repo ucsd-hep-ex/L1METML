@@ -43,7 +43,7 @@ def trainFrom_Root(args):
     batch_size = 1024
     preprocessed = True
     t_mode = args.mode
-    fileListPath = args.input
+    inputPath = args.input
     path_out = args.output
 
     # Make directory for output
@@ -376,11 +376,10 @@ def trainFrom_h5(args):
     args = parser.parse_args()
     main(args) '''
 
-
-if __name__ == "__main__":
+def main():
     time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
     path = "./result/"+time_path+"_PUPPICandidates/"
-    
+
     # 4 arguments
     # train from h5 or root?
     # root file path (input)
@@ -394,9 +393,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     dataType = args.dataType
-    
+
     if dataType == 'h5':
         trainFrom_h5(args)
 
     if dataType == 'root':
         trainFrom_Root(args)
+
+if __name__ == "__main__":
+    main()

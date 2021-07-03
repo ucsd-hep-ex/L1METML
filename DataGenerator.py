@@ -11,7 +11,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     def __init__(self, list_files, batch_size=1024, n_dim=100,
                  max_entry = 100000000):
         'Initialization'
-        self.dataSetType = dataSetType
         self.n_features_pf = 6
         self.n_features_pf_cat = 2
         self.normFac = 1.
@@ -146,6 +145,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         #indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
 
 	# form the data subsets by selecting indicies
+	#Note if we use these indicies, we must pass a dataSetType argument to __init__
        	#if self.dataSetType == 'train':
             #Xr = [x[indices_train] for x in Xr]
             #Yr = Yr[indices_train]
@@ -202,19 +202,3 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         return X, y
 
-train_generator = DataGenerator(['data/perfNano_TTbar_PU200.110X_set0.root'])
-import tqdm
-all_met_x = []
-all_met_y = []
-for Xr, y in tqdm.tqdm(train_generator):
-    Xi = Xr[0]
-    Xc1 = Xr[1]
-    Xc2 = Xr[2]
-    met_x = -np.sum(Xi[:,:,4],axis=1) #px
-    met_y = -np.sum(Xi[:,:,5],axis=1) #py
-    all_met_x.append(met_x)
-    all_met_y.append(met_y)
-all_met_x = np.concatenate(all_met_x)
-all_met_y = np.concatenate(all_met_y)
-print(all_met_x.shape)
-print(all_met_y.shape)
