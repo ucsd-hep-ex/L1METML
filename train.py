@@ -159,13 +159,13 @@ def trainFrom_Root(args):
         Xi = Xr[0]
         puppi_pt = -np.sum(Xi[:,:,4:6],axis=1)
         all_PUPPI_pt.append(puppi_pt)
-        Yr_test.append(Yr[0])
+        Yr_test.append(Yr)
 
     all_PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     print(Yr_test, "Yr_test")
-    print(Yr_test.shape)
-    print(Yr_test[0])
-    Yr_test = normFac * Yr_test
+    print(np.shape(Yr_test))
+    print(np.shape(Yr_test[0]))
+    Yr_test = normFac * Yr_test[0]
     #Xr_test = normFac * Xr_test
     #test_events = Xr_test[0].shape[0]
     
