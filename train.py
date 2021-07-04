@@ -114,20 +114,6 @@ def trainFrom_Root(args):
                                        save_weights_only=False, mode='auto',
                                        period=1)
 
-    predict_test = keras_model.predict(testGenerator) * normFac
-    all_PUPPI_pt = []
-    Yr_test = []
-    for (Xr, Yr) in tqdm.tqdm(testGenerator):
-        Xi = Xr[0]
-        puppi_pt = -np.sum(Xi[:,:,4:6],axis=1)
-        all_PUPPI_pt.append(puppi_pt)
-        Yr_test.append(Yr)
-
-    all_PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
-    print(Yr_test, "Yr_test")
-    print(np.shape(Yr_test))
-    print(np.shape(Yr_test[0]))
-    Yr_test = normFac * Yr_test[0]
     reduce_lr = ReduceLROnPlateau(
         monitor='val_loss', factor=0.5, patience=4, min_lr=0.000001, cooldown=3, verbose=1)
 
@@ -162,10 +148,7 @@ def trainFrom_Root(args):
         Yr_test.append(Yr)
 
     all_PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
-    print(Yr_test, "Yr_test")
-    print(np.shape(Yr_test))
-    print(np.shape(Yr_test[0]))
-    Yr_test = normFac * Yr_test[0]
+    Yr_test = normFac * np.concatenate(Yr_test)
     #Xr_test = normFac * Xr_test
     #test_events = Xr_test[0].shape[0]
     
@@ -303,9 +286,6 @@ def trainFrom_h5(args):
                        metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
-    Yr_test = normFac * Yr_test
-    print(Yr_test, "Yr_test")
-    print(np.shape(Yr_test))
     # Set model config
 
       # early stopping callback
