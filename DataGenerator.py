@@ -133,8 +133,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     	#Xr = [x[mask1] for x in Xr]
 
     	# check the number of events higher than 300 GeV
-        mask2 = (Yr_pt[:,0] > 300)
-        Yr_pt = Yr_pt[mask2]
+        #mask2 = (Yr_pt[:,0] > 300)
+        #Yr_pt = Yr_pt[mask2]
         #print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
         
         #Split batch into 3 subsets of the list files: train, valid, test

@@ -20,6 +20,5 @@ RUN pip install --quiet --no-cache-dir \
     scikit-learn \
     setGPU \
     mplhep \
-    keras \
     awkward
   
