@@ -147,12 +147,12 @@ def trainFrom_Root(args):
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
 
-    all_PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
+    PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
     #Xr_test = normFac * Xr_test
     #test_events = Xr_test[0].shape[0]
     
-    MakePlots(Yr_test, predict_test, all_PUPPI_pt, path_out = path_out)
+    MakePlots(Yr_test, predict_test, PUPPI_pt, path_out = path_out)
     
     Yr_test = convertXY2PtPhi(Yr_test)
     predict_test = convertXY2PtPhi(predict_test)
