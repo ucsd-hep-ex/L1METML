@@ -125,7 +125,7 @@ def trainFrom_Root(args):
 
     all_PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     print(Yr_test, "Yr_test")
-    print(np.shape.(Yr_test))
+    print(np.shape(Yr_test))
     print(np.shape(Yr_test[0]))
     Yr_test = normFac * Yr_test[0]
     reduce_lr = ReduceLROnPlateau(
