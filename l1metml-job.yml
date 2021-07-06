@@ -19,11 +19,11 @@ spec:
           name: l1metmlvol
         resources:
           limits:
-            memory: 100Gi
+            memory: 50Gi
             cpu: "2"
             nvidia.com/gpu: "1"
           requests:
-            memory: 50Gi
+            memory: 25Gi
             cpu: "2"
             nvidia.com/gpu: "1"
       volumes:
