@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-root-1024-35epochs
+  name: l1metml-training-root-1024-35epochs2
 spec:
   template:
     spec:
@@ -19,11 +19,11 @@ spec:
           name: l1metmlvol
         resources:
           limits:
-            memory: 50Gi
+            memory: 100Gi
             cpu: "2"
             nvidia.com/gpu: "1"
           requests:
-            memory: 25Gi
+            memory: 50Gi
             cpu: "2"
             nvidia.com/gpu: "1"
       volumes:
