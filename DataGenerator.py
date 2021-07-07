@@ -177,6 +177,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         X = np.zeros(shape=(n_samples,self.n_dim,self.n_channels), dtype=float, order='F')
         y = np.zeros(shape=(n_samples,2), dtype=float, order='F')
+        
+        def to_np_array(ak_array, maxN=100, pad=0):
+            return ak.fill_none(ak.pad_none(ak_array,maxN,clip=True,axis=-1),pad).to_numpy()
     
         pt = to_np_array(tree['L1PuppiCands_pt'],maxN=self.n_dim)
         eta = to_np_array(tree['L1PuppiCands_eta'],maxN=self.n_dim)

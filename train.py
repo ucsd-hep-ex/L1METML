@@ -39,7 +39,7 @@ def trainFrom_Root(args):
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
-    epochs = 20
+    epochs = 100
     batch_size = 1024
     preprocessed = True
     t_mode = args.mode
@@ -168,23 +168,6 @@ def trainFrom_Root(args):
     fi.write("Working Time (m) : {}".format((end_time - start_time)/60.))
 
     fi.close()
-
-
-# Configuration
-
-'''if __name__ == "__main__":
-
-    time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-    path = "./result/"+time_path+"_PUPPICandidates/"
-
-    parser = argparse.ArgumentParser()
-    #parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
-    parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
-    parser.add_argument('--mode', action='store', type=int, required=True, help='0 for L1MET, 1 for DeepMET')
-        
-    args = parser.parse_args()
-    main(args) '''
-    
     
 def trainFrom_h5(args):
 
@@ -211,11 +194,10 @@ def trainFrom_h5(args):
     # Read inputs
     
     # convert root files to h5 and store in same location
-    i =0
-    for file in os.listdir(inputPath):
-        if '.root' in file:
-            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {inputPath}/set{i}.h5')
-            i += 1
+    for i, file in enumerate(glob.glob(os.path.join(inputPath,'*.root'))):
+        h5file_path = f'{inputPath}/set{i}.h5'
+        if os.isfile(h5file_path) == False:
+            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {h5file_path}')
     # place h5 file names into a .txt file
     writeFile= open(f'{inputPath}/h5files.txt',"w+")
     for file in os.listdir(inputPath):
@@ -257,8 +239,8 @@ def trainFrom_h5(args):
 
     indices = np.array([i for i in range(len(Yr))])
     #print(indices)
-    indices_train, indices_valid = train_test_split(indices, test_size=0.2, random_state= 7)
-    indices_train, indices_test = train_test_split(indices_train, test_size=0.2, random_state=7)
+    indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
+    indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
 
     Xr_train = [x[indices_train] for x in Xr]
     Xr_test = [x[indices_test] for x in Xr]
@@ -358,22 +340,6 @@ def trainFrom_h5(args):
     fi.write("Working Time (m) : {}".format((end_time - start_time)/60.))
 
     fi.close()
-
-
-# Configuration
-
-''' if __name__ == "__main__":
-
-    time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-    path = "./result/"+time_path+"_PUPPICandidates/"
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
-    parser.add_argument('--output', action='store', type=str, default='{}'.format(path), help='designate output file path')
-    parser.add_argument('--mode', action='store', type=int, required=True, help='0 for L1MET, 1 for DeepMET')
-        
-    args = parser.parse_args()
-    main(args) '''
 
 def main():
     time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
