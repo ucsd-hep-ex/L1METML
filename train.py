@@ -228,19 +228,9 @@ def trainFrom_h5(args):
     Yr = Y
     Xr = [Xi] + Xc
 
-    # remove events True pT < 50 GeV
     Yr_pt = convertXY2PtPhi(Yr)
-    #mask1 = (Yr_pt[:,0] > 50.)
-    #Yr = Yr[mask1]
-    #Xr = [x[mask1] for x in Xr]
-
-    # check the number of events higher than 300 GeV
-    mask2 = (Yr_pt[:,0] > 300)
-    Yr_pt = Yr_pt[mask2]
-    #print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
 
     indices = np.array([i for i in range(len(Yr))])
-    #print(indices)
     indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
     indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
 

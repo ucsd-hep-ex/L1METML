@@ -124,40 +124,29 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     	# Prepare training/val data
         Yr = Y
         Xr = [Xi, Xc1, Xc2]
-
-    	# remove events True pT < 50 GeV
         Yr_pt = convertXY2PtPhi(Yr)
-        # uncomment this out??
-    	#mask1 = (Yr_pt[:,0] > 50.)
-    	#Yr = Yr[mask1]
-    	#Xr = [x[mask1] for x in Xr]
-
-    	# check the number of events higher than 300 GeV
-        #mask2 = (Yr_pt[:,0] > 300)
-        #Yr_pt = Yr_pt[mask2]
-        #print("# of events higher than 300 GeV : {}".format(Yr_pt.shape[0]))
         
-        #Split batch into 3 subsets of the list files: train, valid, test
-        # for now we just choose different data files for each
+        '''Split batch into 3 subsets of the list files: train, valid, test
+        #for now we just choose different data files for each
         
-        # indices = np.array([i for i in range(len(Yr))])
-        #indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
-        #indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
+        indices = np.array([i for i in range(len(Yr))])
+        indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
+        indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
 
-	# form the data subsets by selecting indicies
-	#Note if we use these indicies, we must pass a dataSetType argument to __init__
-       	#if self.dataSetType == 'train':
-            #Xr = [x[indices_train] for x in Xr]
-            #Yr = Yr[indices_train]
+        #form the data subsets by selecting indicies
+        #Note if we use these indicies, we must pass a dataSetType argument to __init__
+       	if self.dataSetType == 'train':
+            Xr = [x[indices_train] for x in Xr]
+            Yr = Yr[indices_train]
 
-       	#if self.dataSetType == 'test':
-            #Xr = [x[indices_test] for x in Xr]
-            #Yr = Yr[indices_test]
+       	if self.dataSetType == 'test':
+            Xr = [x[indices_test] for x in Xr]
+            Yr = Yr[indices_test]
 
-        #if self.dataSetType == 'valid':
+        if self.dataSetType == 'valid':
             #Xr = [x[indices_valid] for x in Xr]
             #Yr = Yr[indices_valid]
-
+        '''
         return Xr, Yr
    
     def __get_features_labels(self, ifile, entry_start, entry_stop):
