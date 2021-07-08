@@ -197,7 +197,9 @@ def trainFrom_h5(args):
     i =0
     for file in os.listdir(inputPath):
         if '.root' in file:
-            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {inputPath}/set{i}.h5')
+            h5file_path = f'{inputPath}set{i}.h5'
+            if os.isfile(h5file_path) == False:
+                os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {h5file_path}')
             i += 1
     # place h5 file names into a .txt file
     writeFile= open(f'{inputPath}h5files.txt',"w+")
