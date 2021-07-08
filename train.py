@@ -65,7 +65,7 @@ def trainFrom_Root(args):
     filesList = []
     for file in os.listdir(inputPath):
         if '.root' in file:
-            filesList.append(f'{inputPath}{file}')
+            filesList.append(f'{inputPath}/{file}')
     valid_nfiles = int(.1*len(filesList))
     if valid_nfiles == 0:
         valid_nfiles = 1
@@ -104,7 +104,7 @@ def trainFrom_Root(args):
       # early stopping callback
     early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
 
-    csv_logger = CSVLogger(f"{path_out}loss_history.log")
+    csv_logger = CSVLogger(f"{path_out}/loss_history.log")
 
       # model checkpoint callback
       # this saves our model architecture + parameters into model.h5
@@ -158,8 +158,8 @@ def trainFrom_Root(args):
     predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
 
-    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
-    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
+    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'/rel_error_opaque.png')
+    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'/PrVSGen.png')
     extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
     extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
     fi = open("{}time.txt".format(path_out), 'w')
@@ -273,7 +273,7 @@ def trainFrom_h5(args):
       # early stopping callback
     early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
 
-    csv_logger = CSVLogger(f"{path_out}loss_history.log")
+    csv_logger = CSVLogger(f"{path_out}/loss_history.log")
 
       # model checkpoint callback
       # this saves our model architecture + parameters into model.h5
@@ -330,8 +330,8 @@ def trainFrom_h5(args):
     predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
 
-    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
-    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
+    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'/rel_error_opaque.png')
+    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'/PrVSGen.png')
     extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
     extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
     fi = open("{}time.txt".format(path_out), 'w')
