@@ -182,6 +182,7 @@ def trainFrom_h5(args):
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
+    inputPath = args.input
 
     # Make directory for output
     try:
@@ -193,10 +194,11 @@ def trainFrom_h5(args):
     # Read inputs
     
     # convert root files to h5 and store in same location
-    for i, file in enumerate(glob.glob(os.path.join(inputPath,'*.root'))):
-        h5file_path = f'{inputPath}set{i}.h5'
-        if os.isfile(h5file_path) == False:
-            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}{file} -o {h5file_path}')
+    i =0
+    for file in os.listdir(inputPath):
+        if '.root' in file:
+            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {inputPath}/set{i}.h5')
+            i += 1
     # place h5 file names into a .txt file
     writeFile= open(f'{inputPath}h5files.txt',"w+")
     for file in os.listdir(inputPath):
