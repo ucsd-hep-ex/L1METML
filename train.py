@@ -64,7 +64,7 @@ def trainFrom_Root(args):
     filesList = []
     for file in os.listdir(inputPath):
         if '.root' in file:
-            filesList.append(f'{inputPath}/{file}')
+            filesList.append(f'{inputPath}{file}')
     valid_nfiles = int(.1*len(filesList))
     if valid_nfiles == 0:
         valid_nfiles = 1
@@ -103,12 +103,12 @@ def trainFrom_Root(args):
       # early stopping callback
     early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
 
-    csv_logger = CSVLogger(f"{path_out}/loss_history.log")
+    csv_logger = CSVLogger(f"{path_out}loss_history.log")
 
       # model checkpoint callback
       # this saves our model architecture + parameters into model.h5
 
-    model_checkpoint = ModelCheckpoint(f'{path_out}/model.h5', monitor='val_loss',
+    model_checkpoint = ModelCheckpoint(f'{path_out}model.h5', monitor='val_loss',
                                        verbose=0, save_best_only=True,
                                        save_weights_only=False, mode='auto',
                                        period=1)
@@ -124,7 +124,7 @@ def trainFrom_Root(args):
     # Run training
 
     print(keras_model.summary())
-    #plot_model(keras_model, to_file=f'{path_out}/model_plot.png', show_shapes=True, show_layer_names=True)
+    #plot_model(keras_model, to_file=f'{path_out}model_plot.png', show_shapes=True, show_layer_names=True)
 
     start_time = time.time() # check start time
     history = keras_model.fit(trainGenerator,
@@ -135,7 +135,7 @@ def trainFrom_Root(args):
                        )
     end_time = time.time() # check end time
     
-    keras_model.load_weights(f'{path_out}/model.h5')
+    keras_model.load_weights(f'{path_out}model.h5')
 
     predict_test = keras_model.predict(testGenerator) * normFac
     all_PUPPI_pt = []
@@ -157,8 +157,8 @@ def trainFrom_Root(args):
     predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
 
-    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'/rel_error_opaque.png')
-    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'/PrVSGen.png')
+    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
+    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
     extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
     extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
     fi = open("{}time.txt".format(path_out), 'w')
@@ -194,22 +194,21 @@ def trainFrom_h5(args):
     
     # convert root files to h5 and store in same location
     for i, file in enumerate(glob.glob(os.path.join(inputPath,'*.root'))):
-        h5file_path = f'{inputPath}/set{i}.h5'
+        h5file_path = f'{inputPath}set{i}.h5'
         if os.isfile(h5file_path) == False:
-            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {h5file_path}')
+            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}{file} -o {h5file_path}')
     # place h5 file names into a .txt file
-    writeFile= open(f'{inputPath}/h5files.txt',"w+")
+    writeFile= open(f'{inputPath}h5files.txt',"w+")
     for file in os.listdir(inputPath):
         if '.h5' in file:
-            writeFile.write(f'{inputPath}/{file}\n')
+            writeFile.write(f'{inputPath}{file}\n')
     writeFile.close()
-    h5files = f'{inputPath}/h5files.txt'
-    h5filesList = f'{inputPath}/h5files.txt'
+    h5files = f'{inputPath}h5files.txt'
     
     # It may be desireable to set specific files as the train, test, valid data sets
     # For now I keep train.py used: selection from a list of indicies
 
-    Xorg, Y = read_input(h5filesList)
+    Xorg, Y = read_input(h5files)
     Y = Y / -normFac
 
     Xi, Xc1, Xc2 = preProcessing(Xorg, normFac)
@@ -277,7 +276,7 @@ def trainFrom_h5(args):
       # model checkpoint callback
       # this saves our model architecture + parameters into model.h5
 
-    model_checkpoint = ModelCheckpoint(f'{path_out}/model.h5', monitor='val_loss',
+    model_checkpoint = ModelCheckpoint(f'{path_out}model.h5', monitor='val_loss',
                                        verbose=0, save_best_only=True,
                                        save_weights_only=False, mode='auto',
                                        period=1)
@@ -297,7 +296,7 @@ def trainFrom_h5(args):
     
     # Run training
     print(keras_model.summary())
-    #plot_model(keras_model, to_file=f'{path_out}/model_plot.png', show_shapes=True, show_layer_names=True)
+    #plot_model(keras_model, to_file=f'{path_out}model_plot.png', show_shapes=True, show_layer_names=True)
 
     start_time = time.time() # check start time
 
@@ -313,7 +312,7 @@ def trainFrom_h5(args):
     end_time = time.time() # check end time
     
 
-    keras_model.load_weights(f'{path_out}/model.h5')
+    keras_model.load_weights(f'{path_out}model.h5')
 
     predict_test = keras_model.predict(Xr_test)
     PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,4:6], axis=1)
@@ -329,8 +328,8 @@ def trainFrom_h5(args):
     predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
 
-    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'/rel_error_opaque.png')
-    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'/PrVSGen.png')
+    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
+    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
     extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
     extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
     fi = open("{}time.txt".format(path_out), 'w')
