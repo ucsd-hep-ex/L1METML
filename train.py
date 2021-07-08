@@ -45,6 +45,7 @@ def trainFrom_Root(args):
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
+    quantized = args.quantized
 
     # Make directory for output
     try:
@@ -58,7 +59,6 @@ def trainFrom_Root(args):
 
     # on lxplus
     #data in '/afs/cern.ch/work/d/daekwon/public/L1PF_110X/CMSSW_11_1_2/src/FastPUPPI/NtupleProducer/python/TTbar_PU200_110X_1M'
-    
     # on prp
     #data in '../../../l1metmlvol/TTbar_PU200_110X_1M'
     
@@ -80,8 +80,17 @@ def trainFrom_Root(args):
     testGenerator = DataGenerator(list_files=test_filesList,batch_size=batch_size)
     Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
     # Load training model
+    
+    if quantized == true:
+    
+        logit_total_bits = 7
+        logit_int_bits = 2
+        activation_total_bits = 7
+        activation_int_bits = 2
         
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
+        keras_model = dense_embedding_quantized(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation_quantizer='quantized_tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False, logit_quantizer = 'quantized_bits', logit_total_bits=logic_total_bits, logit_int_bits=logit_int_bits, activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits, alpha=1, use_stochastic_rounding=False,)
+    else:
+        keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
@@ -183,6 +192,7 @@ def trainFrom_h5(args):
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
+    quantized = args.quantized
 
     # Make directory for output
     try:
@@ -251,7 +261,17 @@ def trainFrom_h5(args):
 
     # Load training model
 
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
+    if quantized == true:
+    
+        logit_total_bits = 7
+        logit_int_bits = 2
+        activation_total_bits = 7
+        activation_int_bits = 2
+        
+        keras_model = dense_embedding_quantized(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation_quantizer='quantized_tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False, logit_quantizer = 'quantized_bits', logit_total_bits=logic_total_bits, logit_int_bits=logit_int_bits, activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits, alpha=1, use_stochastic_rounding=False,)
+
+    else:
+        keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
@@ -355,6 +375,7 @@ def main():
     parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store',   type=int, required=True, help='0 for L1MET, 1 for DeepMET')
+    parser.add_argument('--quantized', action='store_true', required=False, help='flag for quantized model, empty for normal model')
     args = parser.parse_args()
 
     dataType = args.dataType
