@@ -51,9 +51,10 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation
     return keras_model
     
 def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=3, number_of_pupcandis=100, embedding_input_dim={0: 13, 1: 3}, emb_out_dim=8, with_bias=True, t_mode = 0, logit_total_bits=7, logit_int_bits=2, activation_total_bits=7, logit_quantizer = 'quantized_bits', activation_quantizer = 'quantized_relu', activation_int_bits=2, alpha=1, use_stochastic_rounding=False):
+
     
     logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
-    activation_quantizer = getattr(qkeras.quantizers,activation_quantizer)(activation_total_bits, activation_int_bits, use_stochastic_rounding=use_stochastic_rounding)
+    activation_quantizer = getattr(qkeras.quantizers,activation_quantizer)(activation_total_bits, activation_int_bits)
     
     inputs_cont = Input(shape=(number_of_pupcandis, n_features), name='input')
     pxpy = Lambda(lambda x: slice(x, (0, 0, n_features-2), (-1, -1, -1)))(inputs_cont)
@@ -72,25 +73,30 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=3, 
     x = Concatenate()([inputs[0]] + [emb for emb in embeddings])
     
     for i_dense in range(n_dense_layers):
-        x = Dense(8*2**(n_dense_layers-i_dense), activation = activation_quantizer, kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
+        x = QDense(8*2**(n_dense_layers-i_dense), activation = activation_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
 
     if t_mode == 0:
         x = qkeras.qpooling.QGlobalAveragePooling1D(name='pool', quantizer=logit_quantizer)(x)
         #pool size?
-        outputs = QDense(2, name = 'output', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, activation='quantized_tanh')(x)
+        outputs = QDense(2, name = 'output', bias_quantizer=logit_quantizer, activation='quantized_tanh')(x)
         #similar to activation='linear'?
 
     if t_mode == 1:
-        x = QDense(3 if with_bias else 1, activation='quantized_tanh', kernel_initializer=initializers.VarianceScaling(scale=0.02, kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer))(x)
+        x = QDense(3 if with_bias else 1, activation='quantized_tanh', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         x = Concatenate()([x, pxpy])
         x = weighted_sum_layer(with_bias, name="weighted_sum" if with_bias else "output")(x)
 
         if with_bias:
-            x = QDense(2, name = 'output', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, activation='quantized_tanh')(x)
+            x = QDense(2, name = 'output', bias_quantizer=logit_quantizer, activation='quantized_tanh')(x)
 
         outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
     return keras_model
+
+# import qkeras (is this part of tensorflow as well?)
+# multiple values assigned to 'use_stochastic_rounding' in line 57 (activation quantizer), so i removed this argument
+# removed all 'kernal_quantizer' arguments in lines 76, 82, 86, 91; maybe need not for all?
+# removed 'bias_quantizer' in line 86
