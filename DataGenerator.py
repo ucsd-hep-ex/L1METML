@@ -3,7 +3,7 @@ import tensorflow.keras as keras
 import numpy as np
 import uproot
 import awkward as ak
-from utils import convertXY2PtPhi, preProcessing, to_np_array
+from utils import convertXY2PtPhi, preProcessing
 from sklearn.model_selection import train_test_split
 
 class DataGenerator(tensorflow.keras.utils.Sequence):
