@@ -34,11 +34,11 @@ def get_callbacks(path_out, sample_size, batch_size):
     # early stopping callback
     early_stopping = EarlyStopping(monitor='val_loss', patience=20, verbose=1, restore_best_weights=False)
 
-    csv_logger = CSVLogger(f"{path_out}/loss_history.log")
+    csv_logger = CSVLogger(f'{path_out}loss_history.log')
 
     # model checkpoint callback
     # this saves our model architecture + parameters into model.h5
-    model_checkpoint = ModelCheckpoint(f'{path_out}/model.h5', monitor='val_loss',
+    model_checkpoint = ModelCheckpoint(f'{path_out}model.h5', monitor='val_loss',
                                        verbose=0, save_best_only=True,
                                        save_weights_only=False, mode='auto',
                                        period=1)
@@ -83,7 +83,7 @@ def trainFrom_Root(args):
     filesList = []
     for file in os.listdir(inputPath):
         if '.root' in file:
-            filesList.append(f'{inputPath}/{file}')
+            filesList.append(f'{inputPath}{file}')
     valid_nfiles = int(.1*len(filesList))
     if valid_nfiles == 0:
         valid_nfiles = 1
@@ -164,8 +164,8 @@ def trainFrom_h5(args):
     
     # convert root files to h5 and store in same location
     h5files = []
-    print(glob(f'{inputPath}/*.root'))
-    for ifile in glob(f'{inputPath}/*.root'):
+    print(glob(f'{inputPath}*.root'))
+    for ifile in glob(f'{inputPath}*.root'):
         h5file_path = ifile.replace('.root','.h5')
         if not os.path.isfile(h5file_path):
             print(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
