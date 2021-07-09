@@ -3,7 +3,7 @@ import tensorflow.keras as keras
 import numpy as np
 import uproot
 import awkward as ak
-from utils import convertXY2PtPhi, preProcessing
+from utils import convertXY2PtPhi, preProcessing, to_np_array
 from sklearn.model_selection import train_test_split
 
 class DataGenerator(tensorflow.keras.utils.Sequence):
@@ -120,33 +120,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 	# dimension parameter for keras model
         self.emb_input_dim = {i:int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
 
-
     	# Prepare training/val data
         Yr = Y
-        Xr = [Xi, Xc1, Xc2]
-        Yr_pt = convertXY2PtPhi(Yr)
+        Xr = [Xi] + Xc
         
-        '''Split batch into 3 subsets of the list files: train, valid, test
-        #for now we just choose different data files for each
-        
-        indices = np.array([i for i in range(len(Yr))])
-        indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
-        indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
-
-        #form the data subsets by selecting indicies
-        #Note if we use these indicies, we must pass a dataSetType argument to __init__
-       	if self.dataSetType == 'train':
-            Xr = [x[indices_train] for x in Xr]
-            Yr = Yr[indices_train]
-
-       	if self.dataSetType == 'test':
-            Xr = [x[indices_test] for x in Xr]
-            Yr = Yr[indices_test]
-
-        if self.dataSetType == 'valid':
-            #Xr = [x[indices_valid] for x in Xr]
-            #Yr = Yr[indices_valid]
-        '''
         return Xr, Yr
    
     def __get_features_labels(self, ifile, entry_start, entry_stop):
@@ -167,9 +144,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         X = np.zeros(shape=(n_samples,self.n_dim,self.n_channels), dtype=float, order='F')
         y = np.zeros(shape=(n_samples,2), dtype=float, order='F')
         
-        def to_np_array(ak_array, maxN=100, pad=0):
-            return ak.fill_none(ak.pad_none(ak_array,maxN,clip=True,axis=-1),pad).to_numpy()
-    
         pt = to_np_array(tree['L1PuppiCands_pt'],maxN=self.n_dim)
         eta = to_np_array(tree['L1PuppiCands_eta'],maxN=self.n_dim)
         phi = to_np_array(tree['L1PuppiCands_phi'],maxN=self.n_dim)
