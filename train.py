@@ -19,6 +19,7 @@ import pathlib
 import datetime
 import tqdm
 import h5py
+from glob import glob
 
 #Import custom modules
 
@@ -27,44 +28,62 @@ from cyclical_learning_rate import CyclicLR
 from models import *
 from utils import *
 from loss import custom_loss
-#from epoch_all import epoch_all
 from DataGenerator import DataGenerator
 
+def get_callbacks(path_out, sample_size, batch_size):
+    # early stopping callback
+    early_stopping = EarlyStopping(monitor='val_loss', patience=20, verbose=1, restore_best_weights=False)
+
+    csv_logger = CSVLogger(f"{path_out}/loss_history.log")
+
+    # model checkpoint callback
+    # this saves our model architecture + parameters into model.h5
+    model_checkpoint = ModelCheckpoint(f'{path_out}/model.h5', monitor='val_loss',
+                                       verbose=0, save_best_only=True,
+                                       save_weights_only=False, mode='auto',
+                                       period=1)
+
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=4, min_lr=0.000001, cooldown=3, verbose=1)
+
+    lr_scale = 1.
+    clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=sample_size/batch_size, mode='triangular2')
+
+    stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
+
+    callbacks = [early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint]
+
+    return callbacks
+
+def test(Yr_test, predict_test, PUPPI_pt, path_out):
+
+    MakePlots(Yr_test, predict_test, PUPPI_pt, path_out = path_out)
+    
+    Yr_test = convertXY2PtPhi(Yr_test)
+    predict_test = convertXY2PtPhi(predict_test)
+    PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
+
+    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
+    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
+    extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
+    extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
+
 def trainFrom_Root(args):
-
-
     # general setup
-
     maxNPF = 100
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
-    epochs = 100
+    epochs = args.epochs
     batch_size = 1024
     preprocessed = True
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
 
-    # Make directory for output
-    try:
-        if not os.path.exists(path_out):
-            os.makedirs(path_out)
-    except OSError:
-        print ('Creating directory' + path_out)
-	
-
-    # load in data 3 generators; each recieve different data sets
-
-    # on lxplus
-    #data in '/afs/cern.ch/work/d/daekwon/public/L1PF_110X/CMSSW_11_1_2/src/FastPUPPI/NtupleProducer/python/TTbar_PU200_110X_1M'
-    # on prp
-    #data in '../../../l1metmlvol/TTbar_PU200_110X_1M'
-    
     filesList = []
     for file in os.listdir(inputPath):
         if '.root' in file:
-            filesList.append(f'{inputPath}{file}')
+            filesList.append(f'{inputPath}/{file}')
     valid_nfiles = int(.1*len(filesList))
     if valid_nfiles == 0:
         valid_nfiles = 1
@@ -78,89 +97,49 @@ def trainFrom_Root(args):
     validGenerator = DataGenerator(list_files=valid_filesList,batch_size=batch_size)
     testGenerator = DataGenerator(list_files=test_filesList,batch_size=batch_size)
     Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
-    # Load training model
 
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
+    # Load training model
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
-
     if t_mode == 0:
         keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
-        #keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
-
-    if t_mode == 1:
+    elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        #keras_model.compile(loss=custom_loss, optimizer=optimizer, 
         keras_model.compile(loss=['mean_absolute_error', 'mean_squared_error'], optimizer=optimizer, 
-                       metrics=['mean_absolute_error', 'mean_squared_error'])
+                            metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
 
     # Set model config
-
-      # early stopping callback
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
-
-    csv_logger = CSVLogger(f"{path_out}loss_history.log")
-
-      # model checkpoint callback
-      # this saves our model architecture + parameters into model.h5
-
-    model_checkpoint = ModelCheckpoint(f'{path_out}model.h5', monitor='val_loss',
-                                       verbose=0, save_best_only=True,
-                                       save_weights_only=False, mode='auto',
-                                       period=1)
-
-    reduce_lr = ReduceLROnPlateau(
-        monitor='val_loss', factor=0.5, patience=4, min_lr=0.000001, cooldown=3, verbose=1)
-
-    lr_scale = 1.
-    clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(trainGenerator.y)/batch_size, mode='triangular2')
-
-    stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
-    
     # Run training
 
     print(keras_model.summary())
-    #plot_model(keras_model, to_file=f'{path_out}model_plot.png', show_shapes=True, show_layer_names=True)
 
     start_time = time.time() # check start time
     history = keras_model.fit(trainGenerator,
-                        epochs=epochs,
-                        verbose=verbose,  # switch to 1 for more verbosity
-                        validation_data=validGenerator,
-                        callbacks=[early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint],#, reduce_lr], #, lr,   reduce_lr],
-                       )
+                              epochs=epochs,
+                              verbose=verbose,  # switch to 1 for more verbosity
+                              validation_data=validGenerator,
+                              callbacks=get_callbacks(path_out, len(trainGenerator), batch_size),
+                          )
     end_time = time.time() # check end time
     
-    keras_model.load_weights(f'{path_out}model.h5')
-
     predict_test = keras_model.predict(testGenerator) * normFac
     all_PUPPI_pt = []
     Yr_test = []
     for (Xr, Yr) in tqdm.tqdm(testGenerator):
-        Xi = Xr[0]
-        puppi_pt = -np.sum(Xi[:,:,4:6],axis=1)
+        puppi_pt = np.sum(Xr[0][:,:,4:6],axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
 
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
-    #Xr_test = normFac * Xr_test
-    #test_events = Xr_test[0].shape[0]
     
-    MakePlots(Yr_test, predict_test, PUPPI_pt, path_out = path_out)
-    
-    Yr_test = convertXY2PtPhi(Yr_test)
-    predict_test = convertXY2PtPhi(predict_test)
-    PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
+    test(Yr_test, predict_test, PUPPI_pt, path_out)
 
-    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
-    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
-    extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
-    extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
     fi = open("{}time.txt".format(path_out), 'w')
 
     fi.write("Working Time (s) : {}".format(end_time - start_time))
@@ -169,46 +148,30 @@ def trainFrom_Root(args):
     fi.close()
     
 def trainFrom_h5(args):
-
     # general setup
-
     maxNPF = 100
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
-    epochs = 1
+    epochs = args.epochs
     batch_size = 1024
     preprocessed = True
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
-    inputPath = args.input
-
-    # Make directory for output
-    try:
-        if not os.path.exists(path_out):
-            os.makedirs(path_out)
-    except OSError:
-        print ('Creating directory' + path_out)
 
     # Read inputs
     
     # convert root files to h5 and store in same location
-    i =0
-    for file in os.listdir(inputPath):
-        if '.root' in file:
-            h5file_path = f'{inputPath}set{i}.h5'
-            if os.path.isfile(h5file_path) == False:
-                os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {inputPath}/{file} -o {h5file_path}')
-            i += 1
-    # place h5 file names into a .txt file
-    writeFile= open(f'{inputPath}h5files.txt',"w+")
-    for file in os.listdir(inputPath):
-        if '.h5' in file:
-            writeFile.write(f'{inputPath}{file}\n')
-    writeFile.close()
-    h5files = f'{inputPath}h5files.txt'
-    
+    h5files = []
+    print(glob(f'{inputPath}/*.root'))
+    for ifile in glob(f'{inputPath}/*.root'):
+        h5file_path = ifile.replace('.root','.h5')
+        if not os.path.isfile(h5file_path):
+            print(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
+            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
+        h5files.append(h5file_path)
+
     # It may be desireable to set specific files as the train, test, valid data sets
     # For now I keep train.py used: selection from a list of indicies
 
@@ -221,14 +184,10 @@ def trainFrom_h5(args):
     emb_input_dim = {
         i:int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
     }
-    #print(emb_input_dim)
-
 
     # Prepare training/val data
     Yr = Y
     Xr = [Xi] + Xc
-
-    Yr_pt = convertXY2PtPhi(Yr)
 
     indices = np.array([i for i in range(len(Yr))])
     indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
@@ -242,90 +201,41 @@ def trainFrom_h5(args):
     Yr_valid = Yr[indices_valid]
 
     # Load training model
-
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
-
     if t_mode == 0:
         keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
-        #keras_model.compile(optimizer='adam', loss=['mean_squared_error', 'mean_squared_error'], metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
-
-    if t_mode == 1:
+    elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        #keras_model.compile(loss=custom_loss, optimizer=optimizer,
         keras_model.compile(loss=['mean_absolute_error', 'mean_squared_error'], optimizer=optimizer,
-                       metrics=['mean_absolute_error', 'mean_squared_error'])
+                            metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
     # Set model config
 
-      # early stopping callback
-    early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
-
-    csv_logger = CSVLogger(f"{path_out}/loss_history.log")
-
-      # model checkpoint callback
-      # this saves our model architecture + parameters into model.h5
-
-    model_checkpoint = ModelCheckpoint(f'{path_out}model.h5', monitor='val_loss',
-                                       verbose=0, save_best_only=True,
-                                       save_weights_only=False, mode='auto',
-                                       period=1)
-
-    reduce_lr = ReduceLROnPlateau(
-        monitor='val_loss', factor=0.5, patience=4, min_lr=0.000001, cooldown=3, verbose=1)
-
-    lr_scale = 1.
-    clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(Y)/batch_size, mode='triangular2')
-
-    stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
-
-    #print(Xr_train[0].shape[-1])
-    #print(Xr_train[1].shape[-1])
-    #print(Xr_train[2].shape[-1])
-    
-    
     # Run training
     print(keras_model.summary())
-    #plot_model(keras_model, to_file=f'{path_out}model_plot.png', show_shapes=True, show_layer_names=True)
 
     start_time = time.time() # check start time
-
     history = keras_model.fit(Xr_train,
-                        Yr_train,
-                        epochs=epochs,
-                        batch_size = batch_size,
-                        verbose=verbose,  # switch to 1 for more verbosity
-                        validation_data=(Xr_valid, Yr_valid),
-                        callbacks=[early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint],#, reduce_lr], #, lr,   reduce_lr],
-                       )
-
+                              Yr_train,
+                              epochs=epochs,
+                              batch_size = batch_size,
+                              verbose=verbose,  # switch to 1 for more verbosity
+                              validation_data=(Xr_valid, Yr_valid),
+                              callbacks=get_callbacks(path_out, len(Yr_train), batch_size)
+                          )
     end_time = time.time() # check end time
     
-
-    keras_model.load_weights(f'{path_out}model.h5')
-
-    predict_test = keras_model.predict(Xr_test)
+    predict_test = keras_model.predict(Xr_test) * normFac
     PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,4:6], axis=1)
-    predict_test = predict_test *normFac
     Yr_test = normFac * Yr_test
-    #Xr_valid = normFac * Xr_valid
 
-    #test_events = Xr_valid[0].shape[0]
+    test(Yr_test, predict_test, PUPPI_pt, path_out)
 
-    MakePlots(Yr_test, predict_test, PUPPI_pt, path_out = path_out)
-
-    Yr_test = convertXY2PtPhi(Yr_test)
-    predict_test = convertXY2PtPhi(predict_test)
-    PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
-
-    MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
-    MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
-    extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
-    extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
     fi = open("{}time.txt".format(path_out), 'w')
 
     fi.write("Working Time (s) : {}".format(end_time - start_time))
@@ -343,18 +253,20 @@ def main():
     # output path
     # mode 0 or 1
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataType', action='store', type=str, required=True, help='designate input file path')
+    parser.add_argument('--dataType', action='store', type=str, required=True, choices=['h5', 'root'], help='designate input file path')
     parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
-    parser.add_argument('--mode', action='store',   type=int, required=True, help='0 for L1MET, 1 for DeepMET')
+    parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
+    parser.add_argument('--epochs', action='store', type=int, required=False, default=100, help='0 for L1MET, 1 for DeepMET')
     
     args = parser.parse_args()
     dataType = args.dataType
 
+    os.makedirs(args.output,exist_ok=True)
+
     if dataType == 'h5':
         trainFrom_h5(args)
-
-    if dataType == 'root':
+    elif dataType == 'root':
         trainFrom_Root(args)
 
 if __name__ == "__main__":
