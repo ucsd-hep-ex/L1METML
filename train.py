@@ -257,7 +257,7 @@ def main():
     parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
-    parser.add_argument('--epochs', action='store', type=int, required=False, default=100, help='0 for L1MET, 1 for DeepMET')
+    parser.add_argument('--epochs', action='store', type=int, required=False, default=100)
     
     args = parser.parse_args()
     dataType = args.dataType
