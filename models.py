@@ -73,22 +73,22 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=3, 
     x = Concatenate()([inputs[0]] + [emb for emb in embeddings])
     
     for i_dense in range(n_dense_layers):
-        x = QDense(8*2**(n_dense_layers-i_dense), activation = activation_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
+        x = QDense(8*2**(n_dense_layers-i_dense), activation = activation_quantizer,kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
 
     if t_mode == 0:
         x = qkeras.qpooling.QGlobalAveragePooling1D(name='pool', quantizer=logit_quantizer)(x)
         #pool size?
-        outputs = QDense(2, name = 'output', bias_quantizer=logit_quantizer, activation='quantized_tanh')(x)
+        outputs = QDense(2, name = 'output', bias_quantizer=logit_quantizer, kernel_quantizer=logit_quantizer, activation='quantized_tanh')(x)
         #similar to activation='linear'?
 
     if t_mode == 1:
-        x = QDense(3 if with_bias else 1, activation='quantized_tanh', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        x = QDense(3 if with_bias else 1, activation='quantized_tanh', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         x = Concatenate()([x, pxpy])
         x = weighted_sum_layer(with_bias, name="weighted_sum" if with_bias else "output")(x)
 
         if with_bias:
-            x = QDense(2, name = 'output', bias_quantizer=logit_quantizer, activation='quantized_tanh')(x)
+            x = QDense(2, name = 'output', bias_quantizer=logit_quantizer,kernel_quantizer=logit_quantizer, activation='quantized_tanh')(x)
 
         outputs = x
 
@@ -100,3 +100,4 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=3, 
 # multiple values assigned to 'use_stochastic_rounding' in line 57 (activation quantizer), so i removed this argument
 # removed all 'kernal_quantizer' arguments in lines 76, 82, 86, 91; maybe need not for all?
 # removed 'bias_quantizer' in line 86
+# QGlobalAveragePooling1D doesn't exist (line 80)
