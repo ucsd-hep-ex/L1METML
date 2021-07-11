@@ -98,6 +98,4 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=3, 
 
 # import qkeras (is this part of tensorflow as well?)
 # multiple values assigned to 'use_stochastic_rounding' in line 57 (activation quantizer), so i removed this argument
-# removed all 'kernal_quantizer' arguments in lines 76, 82, 86, 91; maybe need not for all?
-# removed 'bias_quantizer' in line 86
 # QGlobalAveragePooling1D doesn't exist (line 80)
