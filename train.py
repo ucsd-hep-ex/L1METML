@@ -164,11 +164,9 @@ def trainFrom_h5(args):
     
     # convert root files to h5 and store in same location
     h5files = []
-    print(glob(f'{inputPath}*.root'))
     for ifile in glob(f'{inputPath}*.root'):
         h5file_path = ifile.replace('.root','.h5')
         if not os.path.isfile(h5file_path):
-            print(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
             os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
         h5files.append(h5file_path)
 
