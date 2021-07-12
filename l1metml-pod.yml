@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: l1metml-pod
+  name: l1metml-pod2
 spec:
   containers:
   - name: gpu-container
@@ -9,11 +9,11 @@ spec:
     command: ["sleep", "infinity"]
     resources:
       limits:
-        memory: 4Gi
+        memory: 12Gi
         cpu: "2"
         nvidia.com/gpu: "1"
       requests:
-        memory: 2Gi
+        memory: 12Gi
         cpu: "1"
         nvidia.com/gpu: "1"
     volumeMounts:

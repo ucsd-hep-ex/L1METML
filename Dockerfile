@@ -12,6 +12,7 @@ USER ${NB_UID}
 
 # Install Tensorflow
 RUN pip install --quiet --no-cache-dir \
+    uproot \
     tables \
     awkward \
     uproot \
@@ -20,4 +21,7 @@ RUN pip install --quiet --no-cache-dir \
     tqdm \
     scikit-learn \
     setGPU \
-    mplhep
+    mplhep \
+    qkeras \
+    awkward
+  

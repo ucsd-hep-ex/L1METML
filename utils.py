@@ -1,33 +1,19 @@
+import awkward as ak
 import numpy as np
-from glob import glob
 
-def read_input(inputfile):
+def read_input(inputfiles):
     import h5py
-    import os
-    list_input = open("%s"%inputfile)
-    nfiles=0
-    for line in list_input:
-        fname = line.rstrip()
-        if fname.startswith('#'):
-            continue
-        if not os.path.getsize(fname):
-            continue
+    for i, fname in enumerate(inputfiles):
         print("read file", fname)
-        h5f = h5py.File( fname, 'r')
-        if nfiles == 0:
-           X = h5f['X'][:]
-           Y = h5f['Y'][:]
-    
-        else:
-           X = np.concatenate((X, h5f['X']), axis=0)
-           Y = np.concatenate((Y, h5f['Y']), axis=0)
-        h5f.close()
-        nfiles += 1
-    
+        with h5py.File( fname, 'r') as h5f:
+            if i == 0:
+                X = h5f['X'][:]
+                Y = h5f['Y'][:]
+            else:
+                X = np.concatenate((X, h5f['X']), axis=0)
+                Y = np.concatenate((Y, h5f['Y']), axis=0)    
     print("finish reading files")
-    A = X[:, :, :]
-    B = Y[:, :]
-    return A, B
+    return X, Y
 
 def convertXY2PtPhi(arrayXY):
     # convert from array with [:,0] as X and [:,1] as Y to [:,0] as pt and [:,1] as phi
@@ -37,9 +23,8 @@ def convertXY2PtPhi(arrayXY):
     arrayPtPhi[:,1] = np.sign(arrayXY[:,1])*np.arccos(arrayXY[:,0]/arrayPtPhi[:,0])
     return arrayPtPhi
 
-def preProcessing(X, normFac, EVT=None):
+def preProcessing(A, normFac, EVT=None):
     """ pre-processing input """
-    A = X[:, :, :]
 
     norm = normFac
 
@@ -150,3 +135,6 @@ def Make1DHists(truth, predict, PUPPI, xmin=0, xmax=400, nbins=100, density=Fals
     plt.ylabel(yname)
     plt.savefig(outputname)
     plt.close()
+
+def to_np_array(ak_array, maxN=100, pad=0):
+    return ak.fill_none(ak.pad_none(ak_array,maxN,clip=True,axis=-1),pad).to_numpy()
