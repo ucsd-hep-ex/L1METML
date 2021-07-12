@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-h5-1024-100epochs
+  name: l1metml-training-h5-1024-10epochs-customloss
 spec:
   template:
     spec:
@@ -13,7 +13,7 @@ spec:
         - "-c"
         - " git clone https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --dataType h5 --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/h5_training_1024-100epochs/ --mode 1 --epochs 100"
+            python train.py --dataType h5 --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root_training_1024-10epochs_customLoss/ --mode 1 --epochs 10"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol

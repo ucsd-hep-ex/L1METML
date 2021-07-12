@@ -154,7 +154,7 @@ def trainFrom_h5(args):
     n_features_pf_cat = 2
     normFac = 1.
     epochs = args.epochs
-    batch_size = 1024
+    batch_size = 2048
     preprocessed = True
     t_mode = args.mode
     inputPath = args.input
