@@ -54,5 +54,5 @@ def custom_loss(y_true, y_pred):
     loss = 0.5*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
 
     #loss += 200.*dev
-    loss += 5000.*dev
+    loss += 100.*dev
     return loss
