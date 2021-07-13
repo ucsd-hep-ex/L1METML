@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-h5-1024-10epochs-customloss
+  name: l1metml-training-h5-2048-2epochs
 spec:
   template:
     spec:
@@ -13,19 +13,19 @@ spec:
         - "-c"
         - " git clone https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --dataType h5 --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root_training_1024-10epochs_customLoss/ --mode 1 --epochs 10"
+            python -m cProfile -o /l1metmlvol/l1metml-training-h5-2048-2epochs.dat train.py --dataType h5 --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/h5_training_2048-2epochs_customLoss/ --mode 1 --epochs 2 &&
+            pip install snakeviz &&
+            snakeviz -s safari /l1metmlvol/l1metml-training-h5-2048-2epochs.dat"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
         resources:
           limits:
-            memory: 100Gi
-            cpu: "2"
-            nvidia.com/gpu: "1"
-          requests:
             memory: 50Gi
-            cpu: "2"
-            nvidia.com/gpu: "1"
+            cpu: "6"
+          requests:
+            memory: 25Gi
+            cpu: "6"
       volumes:
       - name: l1metmlvol
         persistentVolumeClaim:
