@@ -99,7 +99,7 @@ def trainFrom_Root(args):
     Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
 
     # Load training model
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
@@ -108,7 +108,7 @@ def trainFrom_Root(args):
         verbose = 1
     elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=['mean_absolute_error', 'mean_squared_error'], optimizer=optimizer, 
+        keras_model.compile(loss=custom_loss, optimizer=optimizer, 
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
@@ -199,7 +199,7 @@ def trainFrom_h5(args):
     Yr_valid = Yr[indices_valid]
 
     # Load training model
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=5, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
 
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
@@ -208,7 +208,7 @@ def trainFrom_h5(args):
         verbose = 1
     elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=['mean_absolute_error', 'mean_squared_error'], optimizer=optimizer,
+        keras_model.compile(loss=custom_loss, optimizer=optimizer,
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
