@@ -11,7 +11,8 @@ spec:
         command:
         - "/bin/bash"
         - "-c"
-        - " git clone b quantized_model https://github.com/hanhiller/L1METML &&
+        - " git clone -b quantized_model https://github.com/hanhiller/L1METML &&
+            pip install qkeras &&
             cd L1METML &&
             python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root_training_quantized_test/ --mode 1 --epochs 100 --quantized"
         volumeMounts:
