@@ -39,7 +39,7 @@ def Write_MET_binned_histogram(Predict_array, Gen_array, bin_number, bin_minimum
         book(hists, "predict_para_"+str(int(i*binning_gr+bin_medi))+"-"+str(int((i+1)*binning_gr+bin_medi))+"", 100, -bin_maxi, bin_maxi)
         book(hists, "v_gen_"+str(int(i*binning_gr+bin_medi))+"-"+str(int((i+1)*binning_gr+bin_medi))+"", 1000, i*binning_gr+bin_medi, (i+1)*binning_gr+bin_medi)
 
-    v_gen =	rt.TVector2()
+    v_gen =    rt.TVector2()
     v_para_PUPPI = rt.TVector2()
     v_perp_PUPPI = rt.TVector2()
     v_predict = rt.TVector2()
@@ -350,9 +350,6 @@ def MET_rel_error_bad(predict_met, gen_met, name='Met_res.pdf'):
     #plt.pause(5)
     plt.close("all")
 
-
-
-
 def MET_rel_error(predict_met, gen_met, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)/gen_met
 
@@ -538,7 +535,7 @@ def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, genMET_cu
         X_error[j] = np.std(gen_met[mask])
         y_error[j] = np.std(predict_met[mask])
 
-    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, 
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error,
                  label='cut = '+str(genMET_cut)+', '+str(corr_check)+'.')
 
     ## x = y plot
@@ -585,10 +582,10 @@ def MET_binned_predict_mean_opaque(predict_met, predict_met2, gen_met, binning, 
         y_error2[j] = np.std(predict_met2[mask2])
 
 
-    plt.errorbar(X_genMET2, y_predict2, xerr = X_error2, yerr = y_error2, 
+    plt.errorbar(X_genMET2, y_predict2, xerr = X_error2, yerr = y_error2,
                  label='PUPPI MET', color='green', uplims=y_error2, lolims=y_error2)
      
-    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, 
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error,
                  label='Predicted MET', color='red', uplims=y_error, lolims=y_error)
 
 
@@ -623,7 +620,7 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
         X_error[j] = np.std(gen_met[mask])
         y_error[j] = np.std(predict_met[mask]/gen_met[mask])
 
-    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error, 
+    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error,
                  label='cut = '+str(genMET_cut)+', '+str(comment)+'.')
 
     ## y = 1 plot
