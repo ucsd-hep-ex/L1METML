@@ -9,6 +9,8 @@ import h5py
 from tqdm import tqdm
 import os
 
+from utils import  to_np_array
+
 '''
 widgets=[
     progressbar.SimpleProgress(), ' - ', progressbar.Timer(), ' - ', progressbar.Bar(), ' - ', progressbar.AbsoluteETA()
@@ -85,9 +87,6 @@ X = np.zeros(shape=(maxEntries,maxNPuppi,nFeatures), dtype=float, order='F')
 # recoil estimators
 Y = np.zeros(shape=(maxEntries,2), dtype=float, order='F')
 
-def to_np_array(ak_array, maxN=100, pad=0):
-    return ak.fill_none(ak.pad_none(ak_array,maxN,clip=True,axis=-1),pad).to_numpy()
-    
 pt = to_np_array(tree['L1PuppiCands_pt'],maxN=maxNPuppi)
 eta = to_np_array(tree['L1PuppiCands_eta'],maxN=maxNPuppi)
 phi = to_np_array(tree['L1PuppiCands_phi'],maxN=maxNPuppi)

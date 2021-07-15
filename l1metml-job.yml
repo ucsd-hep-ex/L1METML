@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-root-1024-mode1-dummy
+  name: l1metml-root-training-quantized-test
 spec:
   template:
     spec:
@@ -11,21 +11,19 @@ spec:
         command:
         - "/bin/bash"
         - "-c"
-        - " git clone https://github.com/hanhiller/L1METML &&
+        - " git clone b quantized_model https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M --output /l1metmlvol/root_training_mode1 --mode 1"
+            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root_training_quantized_test/ --mode 1 --epochs 100 --quantized"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
         resources:
           limits:
-            memory: 100Gi
-            cpu: "2"
-            nvidia.com/gpu: "1"
-          requests:
             memory: 50Gi
-            cpu: "2"
-            nvidia.com/gpu: "1"
+            cpu: "10"
+          requests:
+            memory: 25Gi
+            cpu: "10"
       volumes:
       - name: l1metmlvol
         persistentVolumeClaim:

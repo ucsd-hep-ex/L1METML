@@ -14,11 +14,14 @@ USER ${NB_UID}
 RUN pip install --quiet --no-cache-dir \
     uproot \
     tables \
+    awkward \
+    uproot \
     pandas \
     h5py \
     tqdm \
     scikit-learn \
     setGPU \
     mplhep \
+    qkeras \
     awkward
   
