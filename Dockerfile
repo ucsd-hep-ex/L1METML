@@ -22,6 +22,5 @@ RUN pip install --quiet --no-cache-dir \
     scikit-learn \
     setGPU \
     mplhep \
-    qkeras \
-    awkward
+    git+https://github.com/jmduarte/qkeras#egg=qkeras
   
