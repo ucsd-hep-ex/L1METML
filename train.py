@@ -168,6 +168,7 @@ def trainFrom_h5(args):
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
+    quantized = args.quantized
 
     # Read inputs
     
