@@ -11,9 +11,9 @@ spec:
         command:
         - "/bin/bash"
         - "-c"
-        - " git clone https://github.com/hanhiller/L1METML &&
-            cd L1METML &&
-            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-quantized/ --mode 1 --epochs 100 --quantized"
+        - "git clone https://github.com/hanhiller/L1METML &&
+           cd L1METML &&
+           python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-quantized/ --mode 1 --epochs 100 --quantized"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
