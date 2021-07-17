@@ -438,7 +438,7 @@ def MET_abs_error(predict_met, gen_met, name='Met_res.pdf'):
     mask = gen_met[:] > 100
     rel_err = rel_err[~mask]
 
-    plt.figure())
+    plt.figure()
     plt.hist(rel_err, bins=np.linspace(-150., 150., 50+1))
     plt.xlabel("abs error (predict - true)")
     plt.ylabel("Events")
