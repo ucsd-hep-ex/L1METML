@@ -67,8 +67,8 @@ def test(Yr_test, predict_test, PUPPI_pt, path_out):
     extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
     extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
     
-    Phi_abs_error_opaque(PUPPI_pt[:,1], predict_test[:,1], Yr_test[:,1])
-    Pt_abs_error_opaque(PUPPI_pt[:,0], predict_test[:,0], Yr_test[:,0])
+    Phi_abs_error_opaque(PUPPI_pt[:,1], predict_test[:,1], Yr_test[:,1], name=path_out+'Phi_abs_err')
+    Pt_abs_error_opaque(PUPPI_pt[:,0], predict_test[:,0], Yr_test[:,0],name=path_out+'Pt_abs_error')
 
 def trainFrom_Root(args):
     # general setup

@@ -416,7 +416,7 @@ def MET_rel_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf')
     std = int(std)
     std = float(std) / 1000
 
-    plt.figure(figsize=(15, 7))
+    plt.figure()
     plt.hist(rel_err, bins=np.linspace(-3., 3., 50+1), label='puppi', alpha=0.5, color='red')
     plt.hist(rel_err2, bins=np.linspace(-3., 3., 50+1), label='ML', alpha=0.5, color='green')
     plt.xlabel("relative error (predict - true)/true", fontsize=16)
@@ -438,7 +438,7 @@ def MET_abs_error(predict_met, gen_met, name='Met_res.pdf'):
     mask = gen_met[:] > 100
     rel_err = rel_err[~mask]
 
-    plt.figure(figsize=(15, 7))
+    plt.figure())
     plt.hist(rel_err, bins=np.linspace(-150., 150., 50+1))
     plt.xlabel("abs error (predict - true)")
     plt.ylabel("Events")
@@ -471,7 +471,7 @@ def Pt_abs_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf'):
     rel_err2 = (predict_met2 - gen_met)
     #minErr = min(np.array([rel_err, rel_err2]).flatten())
     #maxErr = max(np.array([rel_err, rel_err2]).flatten())
-    plt.figure(figsize=(15, 7))
+    plt.figure()
     plt.hist(rel_err, bins=np.linspace(-250, 250, 50+1), alpha=0.5, label='puppi')
     plt.hist(rel_err2, bins=np.linspace(-250, 250, 50+1), alpha=0.5, label='ML')
     plt.xlabel("abs error (predict - true)")
@@ -488,7 +488,7 @@ def Pt_abs_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf'):
 def Phi_abs_error_opaque(predict_met, predict_met2,gen_met, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)
     rel_err2 = (predict_met2 - gen_met)
-    plt.figure(figsize=(15, 7))
+    plt.figure()
     plt.hist(rel_err, bins=np.linspace(-3.5, 3.5, 50+1), alpha=0.5, label='puppi')
     plt.hist(rel_err2, bins=np.linspace(-3.5, 3.5, 50+1), alpha=0.5, label='ML')
     plt.xlabel("abs error (predict - true)")
