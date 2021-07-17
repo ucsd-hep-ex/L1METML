@@ -135,7 +135,7 @@ def trainFrom_Root(args):
                         callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
     end_time = time.time() # check end time
 
-    predict_test = keras_model.predict(testGenerator) * normFac
+    predict_test = keras_model.predict(testGenerator) * -normFac
     all_PUPPI_pt = []
     Yr_test = []
     for (Xr, Yr) in tqdm.tqdm(testGenerator):
