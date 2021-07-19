@@ -77,16 +77,16 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=3, 
     if t_mode == 0:
         x = qkeras.qpooling.QGlobalAveragePooling1D(name='pool', quantizer=logit_quantizer)(x)
         #pool size?
-        outputs = QDense(2, name = 'output', bias_quantizer=logit_quantizer, kernel_quantizer=logit_quantizer, activation='quantized_tanh')(x)
+        outputs = QDense(2, name = 'output', bias_quantizer=logit_quantizer, kernel_quantizer=logit_quantizer, activation=activation_quantizer)(x)
         #similar to activation='linear'?
 
     if t_mode == 1:
-        x = QDense(3 if with_bias else 1, activation='quantized_tanh', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        x = QDense(3 if with_bias else 1, activation=activation_quantizer, kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         x = Concatenate()([x, pxpy])
         x = weighted_sum_layer(with_bias, name="weighted_sum" if with_bias else "output")(x)
 
         if with_bias:
-            x = QDense(2, name = 'output', bias_quantizer=logit_quantizer,kernel_quantizer=logit_quantizer, activation='quantized_tanh')(x)
+            x = QDense(2, name = 'output', bias_quantizer=logit_quantizer,kernel_quantizer=logit_quantizer, activation=activation_quantizer)(x)
 
         outputs = x
 

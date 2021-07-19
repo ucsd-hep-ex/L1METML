@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-root-javier-repo
+  name: l1metml-root-quantized-relu
 spec:
   template:
     spec:
@@ -11,9 +11,9 @@ spec:
         command:
         - "/bin/bash"
         - "-c"
-        - "git clone https://github.com/jmduarte/L1METML &&
+        - "git clone https://github.com/hanhiller/L1METML &&
            cd L1METML &&
-           python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-javier-repo/ --mode 1 --epochs 100"
+           python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-quantized-relu/ --mode 1 --epochs 100 --quantized"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
