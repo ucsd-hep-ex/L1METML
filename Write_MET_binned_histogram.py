@@ -417,8 +417,8 @@ def MET_rel_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf')
     std = float(std) / 1000
 
     plt.figure()
-    plt.hist(rel_err, bins=np.linspace(-3., 3., 50+1), label='puppi', alpha=0.5, color='red')
-    plt.hist(rel_err2, bins=np.linspace(-3., 3., 50+1), label='ML', alpha=0.5, color='green')
+    plt.hist(rel_err, bins=np.linspace(-3., 3., 50+1), label='ML', alpha=0.5, color='red')
+    plt.hist(rel_err2, bins=np.linspace(-3., 3., 50+1), label='PUPPI', alpha=0.5, color='green')
     plt.xlabel("relative error (predict - true)/true", fontsize=16)
     plt.ylabel("Events", fontsize=16)
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
