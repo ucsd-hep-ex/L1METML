@@ -1,6 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-FROM jupyter/tensorflow-notebook:latest
+FROM gitlab-registry.nrp-nautilus.io/prp/jupyter-stack/tensorflow:latest
 
 LABEL maintainer="Javier Duarte <jduarte@ucsd.edu>"
 
@@ -13,15 +13,10 @@ USER ${NB_UID}
 # Install Tensorflow
 RUN pip install --quiet --no-cache-dir \
     uproot \
-    tables \
     awkward \
     uproot \
-    pandas \
-    h5py \
     tqdm \
-    scikit-learn \
     setGPU \
     mplhep \
-    qkeras \
-    awkward
+    git+https://github.com/jmduarte/qkeras#egg=qkeras
   
