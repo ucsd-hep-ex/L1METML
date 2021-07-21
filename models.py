@@ -27,7 +27,7 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation
 
     if t_mode == 0:
         x = GlobalAveragePooling1D(name='pool')(x)
-        outputs = Conv1D(2, kernel_size=1, name = 'output', activation='linear')(x)
+        x = Conv1D(2, kernel_size=1, name = 'output', activation='linear')(x)
 
     if t_mode == 1:
         w = Conv1D(1, kernel_size=1, activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
@@ -35,8 +35,8 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation
         if with_bias:
             b = Conv1D(2, kernel_size=1, activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
             x = Add()([x, b])
-        x = GlobalAveragePooling1D(name='pool')(x)
-        outputs = x
+        x = GlobalAveragePooling1D(name='output')(x)
+    outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
