@@ -80,7 +80,7 @@ print(y_3)
 # check if they're equal (error if they're not!)
 np.testing.assert_array_equal(y, y_3)
 
-model_to_convert = partial_model_3
+model_to_convert = partial_model_2
 config = hls4ml.utils.config_from_keras_model(model_to_convert, granularity='name')
 
 config['Model'] = {}
