@@ -16,3 +16,5 @@ dependencies:
   - pip:
     - setGPU
     - mplhep
+    - git+https://github.com/google/qkeras#egg=qkeras
+    - git+https://github.com/fastmachinelearning/hls4ml@master#egg=hls4ml[profiling]

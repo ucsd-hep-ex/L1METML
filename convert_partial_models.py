@@ -3,9 +3,23 @@ from models import dense_embedding
 from tensorflow.keras.layers import Input, Concatenate
 from tensorflow.keras.models import Model
 import numpy as np
+import hls4ml
+import pandas as pd
+from qkeras.utils import _add_supported_quantized_objects
+co = {}
+_add_supported_quantized_objects(co)
 
-# to check if model is loadable
-model = tensorflow.keras.models.load_model('output/model.h5', compile=False)
+def print_dict(d, indent=0):
+    align=20
+    for key, value in d.items():
+        print('  ' * indent + str(key), end='')
+        if isinstance(value, dict):
+            print()
+            print_dict(value, indent+1)
+        else:
+            print(':' + ' ' * (20 - len(key) - 2 * indent) + str(value))
+
+model = tensorflow.keras.models.load_model('output/model.h5', compile=False, custom_objects=co)
 
 # check everthing works
 model.summary()
@@ -65,3 +79,33 @@ print(y_3)
 
 # check if they're equal (error if they're not!)
 np.testing.assert_array_equal(y, y_3)
+
+model_to_convert = partial_model_3
+config = hls4ml.utils.config_from_keras_model(model_to_convert, granularity='name')
+
+config['Model'] = {}
+config['Model']['ReuseFactor'] = 1
+config['Model']['Strategy'] = 'Latency'
+config['Model']['Precision'] = 'ap_fixed<16,6>'
+config['SkipOptimizers'] = ['optimize_pointwise_conv']
+for layer in config['LayerName'].keys():
+    config['LayerName'][layer]['Trace'] = True
+
+cfg = hls4ml.converters.create_vivado_config(fpga_part='xc7z020clg400-1')
+cfg['HLSConfig'] = config
+cfg['IOType'] = 'io_parallel'
+cfg['Backend'] = 'Vivado'
+cfg['ClockPeriod'] = 10
+cfg['KerasModel'] = model_to_convert
+cfg['OutputDir'] = 'hls_output'
+
+print("-----------------------------------")
+print_dict(cfg)
+print("-----------------------------------")
+
+hls_model = hls4ml.converters.keras_to_hls(cfg)
+hls_model.compile()
+
+y_2_hls = hls_model.predict(y_1)
+df = pd.DataFrame({'keras': y_2.flatten(), 'hls4ml': y_2_hls.flatten()})
+print(df)
