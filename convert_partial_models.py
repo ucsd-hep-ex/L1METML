@@ -30,7 +30,7 @@ model_dict = {layer.name: layer for layer in model.layers}
 
 # first part of the model
 partial_model_1 = Model(inputs=model.inputs,
-                        outputs=model_dict['conv1d'].input)
+                        outputs=model_dict['conv1d'].input, name='partial_model_1')
 partial_model_1.summary()
 
 # second part of the model (to implement in hls4ml)
@@ -42,7 +42,7 @@ x = model_dict['batch_normalization_1'](x)
 x = model_dict['conv1d_2'](x)
 x = model_dict['batch_normalization_2'](x)
 output_layer = model_dict['conv1d_3'](x)
-partial_model_2 = Model(inputs=input_layer, outputs=output_layer)
+partial_model_2 = Model(inputs=input_layer, outputs=output_layer, name='partial_model_2')
 partial_model_2.summary()
 
 # third part of the model
@@ -50,7 +50,7 @@ input_layer_1 = Input(model_dict['input_pxpy'].input.shape[1:])
 input_layer_2 = Input(model_dict['conv1d_3'].output.shape[1:])
 x = model_dict['multiply']([input_layer_2, input_layer_1])
 output_layer = model_dict['output'](x)
-partial_model_3 = Model(inputs=[input_layer_1, input_layer_2], outputs=output_layer)
+partial_model_3 = Model(inputs=[input_layer_1, input_layer_2], outputs=output_layer, name='partial_model_3')
 partial_model_3.summary()
 
 
@@ -87,7 +87,7 @@ config['Model'] = {}
 config['Model']['ReuseFactor'] = 1
 config['Model']['Strategy'] = 'Latency'
 config['Model']['Precision'] = 'ap_fixed<16,6>'
-config['SkipOptimizers'] = ['optimize_pointwise_conv']
+#config['SkipOptimizers'] = ['optimize_pointwise_conv']
 for layer in config['LayerName'].keys():
     config['LayerName'][layer]['Trace'] = True
 
