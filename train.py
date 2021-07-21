@@ -80,10 +80,7 @@ def trainFrom_Root(args):
     inputPath = args.input
     path_out = args.output
 
-    filesList = []
-    for file in os.listdir(inputPath):
-        if '.root' in file:
-            filesList.append(f'{inputPath}{file}')
+    filesList = glob(os.path.join(f'{inputPath}','*.root'))
     valid_nfiles = int(.1*len(filesList))
     if valid_nfiles == 0:
         valid_nfiles = 1
@@ -131,7 +128,7 @@ def trainFrom_Root(args):
     all_PUPPI_pt = []
     Yr_test = []
     for (Xr, Yr) in tqdm.tqdm(testGenerator):
-        puppi_pt = np.sum(Xr[0][:,:,4:6],axis=1)
+        puppi_pt = np.sum(Xr[1],axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
 
@@ -164,7 +161,7 @@ def trainFrom_h5(args):
     
     # convert root files to h5 and store in same location
     h5files = []
-    for ifile in glob(f'{inputPath}*.root'):
+    for ifile in glob(os.path.join(f'{inputPath}','*.root')):
         h5file_path = ifile.replace('.root','.h5')
         if not os.path.isfile(h5file_path):
             os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
@@ -176,7 +173,7 @@ def trainFrom_h5(args):
     Xorg, Y = read_input(h5files)
     Y = Y / -normFac
 
-    Xi, Xc1, Xc2 = preProcessing(Xorg, normFac)
+    Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
     Xc = [Xc1, Xc2]
     
     emb_input_dim = {
@@ -185,7 +182,7 @@ def trainFrom_h5(args):
 
     # Prepare training/val data
     Yr = Y
-    Xr = [Xi] + Xc
+    Xr = [Xi, Xp] + Xc
 
     indices = np.array([i for i in range(len(Yr))])
     indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
@@ -229,7 +226,7 @@ def trainFrom_h5(args):
     end_time = time.time() # check end time
     
     predict_test = keras_model.predict(Xr_test) * normFac
-    PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,4:6], axis=1)
+    PUPPI_pt = normFac * np.sum(Xr_test[1], axis=1)
     Yr_test = normFac * Yr_test
 
     test(Yr_test, predict_test, PUPPI_pt, path_out)
