@@ -23,23 +23,23 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         self.labels = ['genMet_pt', 'genMet_phi']
         self.d_encoding = {
             'L1PuppiCands_charge':{-999.0: 0,
-                                   -1.0: 0, 
-                                   0.0: 1, 
-                                   1.0: 2},
-           'L1PuppiCands_pdgId':{-999.0: 0,
-                                  -211.0: 0, 
-                                  -130.0: 1, 
-                                  -22.0: 2, 
-                                  -13.0: 3, 
-                                  -11.0: 4,
-                                  0.0: 5, 
-                                  1.0: 6, 
-                                  2.0: 7, 
-                                  11.0: 8, 
-                                  13.0: 9, 
-                                  22.0: 10, 
-                                  130.0: 11, 
-                                  211.0: 12}
+                           -1.0: 1,
+                           0.0: 2,
+                           1.0: 3},
+    'L1PuppiCands_pdgId':{-999.0: 0,
+                          -211.0: 1,
+                          -130.0: 2,
+                          -22.0: 3,
+                          -13.0: 4,
+                          -11.0: 5,
+                          0.0: 6,
+                          1.0: 7,
+                          2.0: 8,
+                          11.0: 5,
+                          13.0: 4,
+                          22.0: 3,
+                          130.0: 2,
+                          211.0: 1}
         }
         self.global_IDs = []
         self.local_IDs = []
