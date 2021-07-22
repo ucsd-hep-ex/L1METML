@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-root-2layers
+  name: l1metml-training-root-javier-update-model
 spec:
   template:
     spec:
@@ -11,9 +11,9 @@ spec:
         command:
         - "/bin/bash"
         - "-c"
-        - " git clone -b model_optimizations https://github.com/hanhiller/L1METML &&
+        - " git clone -b update_model https://github.com/jmduarte/L1METML &&
             cd L1METML &&
-            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-2layers/ --mode 1 --epochs 100"
+            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-javier-update-model/ --mode 1 --epochs 100"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
