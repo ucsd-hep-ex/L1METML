@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-h5-oobe
+  name: l1metml-training-root-pdg-ids
 spec:
   template:
     spec:
@@ -11,21 +11,19 @@ spec:
         command:
         - "/bin/bash"
         - "-c"
-        - " git clone https://github.com/hanhiller/L1METML &&
+        - " git clone -b model_optimizations https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --dataType h5 --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/h5_training_cleanup4_test/ --mode 1 --epochs 3"
+            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-pdg-ids/ --mode 1 --epochs 100"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
         resources:
           limits:
-            memory: 100Gi
-            cpu: "2"
-            nvidia.com/gpu: "1"
+            memory: 40Gi
+            cpu: "10"
           requests:
-            memory: 50Gi
-            cpu: "2"
-            nvidia.com/gpu: "1"
+            memory: 20Gi
+            cpu: "10"
       volumes:
       - name: l1metmlvol
         persistentVolumeClaim:
