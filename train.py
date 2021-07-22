@@ -66,9 +66,6 @@ def test(Yr_test, predict_test, PUPPI_pt, path_out):
     MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
     extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
     extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
-    
-    Phi_abs_error_opaque(PUPPI_pt[:,1], predict_test[:,1], Yr_test[:,1], name=path_out+'Phi_abs_err')
-    Pt_abs_error_opaque(PUPPI_pt[:,0], predict_test[:,0], Yr_test[:,0],name=path_out+'Pt_abs_error')
 
 def trainFrom_Root(args):
     # general setup
@@ -82,7 +79,6 @@ def trainFrom_Root(args):
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
-    quantized = args.quantized
 
     filesList = []
     for file in os.listdir(inputPath):
@@ -103,16 +99,8 @@ def trainFrom_Root(args):
     Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
 
     # Load training model
-    if quantized == True:
-    
-        logit_total_bits = 16
-        logit_int_bits = 6
-        activation_total_bits = 16
-        activation_int_bits = 6
-        
-        keras_model = dense_embedding_quantized(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation_quantizer='quantized_relu',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False, logit_quantizer = 'quantized_bits', logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits, activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits, alpha='auto', use_stochastic_rounding=False)
-    else:
-        keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
+
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
@@ -120,21 +108,25 @@ def trainFrom_Root(args):
         verbose = 1
     elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=custom_loss, optimizer=optimizer,
-                       metrics=['mean_absolute_error', 'mean_squared_error'])
+        keras_model.compile(loss=custom_loss, optimizer=optimizer, 
+                            metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
-    
+        
+
+    # Set model config
     # Run training
+
     print(keras_model.summary())
 
     start_time = time.time() # check start time
     history = keras_model.fit(trainGenerator,
-                        epochs=epochs,
-                        verbose=verbose,  # switch to 1 for more verbosity
-                        validation_data=validGenerator,
-                        callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
+                              epochs=epochs,
+                              verbose=verbose,  # switch to 1 for more verbosity
+                              validation_data=validGenerator,
+                              callbacks=get_callbacks(path_out, len(trainGenerator), batch_size),
+                          )
     end_time = time.time() # check end time
-
+    
     predict_test = keras_model.predict(testGenerator) * normFac
     all_PUPPI_pt = []
     Yr_test = []
@@ -142,19 +134,18 @@ def trainFrom_Root(args):
         puppi_pt = np.sum(Xr[0][:,:,4:6],axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
-        
+
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
     
     test(Yr_test, predict_test, PUPPI_pt, path_out)
-    
+
     fi = open("{}time.txt".format(path_out), 'w')
 
     fi.write("Working Time (s) : {}".format(end_time - start_time))
     fi.write("Working Time (m) : {}".format((end_time - start_time)/60.))
 
     fi.close()
-    
     
 def trainFrom_h5(args):
     # general setup
@@ -168,7 +159,6 @@ def trainFrom_h5(args):
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
-    quantized = args.quantized
 
     # Read inputs
     
@@ -209,17 +199,8 @@ def trainFrom_h5(args):
     Yr_valid = Yr[indices_valid]
 
     # Load training model
-    if quantized == True:
-    
-        logit_total_bits = 16
-        logit_int_bits = 6
-        activation_total_bits = 16
-        activation_int_bits = 6
-        
-        keras_model = dense_embedding_quantized(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation_quantizer='quantized_tanh',embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False, logit_quantizer = 'quantized_bits', logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits, activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits, alpha=1, use_stochastic_rounding=False)
+    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
 
-    else:
-        keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = 100, t_mode = t_mode, with_bias=False)
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
@@ -231,6 +212,8 @@ def trainFrom_h5(args):
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
+    # Set model config
+
     # Run training
     print(keras_model.summary())
 
@@ -241,7 +224,8 @@ def trainFrom_h5(args):
                               batch_size = batch_size,
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=(Xr_valid, Yr_valid),
-                              callbacks=get_callbacks(path_out, len(Yr_train), batch_size))
+                              callbacks=get_callbacks(path_out, len(Yr_train), batch_size)
+                          )
     end_time = time.time() # check end time
     
     predict_test = keras_model.predict(Xr_test) * normFac
@@ -261,13 +245,17 @@ def main():
     time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
     path = "./result/"+time_path+"_PUPPICandidates/"
 
+    # 4 arguments
+    # train from h5 or root?
+    # root file path (input)
+    # output path
+    # mode 0 or 1
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataType', action='store', type=str, required=True, choices=['h5', 'root'], help='designate input file path')
     parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
-    parser.add_argument('--mode', action='store', type=int, required=True, help='0 for L1MET, 1 for DeepMET')
+    parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
     parser.add_argument('--epochs', action='store', type=int, required=False, default=100)
-    parser.add_argument('--quantized', action='store_true', required=False, help='flag for quantized model, empty for normal model')
     
     args = parser.parse_args()
     dataType = args.dataType
