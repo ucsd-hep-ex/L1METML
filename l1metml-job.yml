@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-root-pdg-ids
+  name: l1metml-training-root-2layers
 spec:
   template:
     spec:
@@ -13,7 +13,7 @@ spec:
         - "-c"
         - " git clone -b model_optimizations https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-pdg-ids/ --mode 1 --epochs 100"
+            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-2layers/ --mode 1 --epochs 100"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
