@@ -1,5 +1,5 @@
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape, Multiply, Add, GlobalAveragePooling1D
+from tensorflow.keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape, Multiply, Add, GlobalAveragePooling1D, Activation
 import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow import slice
@@ -23,8 +23,9 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation
     x = Concatenate()([inputs_cont, pxpy] + [emb for emb in embeddings])
 
     for i_dense in range(n_dense_layers):
-        x = Conv1D(8*2**(n_dense_layers-i_dense), kernel_size=1, activation=activation, kernel_initializer='lecun_uniform')(x)
+        x = Conv1D(8*2**(n_dense_layers-i_dense), kernel_size=1, activation='linear', kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
+        x = Activation(activation=activation)(x)
 
     if t_mode == 0:
         x = GlobalAveragePooling1D(name='pool')(x)
