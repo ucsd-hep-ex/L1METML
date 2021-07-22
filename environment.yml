@@ -4,10 +4,10 @@ channels:
   - conda-forge
   - anaconda
 dependencies:
-  - python=3.6
+  - python=3.9
   - pytables
   - uproot
-  - tensorflow
+  - tensorflow=2.5.0
   - pandas
   - h5py
   - tqdm
@@ -16,3 +16,5 @@ dependencies:
   - pip:
     - setGPU
     - mplhep
+    - git+https://github.com/google/qkeras#egg=qkeras
+    - git+https://github.com/jmduarte/hls4ml@l1metml#egg=hls4ml[profiling]
