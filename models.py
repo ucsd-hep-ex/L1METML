@@ -5,6 +5,9 @@ import tensorflow as tf
 from tensorflow import slice
 from tensorflow.keras import initializers
 from weighted_sum_layer import weighted_sum_layer
+from weighted_sum_layer import weighted_sum_layer
+import qkeras
+from qkeras.qlayers import QDense, QActivation
 
 def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim={0: 13, 1: 3}, emb_out_dim=8, with_bias=True, t_mode = 0):
 
