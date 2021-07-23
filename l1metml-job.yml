@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-h5-hyperparams-16-8
+  name: l1metml-training-h5-hyperparams-8-16
 spec:
   template:
     spec:
@@ -13,7 +13,7 @@ spec:
         - "-c"
         - " git clone -b model_optimizations https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --dataType h5 --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/h5-hyperparams-16-8/ --mode 1 --epochs 100"
+            python train.py --dataType h5 --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/h5-hyperparams-8-16/ --mode 1 --epochs 100"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
