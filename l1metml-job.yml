@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-training-h5-16-6-model-optimizations-alpha10
+  name: l1metml-training-root-model-optimizations-embout2
 spec:
   template:
     spec:
@@ -13,7 +13,7 @@ spec:
         - "-c"
         - " git clone -b model_optimizations https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --dataType h5 --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/h5-16-6-model-optimizations-alpha10/ --mode 1 --epochs 100"
+            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-model-optimizations-emb-out2/ --mode 1 --epochs 100"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
