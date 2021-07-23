@@ -28,7 +28,7 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=2, activation
     x = Concatenate()([inputs[0]] + [emb for emb in embeddings])
 
     for i_dense in range(n_dense_layers):
-        x = Dense(8*2**(n_dense_layers-i_dense), activation = activation, kernel_initializer='lecun_uniform')(x)
+        x = Dense(10, activation = activation, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
 
     if t_mode == 0:
@@ -73,7 +73,7 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=2, 
     x = Concatenate()([inputs[0]] + [emb for emb in embeddings])
     
     for i_dense in range(n_dense_layers):
-        x = QDense(8*2**(n_dense_layers-i_dense), activation = activation_quantizer,kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
+        x = QDense(4*2**(n_dense_layers-i_dense), activation = activation_quantizer,kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
 
     if t_mode == 0:
