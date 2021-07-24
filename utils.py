@@ -23,7 +23,31 @@ def convertXY2PtPhi(arrayXY):
     arrayPtPhi[:,1] = np.sign(arrayXY[:,1])*np.arccos(arrayXY[:,0]/arrayPtPhi[:,0])
     return arrayPtPhi
 
-def preProcessing(A, normFac, EVT=None):
+def preProcessing_root(A, normFac, EVT=None):
+    """ pre-processing input """
+
+    norm = normFac
+
+    #pt = A[:,:,0:1] / norm
+    px = A[:,:,0:1] / norm
+    py = A[:,:,1:2] / norm
+    eta = A[:,:,2:3]
+    #phi = A[:,:,4:5]
+    puppi = A[:,:,3:4]
+
+    # remove outliers
+    #pt[ np.where(np.abs(pt>500)) ] = 0.
+    px[ np.where(np.abs(px>500)) ] = 0.
+    py[ np.where(np.abs(py>500)) ] = 0.
+
+    inputs = np.concatenate((eta, puppi, px, py), axis=2)
+
+    inputs_cat0 = A[:,:,4:5] # encoded PF pdgId
+    inputs_cat1 = A[:,:,5:6] # encoded PF charge
+
+    return inputs, inputs_cat0, inputs_cat1
+    
+def preProcessing_h5(A, normFac, EVT=None):
     """ pre-processing input """
 
     norm = normFac
