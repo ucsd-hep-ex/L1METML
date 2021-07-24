@@ -64,7 +64,7 @@ def preProcessing_h5(A, normFac, EVT=None):
     px[ np.where(np.abs(px>500)) ] = 0.
     py[ np.where(np.abs(py>500)) ] = 0.
 
-    inputs = np.concatenate((pt, eta, phi, puppi, px, py), axis=2)
+    inputs = np.concatenate((eta, puppi, px, py), axis=2)
 
     inputs_cat0 = A[:,:,6:7] # encoded PF pdgId
     inputs_cat1 = A[:,:,7:8] # encoded PF charge
