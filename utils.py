@@ -36,7 +36,7 @@ def preProcessing_root(A, normFac, EVT=None):
     puppi = A[:,:,3:4]
 
     # remove outliers
-    pt[ np.where(np.abs(pt>500)) ] = 0.
+    #pt[ np.where(np.abs(pt>500)) ] = 0.
     px[ np.where(np.abs(px>500)) ] = 0.
     py[ np.where(np.abs(py>500)) ] = 0.
 
