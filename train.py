@@ -144,7 +144,7 @@ def trainFrom_Root(args):
     all_PUPPI_pt = []
     Yr_test = []
     for (Xr, Yr) in tqdm.tqdm(testGenerator):
-        puppi_pt = np.sum(Xr[0][:,:,2:4],axis=1)
+        puppi_pt = np.sum(Xr[0][:,:,4:6],axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
 
@@ -189,7 +189,7 @@ def trainFrom_h5(args):
     Xorg, Y = read_input(h5files)
     Y = Y / -normFac
 
-    Xi, Xc1, Xc2 = preProcessing_h5(Xorg, normFac)
+    Xi, Xc1, Xc2 = preProcessing(Xorg, normFac)
     Xc = [Xc1, Xc2]
     
     emb_input_dim = {
@@ -202,7 +202,7 @@ def trainFrom_h5(args):
 
     indices = np.array([i for i in range(len(Yr))])
     indices_train, indices_test = train_test_split(indices, test_size=0.1, random_state= 7)
-    indices_train, indices_valid = train_test_split(indices_train, test_size=1/9, random_state=7)
+    indices_train, indices_valid = train_test_split(indices_train, test_size=0.111111, random_state=7)
 
     Xr_train = [x[indices_train] for x in Xr]
     Xr_test = [x[indices_test] for x in Xr]
@@ -252,7 +252,7 @@ def trainFrom_h5(args):
     end_time = time.time() # check end time
     
     predict_test = keras_model.predict(Xr_test) * normFac
-    PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,2:4], axis=1)
+    PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,4:6], axis=1)
     Yr_test = normFac * Yr_test
 
     test(Yr_test, predict_test, PUPPI_pt, path_out)
