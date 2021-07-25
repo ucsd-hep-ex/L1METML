@@ -78,19 +78,23 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     import matplotlib.pyplot as plt
     import mplhep as hep
     plt.style.use(hep.style.CMS)
+    
     truth_PtPhi = convertXY2PtPhi(truth_XY)
     predict_PtPhi = convertXY2PtPhi(predict_XY)
     PUPPI_PtPhi = convertXY2PtPhi(PUPPI_XY)
+    
     Make1DHists(truth_XY[:,0], predict_XY[:,0], PUPPI_XY[:,0], -400, 400, 40, False, 'MET X [GeV]', 'A.U.', f'{path_out}MET_x.png')
     Make1DHists(truth_XY[:,1], predict_XY[:,1], PUPPI_XY[:,1], -400, 400, 40, False, 'MET Y [GeV]', 'A.U.', f'{path_out}MET_y.png')
     Make1DHists(truth_PtPhi[:,0], predict_PtPhi[:,0], PUPPI_PtPhi[:,0], 0, 400, 40, False, 'MET Pt [GeV]', 'A.U.', f'{path_out}MET_pt.png')
+    
     # do statistics
     from scipy.stats import binned_statistic
     binnings = np.linspace(0, 400, num=21)
     print(binnings)
-    truth_means,    bin_edges, binnumber = binned_statistic(truth_PtPhi[:,0], truth_PtPhi[:,0],    statistic='mean', bins=binnings, range=(0,400))
-    predict_means,  _,         _ = binned_statistic(truth_PtPhi[:,0], predict_PtPhi[:,0],  statistic='mean', bins=binnings, range=(0,400))
-    PUPPI_means, _,         _ = binned_statistic(truth_PtPhi[:,0], PUPPI_PtPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
+    truth_means, bin_edges, binnumber = binned_statistic(truth_PtPhi[:,0], truth_PtPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
+    predict_means,  _, _ = binned_statistic(truth_PtPhi[:,0], predict_PtPhi[:,0],  statistic='mean', bins=binnings, range=(0,400))
+    PUPPI_means, _, _ = binned_statistic(truth_PtPhi[:,0], PUPPI_PtPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
+    
     # plot response
     plt.figure()
     plt.hlines(truth_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='k', lw=5,
@@ -106,10 +110,12 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     plt.ylabel('<MET Estimation>/<MET Truth>')
     plt.savefig(f"{path_out}MET_response.png")
     plt.close()
+    
     # response correction factors
     sfs_truth    = np.take(truth_means/truth_means,    np.digitize(truth_PtPhi[:,0], binnings)-1, mode='clip')
     sfs_predict  = np.take(predict_means/truth_means,  np.digitize(truth_PtPhi[:,0], binnings)-1, mode='clip')
     sfs_PUPPI = np.take(PUPPI_means/truth_means, np.digitize(truth_PtPhi[:,0], binnings)-1, mode='clip')
+    
     # resolution defined as (q84-q16)/2.0
     def resolqt(y):
         return(np.percentile(y,84)-np.percentile(y,16))/2.0
@@ -117,6 +123,13 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     bin_resolY_predict, _, _                 = binned_statistic(truth_PtPhi[:,0], truth_XY[:,1] - predict_XY[:,1] * sfs_predict, statistic=resolqt, bins=binnings, range=(0,400))
     bin_resolX_PUPPI, _, _                = binned_statistic(truth_PtPhi[:,0], truth_XY[:,0] - PUPPI_XY[:,0] * sfs_predict, statistic=resolqt, bins=binnings, range=(0,400))
     bin_resolY_PUPPI, _, _                = binned_statistic(truth_PtPhi[:,0], truth_XY[:,1] - PUPPI_XY[:,1] * sfs_predict, statistic=resolqt, bins=binnings, range=(0,400))
+    
+    weights = []
+    for bin in np.arange(len(binnings)-1):
+        weights.append(len(binnumber[binnumber==bin+1])/nEvents)
+    avgDif_Xres = np.average(bin_resolX_PUPPI-bin_resolX_predict, weights=weights)
+    avgDif_Yres = np.average(bin_resolY_PUPPI-bin_resolY_predict, weights=weights)
+    
     plt.figure()
     plt.hlines(bin_resolX_predict, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
            label='Predict', linestyles='solid')
@@ -127,8 +140,10 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     plt.ylim(0,200.0)
     plt.xlabel('Truth MET [GeV]')
     plt.ylabel('RespCorr $\sigma$(METX) [GeV]')
+    plt.title(f'Average $\sigma$(METX) Difference = {round(avgDif_Xres,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolution_metx.png")
     plt.close()
+    
     plt.figure()
     plt.hlines(bin_resolY_predict, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
            label='Predict', linestyles='solid')
@@ -139,6 +154,7 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     plt.ylim(0,200.0)
     plt.xlabel('Truth MET [GeV]')
     plt.ylabel('RespCorr $\sigma$(METY) [GeV]')
+    plt.title(f'Average $\sigma$(METY) Difference = {round(avgDif_Yres,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolution_mety.png")
     plt.close()
 
