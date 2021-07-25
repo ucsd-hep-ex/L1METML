@@ -66,7 +66,6 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     # do statistics
     from scipy.stats import binned_statistic
     binnings = np.linspace(0, 400, num=21)
-    print(binnings)
     truth_means, bin_edges, binnumber = binned_statistic(truth_PtPhi[:,0], truth_PtPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
     predict_means,  _, _ = binned_statistic(truth_PtPhi[:,0], predict_PtPhi[:,0],  statistic='mean', bins=binnings, range=(0,400))
     PUPPI_means, _, _ = binned_statistic(truth_PtPhi[:,0], PUPPI_PtPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
@@ -134,8 +133,6 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     plt.title(f'Average $\sigma$(METY) Difference = {round(avgDif_Yres,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolution_mety.png")
     plt.close()
-
-
 
 
 def Make1DHists(truth, predict, PUPPI, xmin=0, xmax=400, nbins=100, density=False, xname="pt [GeV]", yname = "A.U.", outputname="1ddistribution.png"):

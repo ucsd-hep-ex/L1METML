@@ -367,7 +367,7 @@ def MET_rel_error(predict_met, gen_met, name='Met_res.pdf'):
 
     mean = mean * 1000
     mean = int(mean)
-    print(mean)
+    print(mean, "mean")
     mean = float(mean) / 1000
     std = std * 1000
     std = int(std)
@@ -410,7 +410,7 @@ def MET_rel_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf')
 
     mean = mean * 1000
     mean = int(mean)
-    print(mean)
+    print(mean, "mean")
     mean = float(mean) / 1000
     std = std * 1000
     std = int(std)
