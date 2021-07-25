@@ -28,7 +28,7 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=2, activation
     x = Concatenate()([inputs[0]] + [emb for emb in embeddings])
 
     for i_dense in range(n_dense_layers):
-        x = Dense(8*2**(i_dense+1), activation = activation, kernel_initializer='lecun_uniform')(x)
+        x = Dense(8*(i_dense+1)**2, activation = activation, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
 
     if t_mode == 0:
