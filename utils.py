@@ -100,6 +100,7 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     bin_resolX_PUPPI, _, _                = binned_statistic(truth_PtPhi[:,0], truth_XY[:,0] - PUPPI_XY[:,0] * sfs_predict, statistic=resolqt, bins=binnings, range=(0,400))
     bin_resolY_PUPPI, _, _                = binned_statistic(truth_PtPhi[:,0], truth_XY[:,1] - PUPPI_XY[:,1] * sfs_predict, statistic=resolqt, bins=binnings, range=(0,400))
     
+    nEvents= len(binnumber)
     weights = []
     for bin in np.arange(len(binnings)-1):
         weights.append(len(binnumber[binnumber==bin+1])/nEvents)
