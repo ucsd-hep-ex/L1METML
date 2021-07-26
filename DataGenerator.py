@@ -111,7 +111,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 	
         #process inputs
         Y = self.y /(-self.normFac)
-        Xi, Xc1, Xc2 = preProcessing(self.X, self.normFac)
+        Xi, Xc1, Xc2 = preProcessing_root(self.X, self.normFac)
         
         Xc = [Xc1, Xc2]
 	# dimension parameter for keras model
@@ -148,16 +148,16 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         charge = to_np_array(tree['L1PuppiCands_charge'],maxN=self.n_dim,pad=-999)
         puppiw = to_np_array(tree['L1PuppiCands_puppiWeight'],maxN=self.n_dim)
         
-        X[:,:,0] = pt
-        X[:,:,1] = pt * np.cos(phi)
-        X[:,:,2] = pt * np.sin(phi)
-        X[:,:,3] = eta
-        X[:,:,4] = phi
-        X[:,:,5] = puppiw
+        #X[:,:,0] = pt
+        X[:,:,0] = pt * np.cos(phi)
+        X[:,:,1] = pt * np.sin(phi)
+        X[:,:,2] = eta
+        #X[:,:,4] = phi
+        X[:,:,3] = puppiw
 
         # encoding
-        X[:,:,6] = np.vectorize(self.d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
-        X[:,:,7] = np.vectorize(self.d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
+        X[:,:,4] = np.vectorize(self.d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
+        X[:,:,5] = np.vectorize(self.d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
     
         # truth data
         y[:,0] += tree['genMet_pt'].to_numpy() * np.cos(tree['genMet_phi'].to_numpy())

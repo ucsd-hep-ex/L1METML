@@ -73,7 +73,7 @@ def test(Yr_test, predict_test, PUPPI_pt, path_out):
 def trainFrom_Root(args):
     # general setup
     maxNPF = 100
-    n_features_pf = 6
+    n_features_pf = 4
     n_features_pf_cat = 2
     normFac = 1.
     epochs = args.epochs
@@ -88,6 +88,7 @@ def trainFrom_Root(args):
     for file in os.listdir(inputPath):
         if '.root' in file:
             filesList.append(f'{inputPath}{file}')
+    filesList.sort(reverse=True)
     valid_nfiles = int(.1*len(filesList))
     if valid_nfiles == 0:
         valid_nfiles = 1
@@ -143,7 +144,7 @@ def trainFrom_Root(args):
     all_PUPPI_pt = []
     Yr_test = []
     for (Xr, Yr) in tqdm.tqdm(testGenerator):
-        puppi_pt = np.sum(Xr[0][:,:,4:6],axis=1)
+        puppi_pt = np.sum(Xr[0][:,:,2:4],axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
 
@@ -162,7 +163,7 @@ def trainFrom_Root(args):
 def trainFrom_h5(args):
     # general setup
     maxNPF = 100
-    n_features_pf = 6
+    n_features_pf = 4
     n_features_pf_cat = 2
     normFac = 1.
     epochs = args.epochs
@@ -200,8 +201,8 @@ def trainFrom_h5(args):
     Xr = [Xi] + Xc
 
     indices = np.array([i for i in range(len(Yr))])
-    indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
-    indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
+    indices_train, indices_test = train_test_split(indices, test_size=0.1, random_state= 7)
+    indices_train, indices_valid = train_test_split(indices_train, test_size=1/9, random_state=7)
 
     Xr_train = [x[indices_train] for x in Xr]
     Xr_test = [x[indices_test] for x in Xr]
@@ -218,7 +219,7 @@ def trainFrom_h5(args):
         activation_total_bits = 16
         activation_int_bits = 6
         
-        keras_model = dense_embedding_quantized(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation_quantizer='quantized_tanh',embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False, logit_quantizer = 'quantized_bits', logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits, activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits, alpha=1, use_stochastic_rounding=False)
+        keras_model = dense_embedding_quantized(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation_quantizer='quantized_relu',embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False, logit_quantizer = 'quantized_bits', logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits, activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits, alpha=1, use_stochastic_rounding=False)
         
     else:
         keras_model = dense_embedding(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
@@ -251,7 +252,7 @@ def trainFrom_h5(args):
     end_time = time.time() # check end time
     
     predict_test = keras_model.predict(Xr_test) * normFac
-    PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,4:6], axis=1)
+    PUPPI_pt = normFac * np.sum(Xr_test[0][:,:,2:4], axis=1)
     Yr_test = normFac * Yr_test
 
     test(Yr_test, predict_test, PUPPI_pt, path_out)
