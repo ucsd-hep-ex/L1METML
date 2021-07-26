@@ -111,7 +111,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 	
         #process inputs
         Y = self.y /(-self.normFac)
-        Xi, Xc1, Xc2 = preProcessing_root(self.X, self.normFac)
+        Xi, Xc1, Xc2 = preProcessing(self.X, self.normFac)
         
         Xc = [Xc1, Xc2]
 	# dimension parameter for keras model
