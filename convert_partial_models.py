@@ -30,18 +30,18 @@ model_dict = {layer.name: layer for layer in model.layers}
 
 # first part of the model
 partial_model_1 = Model(inputs=model.inputs,
-                        outputs=model_dict['conv1d'].input, name='partial_model_1')
+                        outputs=model_dict['dense'].input, name='partial_model_1')
 partial_model_1.summary()
 
 # second part of the model (to implement in hls4ml)
-input_layer = Input(model_dict['conv1d'].input.shape[1:])
-x = model_dict['conv1d'](input_layer)
+input_layer = Input(model_dict['dense'].input.shape[1:])
+x = model_dict['dense'](input_layer)
 x = model_dict['batch_normalization'](x)
 x = model_dict['activation'](x)
-x = model_dict['conv1d_1'](x)
+x = model_dict['dense_1'](x)
 x = model_dict['batch_normalization_1'](x)
 x = model_dict['activation_1'](x)
-x = model_dict['conv1d_2'](x)
+x = model_dict['dense_2'](x)
 x = model_dict['batch_normalization_2'](x)
 x = model_dict['activation_2'](x)
 x = model_dict['met_weight'](x)
@@ -113,3 +113,7 @@ hls_model.compile()
 y_2_hls = hls_model.predict(y_1)
 df = pd.DataFrame({'keras': y_2.flatten(), 'hls4ml': y_2_hls.flatten()})
 print(df)
+
+
+hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='model_hls4ml.png')
+

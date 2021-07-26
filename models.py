@@ -23,19 +23,19 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation
     x = Concatenate()([inputs_cont, pxpy] + [emb for emb in embeddings])
 
     for i_dense in range(n_dense_layers):
-        x = Conv1D(8*2**(n_dense_layers-i_dense), kernel_size=1, activation='linear', kernel_initializer='lecun_uniform')(x)
+        x = Dense(8*2**(n_dense_layers-i_dense), activation='linear', kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
         x = Activation(activation=activation)(x)
 
     if t_mode == 0:
         x = GlobalAveragePooling1D(name='pool')(x)
-        x = Conv1D(2, kernel_size=1, name='output', activation='linear')(x)
+        x = Dense(2, name='output', activation='linear')(x)
 
     if t_mode == 1:
         if with_bias:
-            b = Conv1D(2, kernel_size=1, name='met_bias', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+            b = Dense(2, name='met_bias', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
             pxpy = Add()([pxpy, b])
-        w = Conv1D(1, kernel_size=1, name='met_weight', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        w = Dense(1, name='met_weight', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
         x = Multiply()([w, pxpy])
 
