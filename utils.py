@@ -68,7 +68,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     
     # do statistics
     from scipy.stats import binned_statistic
-    binnings = np.linspace(0, 400, num=21)
+     binnings = np.linspace(0, 400, num=21)
     truth_means, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], true_ptPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
     ml_means,  _, _ = binned_statistic(true_ptPhi[:,0], ml_ptPhi[:,0],  statistic='mean', bins=binnings, range=(0,400))
     puppi_means, _, _ = binned_statistic(true_ptPhi[:,0], puppi_ptPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
@@ -92,14 +92,6 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     # response correction factors
     sfs_ML = np.take(ml_means/truth_means,  np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
     sfs_PUPPI = np.take(puppi_means/truth_means, np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
-    
-    # define the resolution statistic and potential bounds
-    def resolqt(y):
-        return(np.percentile(y,84)-np.percentile(y,16))/2.0
-    def resolqt_upper(y):
-        return(np.percentile(y,90)-np.percentile(y,10))/2.0
-    def resolqt_lower(y):
-        return(np.percentile(y,76)-np.percentile(y,22))/2.0
 
     # compute resolutions inside each bin
     bin_resolX_ML, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt, bins=binnings, range=(0,400))
@@ -127,14 +119,15 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     yRes_avgDif = np.average(bin_resolY_PUPPI-bin_resolY_ML, weights=weights)
 
     #make the plots
+    plt.figure()
     plt.hlines(bin_resolX_ML, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
                label='ML', linestyles='solid')
     plt.hlines(bin_resolX_PUPPI, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
                label='PUPPI', linestyles='solid')
     xRes_ML_error = abs([bin_resolX_ML_lower, bin_resolX_ML_upper]-bin_resolX_ML)
-    plt.errorbar(bin_edges[:-1]+15, bin_resolX_ML, yerr= xRes_ML_error, fmt='none', color='r')
+    plt.errorbar(bin_edges[:-1]+12, bin_resolX_ML, yerr= xRes_ML_error, fmt='none', color='r')
     xRes_PUPPI_error = abs([bin_resolX_PUPPI_lower, bin_resolX_PUPPI_upper]-bin_resolX_PUPPI)
-    plt.errorbar(bin_edges[:-1]+5, bin_resolX_PUPPI, yerr= xRes_PUPPI_error, fmt='none', color='g')
+    plt.errorbar(bin_edges[:-1]+8, bin_resolX_PUPPI, yerr= xRes_PUPPI_error, fmt='none', color='g')
     plt.legend(loc='lower right')
     plt.xlim(0,400.0)
     plt.ylim(0,200)
@@ -143,6 +136,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.title(f'Average $\sigma$(METX) Difference = {round(xRes_avgDif,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolution_metx.png")
 
+    plt.figure()
     plt.hlines(bin_resolY_ML, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
                label='Predict', linestyles='solid')
     plt.hlines(bin_resolY_PUPPI, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
@@ -159,6 +153,10 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.title(f'Average $\sigma$(METY) Difference = {round(yRes_avgDif,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolution_mety.png")
 
+    resolY_dif =bin_resolY_PUPPI-bin_resolY_ML
+    resolX_dif =bin_resolX_PUPPI-bin_resolX_ML
+    
+    plt.figure()
     plt.hlines(resolY_dif, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
     plt.axhline(y=0, color='black', linestyle='-')
     plt.xlim(0,400.0)
@@ -167,13 +165,14 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.ylabel('PUPPI-ML $\sigma$(METY) [GeV]')
     plt.title(f'Average $\sigma$(METY) Difference = {round(yRes_avgDif,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolutionDif_metY.png")
-    
-    plt.hlines(resolY_dif, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
+
+    plt.figure()
+    plt.hlines(resolX_dif, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
     plt.axhline(y=0, color='black', linestyle='-')
     plt.xlim(0,400.0)
     plt.ylim(-20,20)
     plt.xlabel('Truth MET [GeV]')
-    plt.ylabel('PUPPI-ML $\sigma$(METY) [GeV]')
+    plt.ylabel('PUPPI-ML $\sigma$(METX) [GeV]')
     plt.title(f'Average $\sigma$(METX) Difference = {round(xRes_avgDif,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolutionDif_metX.png")
 
