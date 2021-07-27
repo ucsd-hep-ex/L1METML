@@ -4,12 +4,11 @@ import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow import slice
 from tensorflow.keras import initializers
-from weighted_sum_layer import weighted_sum_layer
 import qkeras
 from qkeras.qlayers import QDense, QActivation
 import numpy as np
 
-def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=2, activation='relu', number_of_pupcandis=100, embedding_input_dim={0: 13, 1: 3}, emb_out_dim=2, with_bias=True, t_mode = 0):
+def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3, activation='relu', number_of_pupcandis=100, embedding_input_dim={0: 13, 1: 3}, emb_out_dim=8, with_bias=True, t_mode = 0):
 
     inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input')
     pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
@@ -26,7 +25,7 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=2, activation
     x = Concatenate()([inputs_cont, pxpy] + [emb for emb in embeddings])
 
     for i_dense in range(n_dense_layers):
-        x = Dense(8*2**(i_dense+1), activation = activation, kernel_initializer='lecun_uniform')(x)
+        x = Dense(8*2**(n_dense_layers-i_dense), activation='linear', kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
         x = Activation(activation=activation)(x)
 
@@ -75,7 +74,7 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=2, 
     x = Concatenate()([inputs[0]] + [emb for emb in embeddings])
     
     for i_dense in range(n_dense_layers):
-        x = QDense(8*2**(n_dense_layers-i_dense), activation = activation_quantizer,kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
+        x = QDense(8*2**(n_dense_layers-i_dense), activation = activation_quantizer, kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
 
     if t_mode == 0:
@@ -85,16 +84,15 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=2, 
         #similar to activation='linear'?
 
     if t_mode == 1:
-        x = QDense(3 if with_bias else 1, activation=activation_quantizer, kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
-        x = Concatenate()([x, pxpy])
-        x = weighted_sum_layer(with_bias, name="weighted_sum" if with_bias else "output")(x)
-
         if with_bias:
-            x = QDense(2, name = 'output', bias_quantizer=logit_quantizer,kernel_quantizer=logit_quantizer, activation=activation_quantizer)(x)
+            b = QDense(2, name='met_bias', activation = activation_quantizer, kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+            pxpy = Add()([pxpy, b])
+        w = QDense(1, name='met_weight', activation = activation_quantizer, kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
+        x = Multiply()([w, pxpy])
 
-        outputs = x
-
-    keras_model = Model(inputs=inputs, outputs=outputs)
+        x = GlobalAveragePooling1D(name='output')(x)
+    outputs = x
 
     return keras_model
 
