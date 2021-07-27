@@ -161,7 +161,7 @@ def trainFrom_Root(args):
 def trainFrom_h5(args):
     # general setup
     maxNPF = 100
-    n_features_pf = 4
+    n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
     epochs = args.epochs
