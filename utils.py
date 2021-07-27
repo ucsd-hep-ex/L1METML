@@ -89,6 +89,15 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.savefig(f"{path_out}MET_response.png")
     plt.close()
     
+    def resolqt(y):
+        return(np.percentile(y,84)-np.percentile(y,16))/2.0
+
+    def resolqt_upper(y):
+        return(np.percentile(y,90)-np.percentile(y,10))/2.0
+
+    def resolqt_lower(y):
+        return(np.percentile(y,76)-np.percentile(y,22))/2.0
+    
     # response correction factors
     sfs_ML = np.take(ml_means/truth_means,  np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
     sfs_PUPPI = np.take(puppi_means/truth_means, np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
