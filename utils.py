@@ -28,23 +28,23 @@ def preProcessing(A, normFac, EVT=None):
 
     norm = normFac
 
-    #pt = A[:,:,0:1] / norm
-    px = A[:,:,0:1] / norm
-    py = A[:,:,1:2] / norm
-    eta = A[:,:,2:3]
-    #phi = A[:,:,4:5]
-    puppi = A[:,:,3:4]
+    pt = A[:,:,0:1] / norm
+    px = A[:,:,1:2] / norm
+    py = A[:,:,2:3] / norm
+    eta = A[:,:,3:4]
+    phi = A[:,:,4:5]
+    puppi = A[:,:,5:6]
 
     # remove outliers
-    #pt[ np.where(np.abs(pt>500)) ] = 0.
+    pt[ np.where(np.abs(pt>500)) ] = 0.
     px[ np.where(np.abs(px>500)) ] = 0.
     py[ np.where(np.abs(py>500)) ] = 0.
 
     inputs = np.concatenate((pt, eta, phi, puppi), axis=2)
     pxpy = np.concatenate((px, py), axis=2)
 
-    inputs_cat0 = A[:,:,4:5] # encoded PF pdgId
-    inputs_cat1 = A[:,:,5:6] # encoded PF charge
+    inputs_cat0 = A[:,:,6:7] # encoded PF pdgId
+    inputs_cat1 = A[:,:,7:8] # encoded PF charge
 
     return inputs, pxpy, inputs_cat0, inputs_cat1
 
