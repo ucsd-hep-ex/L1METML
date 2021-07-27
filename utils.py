@@ -58,8 +58,8 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.style.use(hep.style.CMS)
     
     true_ptPhi = convertXY2PtPhi(trueXY)
-    ml_ptPhi = convertXY2PtPhi(predict_XY)
-    puppi_ptPhi = convertXY2PtPhi(PUPPI_XY)
+    ml_ptPhi = convertXY2PtPhi(mlXY)
+    puppi_ptPhi = convertXY2PtPhi(puppiXY)
     # [:,0] is pt; [:,1] is phi
     
     Make1DHists(trueXY[:,0], mlXY[:,0], puppiXY[:,0], -400, 400, 40, False, 'MET X [GeV]', 'A.U.', f'{path_out}MET_x.png')
