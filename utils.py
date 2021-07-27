@@ -68,7 +68,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     
     # do statistics
     from scipy.stats import binned_statistic
-     binnings = np.linspace(0, 400, num=21)
+    binnings = np.linspace(0, 400, num=21)
     truth_means, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], true_ptPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
     ml_means,  _, _ = binned_statistic(true_ptPhi[:,0], ml_ptPhi[:,0],  statistic='mean', bins=binnings, range=(0,400))
     puppi_means, _, _ = binned_statistic(true_ptPhi[:,0], puppi_ptPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
