@@ -18,5 +18,6 @@ RUN pip install --quiet --no-cache-dir \
     tqdm \
     setGPU \
     mplhep \
-    git+https://github.com/jmduarte/qkeras#egg=qkeras
+    git+https://github.com/google/qkeras#egg=qkeras \
+    git+https://github.com/jmduarte/hls4ml@l1metml#egg=hls4ml[profiling]
   
