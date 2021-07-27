@@ -175,5 +175,20 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     plt.title(f'Average $\sigma$(METX) Difference = {round(xRes_avgDif,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolutionDif_metX.png")
 
+def Make1DHists(truth, predict, PUPPI, xmin=0, xmax=400, nbins=100, density=False, xname="pt [GeV]", yname = "A.U.", outputname="1ddistribution.png"):
+    import matplotlib.pyplot as plt
+    import mplhep as hep
+    plt.style.use(hep.style.CMS)
+    plt.figure(figsize=(10,8))
+    plt.hist(truth,    bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='k', label='Truth')
+    plt.hist(predict,  bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='r', label='Predict')
+    plt.hist(PUPPI, bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='g', label='PUPPI')
+    plt.yscale('log')
+    plt.legend(loc='upper right')
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.savefig(outputname)
+    plt.close()
+
 def to_np_array(ak_array, maxN=100, pad=0):
     return ak.fill_none(ak.pad_none(ak_array,maxN,clip=True,axis=-1),pad).to_numpy()
