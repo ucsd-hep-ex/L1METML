@@ -48,36 +48,38 @@ def preProcessing(A, normFac, EVT=None):
 
     return inputs, inputs_cat0, inputs_cat1
 
-def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
+def MakePlots(trueXY, mlXY, puppiXY, path_out):
     # make the 1d distribution, response, resolution,
     # and response-corrected resolution plots
-    # assume the input has [:,0] as X and [:,1] as Y
+    # input has [:,0] as X and [:,1] as Y
+    
     import matplotlib.pyplot as plt
     import mplhep as hep
     plt.style.use(hep.style.CMS)
     
-    truth_PtPhi = convertXY2PtPhi(truth_XY)
-    predict_PtPhi = convertXY2PtPhi(predict_XY)
-    PUPPI_PtPhi = convertXY2PtPhi(PUPPI_XY)
+    true_ptPhi = convertXY2PtPhi(trueXY)
+    ml_ptPhi = convertXY2PtPhi(predict_XY)
+    puppi_ptPhi = convertXY2PtPhi(PUPPI_XY)
+    # [:,0] is pt; [:,1] is phi
     
-    Make1DHists(truth_XY[:,0], predict_XY[:,0], PUPPI_XY[:,0], -400, 400, 40, False, 'MET X [GeV]', 'A.U.', f'{path_out}MET_x.png')
-    Make1DHists(truth_XY[:,1], predict_XY[:,1], PUPPI_XY[:,1], -400, 400, 40, False, 'MET Y [GeV]', 'A.U.', f'{path_out}MET_y.png')
-    Make1DHists(truth_PtPhi[:,0], predict_PtPhi[:,0], PUPPI_PtPhi[:,0], 0, 400, 40, False, 'MET Pt [GeV]', 'A.U.', f'{path_out}MET_pt.png')
+    Make1DHists(trueXY[:,0], mlXY[:,0], puppiXY[:,0], -400, 400, 40, False, 'MET X [GeV]', 'A.U.', f'{path_out}MET_x.png')
+    Make1DHists(trueXY[:,1], mlXY[:,1], puppiXY[:,1], -400, 400, 40, False, 'MET Y [GeV]', 'A.U.', f'{path_out}MET_y.png')
+    Make1DHists(true_ptPhi[:,0], ml_ptPhi[:,0], puppi_ptPhi[:,0], 0, 400, 40, False, 'MET Pt [GeV]', 'A.U.', f'{path_out}MET_pt.png')
     
     # do statistics
     from scipy.stats import binned_statistic
     binnings = np.linspace(0, 400, num=21)
-    truth_means, bin_edges, binnumber = binned_statistic(truth_PtPhi[:,0], truth_PtPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
-    predict_means,  _, _ = binned_statistic(truth_PtPhi[:,0], predict_PtPhi[:,0],  statistic='mean', bins=binnings, range=(0,400))
-    PUPPI_means, _, _ = binned_statistic(truth_PtPhi[:,0], PUPPI_PtPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
+    truth_means, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], true_ptPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
+    ml_means,  _, _ = binned_statistic(true_ptPhi[:,0], ml_ptPhi[:,0],  statistic='mean', bins=binnings, range=(0,400))
+    puppi_means, _, _ = binned_statistic(true_ptPhi[:,0], puppi_ptPhi[:,0], statistic='mean', bins=binnings, range=(0,400))
     
     # plot response
     plt.figure()
     plt.hlines(truth_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='k', lw=5,
            label='Truth', linestyles='solid')
-    plt.hlines(predict_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
+    plt.hlines(ml_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
            label='Predict', linestyles='solid')
-    plt.hlines(PUPPI_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
+    plt.hlines(puppi_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
            label='PUPPI', linestyles='solid')
     plt.xlim(0,400.0)
     plt.ylim(0,1.1)
@@ -88,8 +90,8 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
     plt.close()
     
     # response correction factors
-    sfs_ML = np.take(predict_means/truth_means,  np.digitize(trueMET[:,0], binnings)-1, mode='clip')
-    sfs_PUPPI = np.take(PUPPI_means/truth_means, np.digitize(trueMET[:,0], binnings)-1, mode='clip')
+    sfs_ML = np.take(ml_means/truth_means,  np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
+    sfs_PUPPI = np.take(puppi_means/truth_means, np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
     
     # define the resolution statistic and potential bounds
     def resolqt(y):
@@ -100,21 +102,21 @@ def MakePlots(truth_XY, predict_XY, PUPPI_XY, path_out):
         return(np.percentile(y,76)-np.percentile(y,22))/2.0
 
     # compute resolutions inside each bin
-    bin_resolX_ML, bin_edges, binnumber = binned_statistic(trueMET[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt, bins=binnings, range=(0,400))
-    bin_resolY_ML, _, _ = binned_statistic(trueMET[:,0], trueXY[:,1] - mlXY[:,1] * sfs_ML, statistic=resolqt, bins=binnings, range=(0,400))
-    bin_resolX_PUPPI, _, _ = binned_statistic(trueMET[:,0], trueXY[:,0] - puppiXY[:,0] * sfs_PUPPI, statistic=resolqt, bins=binnings, range=(0,400))
-    bin_resolY_PUPPI, _, _ = binned_statistic(trueMET[:,0], trueXY[:,1] - puppiXY[:,1] * sfs_PUPPI, statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolX_ML, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolY_ML, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * sfs_ML, statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolX_PUPPI, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - puppiXY[:,0] * sfs_PUPPI, statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolY_PUPPI, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - puppiXY[:,1] * sfs_PUPPI, statistic=resolqt, bins=binnings, range=(0,400))
 
     # and the upper and lower bounds
-    bin_resolX_ML_upper, bin_edges, binnumber = binned_statistic(trueMET[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt_upper, bins=binnings, range=(0,400))
-    bin_resolY_ML_upper, _, _ = binned_statistic(trueMET[:,0], trueXY[:,1] - mlXY[:,1] * sfs_ML, statistic=resolqt_upper, bins=binnings, range=(0,400))
-    bin_resolX_PUPPI_upper, _, _ = binned_statistic(trueMET[:,0], trueXY[:,0] - puppiXY[:,0] * sfs_PUPPI, statistic=resolqt_upper, bins=binnings, range=(0,400))
-    bin_resolY_PUPPI_upper, _, _ = binned_statistic(trueMET[:,0], trueXY[:,1] - puppiXY[:,1] * sfs_PUPPI, statistic=resolqt_upper, bins=binnings, range=(0,400))
+    bin_resolX_ML_upper, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt_upper, bins=binnings, range=(0,400))
+    bin_resolY_ML_upper, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * sfs_ML, statistic=resolqt_upper, bins=binnings, range=(0,400))
+    bin_resolX_PUPPI_upper, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - puppiXY[:,0] * sfs_PUPPI, statistic=resolqt_upper, bins=binnings, range=(0,400))
+    bin_resolY_PUPPI_upper, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - puppiXY[:,1] * sfs_PUPPI, statistic=resolqt_upper, bins=binnings, range=(0,400))
 
-    bin_resolX_ML_lower, bin_edges, binnumber = binned_statistic(trueMET[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt_lower, bins=binnings, range=(0,400))
-    bin_resolY_ML_lower, _, _ = binned_statistic(trueMET[:,0], trueXY[:,1] - mlXY[:,1] * sfs_ML, statistic=resolqt_lower, bins=binnings, range=(0,400))
-    bin_resolX_PUPPI_lower, _, _ = binned_statistic(trueMET[:,0], trueXY[:,0] - puppiXY[:,0] * sfs_PUPPI, statistic=resolqt_lower, bins=binnings, range=(0,400))
-    bin_resolY_PUPPI_lower, _, _ = binned_statistic(trueMET[:,0], trueXY[:,1] - puppiXY[:,1] * sfs_PUPPI, statistic=resolqt_lower, bins=binnings, range=(0,400))
+    bin_resolX_ML_lower, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt_lower, bins=binnings, range=(0,400))
+    bin_resolY_ML_lower, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * sfs_ML, statistic=resolqt_lower, bins=binnings, range=(0,400))
+    bin_resolX_PUPPI_lower, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - puppiXY[:,0] * sfs_PUPPI, statistic=resolqt_lower, bins=binnings, range=(0,400))
+    bin_resolY_PUPPI_lower, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - puppiXY[:,1] * sfs_PUPPI, statistic=resolqt_lower, bins=binnings, range=(0,400))
 
     # calculate ML and PUPPI resolutions weighted difference
     weights = []
