@@ -6,6 +6,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, Early
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Model
 from sklearn.model_selection import train_test_split
+import keras_tuner as kt
 
 import numpy as np
 import tables
@@ -71,6 +72,20 @@ def test(Yr_test, predict_test, PUPPI_pt, path_out):
     Phi_abs_error_opaque(PUPPI_pt[:,1], predict_test[:,1], Yr_test[:,1], name=path_out+'Phi_abs_err')
     Pt_abs_error_opaque(PUPPI_pt[:,0], predict_test[:,0], Yr_test[:,0],name=path_out+'Pt_abs_error')
 
+# create a model with scannable hyperparameters
+def model_builder(hp):
+    hp_units = hp.Int('units', min_value=8, max_value=128, step=4)
+  
+    keras_model = dense_embedding(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False, units=[hp_units,32])
+    
+    hp_learning_rate = hp.Choice('learning_rate', values=[1, .1, .01,])
+    
+    optimizer = optimizers.Adam(lr=hp_learning_rate, clipnorm=1.)
+    keras_model.compile(loss=custom_loss, optimizer=optimizer,
+                            metrics=['mean_absolute_error', 'mean_squared_error'])
+            
+    return keras_model
+
 def trainFrom_Root(args):
     # general setup
     maxNPF = 100
@@ -122,7 +137,6 @@ def trainFrom_Root(args):
         keras_model.compile(loss=custom_loss, optimizer=optimizer, 
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
-        
 
     # Set model config
     # Run training
@@ -219,34 +233,56 @@ def trainFrom_h5(args):
         
         keras_model = dense_embedding_quantized(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation_quantizer='quantized_relu',embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False, logit_quantizer = 'quantized_bits', logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits, activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits, alpha=1, use_stochastic_rounding=False)
         
-    else:
-        keras_model = dense_embedding(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
-
-
-    # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
-    if t_mode == 0:
-        keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
-        verbose = 1
-    elif t_mode == 1:
-        optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=custom_loss, optimizer=optimizer,
+        # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
+        if t_mode == 0:
+            keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
+            verbose = 1
+        elif t_mode == 1:
+            #model configuration
+            optimizer = optimizers.Adam(lr=1., clipnorm=1.)
+            keras_model.compile(loss=custom_loss, optimizer=optimizer,
                             metrics=['mean_absolute_error', 'mean_squared_error'])
-        verbose = 1
-        
-    # Set model config
+            verbose = 1
+            
+            # Run training
+            print(keras_model.summary())
 
-    # Run training
-    print(keras_model.summary())
-
-    start_time = time.time() # check start time
-    history = keras_model.fit(Xr_train,
+            start_time = time.time() # check start time
+            history = keras_model.fit(Xr_train,
                               Yr_train,
                               epochs=epochs,
                               batch_size = batch_size,
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=(Xr_valid, Yr_valid),
-                              callbacks=get_callbacks(path_out, len(Yr_train), batch_size)
-                          )
+                              callbacks=get_callbacks(path_out, len(Yr_train), batch_size))
+        
+    else:
+    
+        verbose=1
+        tuner = kt.Hyperband(model_builder,objective='val_accuracy', max_epochs=epochs, factor=3, directory=path_out, project_name='scan_1stDenseLayer_units')
+        
+        stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
+        callbacks=get_callbacks(path_out, len(Yr_train), batch_size))
+        callbacks[0]=stop_early
+        
+        tuner.search(Xr_train,Yr_train, epochs=epochs, validation_split=0.2, callbacks=callbacks)
+
+        # Get the optimal hyperparameters
+        best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
+
+        print(f'The hyperparameter search is complete. The optimal number of units in the first densely-connected layer is {best_hps.get('units')} and the optimal learning rate for the optimizer is {best_hps.get('learning_rate')}')
+        
+        
+        # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
+        start_time = time.time()
+        model = tuner.hypermodel.build(best_hps)
+        history = model.fit(Xr_train,
+                              Yr_train,
+                              epochs=epochs,
+                              batch_size = batch_size,
+                              verbose=verbose
+                              validation_data=(Xr_valid, Yr_valid), callbacks=get_callbacks(path_out, len(Yr_train), batch_size)))
+
     end_time = time.time() # check end time
     
     predict_test = keras_model.predict(Xr_test) * normFac
