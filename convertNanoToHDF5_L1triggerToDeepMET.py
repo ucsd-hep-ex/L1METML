@@ -91,16 +91,16 @@ pdgid = to_np_array(tree['L1PuppiCands_pdgId'],maxN=maxNPuppi,pad=-999)
 charge = to_np_array(tree['L1PuppiCands_charge'],maxN=maxNPuppi,pad=-999)
 puppiw = to_np_array(tree['L1PuppiCands_puppiWeight'],maxN=maxNPuppi)
 
-#X[:,:,0] = pt
-X[:,:,0] = pt * np.cos(phi)
-X[:,:,1] = pt * np.sin(phi)
-X[:,:,2] = eta
-#X[:,:,4] = phi
-X[:,:,3] = puppiw
+X[:,:,0] = pt
+X[:,:,1] = pt * np.cos(phi)
+X[:,:,2] = pt * np.sin(phi)
+X[:,:,3] = eta
+X[:,:,4] = phi
+X[:,:,5] = puppiw
 
 # encoding
-X[:,:,4] = np.vectorize(d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
-X[:,:,5] = np.vectorize(d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
+X[:,:,6] = np.vectorize(d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
+X[:,:,7] = np.vectorize(d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
     
 # truth info
 if not opt.data:
