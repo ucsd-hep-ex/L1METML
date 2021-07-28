@@ -91,10 +91,10 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=2,
     if t_mode == 1:
         if with_bias:
             b = QDense(2, name='met_bias', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
-            b= QActivation(activation=linear)(b)
+            b= QActivation(activation='linear')(b)
             pxpy = Add()([pxpy, b])
         w = QDense(1, name='met_weight', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
-        w= QActivation(activation=linear)(w)
+        w= QActivation(activation='linear')(w)
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
         x = Multiply()([w, pxpy])
 
