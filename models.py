@@ -64,8 +64,8 @@ def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=2,
     logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
     activation_quantizer = getattr(qkeras.quantizers,activation_quantizer)(activation_total_bits, activation_int_bits)
     
-    inputs_cont = Input(shape=(number_of_pupcandis, n_features), name='input')
-    pxpy = Lambda(lambda x: slice(x, (0, 0, n_features-2), (-1, -1, -1)))(inputs_cont)
+    inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input')
+    pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
 
     embeddings = []
     for i_emb in range(n_features_cat):
