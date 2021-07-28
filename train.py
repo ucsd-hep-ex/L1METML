@@ -267,7 +267,7 @@ def main():
     parser.add_argument('--quantized', action='store', required=False, nargs='+', help='flag for quantized model and specify [total bits] [int bits]; empty for normal model')
     
     args = parser.parse_args()
-    workflowType = args.dataType
+    workflowType = args.workflowType
 
     os.makedirs(args.output,exist_ok=True)
 
