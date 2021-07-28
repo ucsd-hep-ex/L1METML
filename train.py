@@ -259,7 +259,7 @@ def main():
     time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataType', action='store', type=str, required=True, choices=['h5', 'root'], help='designate input file path')
+    parser.add_argument('--workflowType', action='store', type=str, required=True, choices=['h5', 'root'], help='designate input file path')
     parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
@@ -267,13 +267,13 @@ def main():
     parser.add_argument('--quantized', action='store', required=False, nargs='+', help='flag for quantized model and specify [total bits] [int bits]; empty for normal model')
     
     args = parser.parse_args()
-    dataType = args.dataType
+    workflowType = args.dataType
 
     os.makedirs(args.output,exist_ok=True)
 
-    if dataType == 'h5':
+    if workflowType == 'h5':
         trainFrom_h5(args)
-    elif dataType == 'root':
+    elif workflowType == 'root':
         trainFrom_Root(args)
 
 if __name__ == "__main__":

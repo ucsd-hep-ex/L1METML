@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-root-main-merge-quan-16-6
+  name: l1metml-h5-main-merge-quan-16-6
 spec:
   template:
     spec:
@@ -13,7 +13,7 @@ spec:
         - "-c"
         - " git clone https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --dataType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-main-merge-quan-16-6/ --mode 1 --epochs 1 --quantized 16 6"
+            python train.py --workflowType h5 --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/h5-main-merge-quan-16-6/ --mode 1 --epochs 1 --quantized 16 6"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
