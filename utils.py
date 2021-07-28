@@ -78,7 +78,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.hlines(truth_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='k', lw=5,
            label='Truth', linestyles='solid')
     plt.hlines(ml_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
-           label='Predict', linestyles='solid')
+           label='ML', linestyles='solid')
     plt.hlines(puppi_means/truth_means, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
            label='PUPPI', linestyles='solid')
     plt.xlim(0,400.0)
@@ -89,45 +89,75 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.savefig(f"{path_out}MET_response.png")
     plt.close()
     
+    #width of a distribution at 1 standard deviation
     def resolqt(y):
         return(np.percentile(y,84)-np.percentile(y,16))/2.0
-
+        
+    # distribution widths at slightly wider and narror points
     def resolqt_upper(y):
         return(np.percentile(y,90)-np.percentile(y,10))/2.0
-
     def resolqt_lower(y):
         return(np.percentile(y,76)-np.percentile(y,22))/2.0
     
     # response correction factors
-    sfs_ML = np.take(ml_means/truth_means,  np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
-    sfs_PUPPI = np.take(puppi_means/truth_means, np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
+    responseCorrection_ml = np.take(ml_means/truth_means,  np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
+    responseCorrection_puppi = np.take(puppi_means/truth_means, np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
 
     # compute resolutions inside each bin
-    bin_resolX_ML, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt, bins=binnings, range=(0,400))
-    bin_resolY_ML, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * sfs_ML, statistic=resolqt, bins=binnings, range=(0,400))
-    bin_resolX_PUPPI, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - puppiXY[:,0] * sfs_PUPPI, statistic=resolqt, bins=binnings, range=(0,400))
-    bin_resolY_PUPPI, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - puppiXY[:,1] * sfs_PUPPI, statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolX_ML, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * responseCorrection_ml,
+                                            statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolY_ML, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * responseCorrection_ml,
+                            statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolX_PUPPI, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - puppiXY[:,0] *responseCorrection_puppi,
+                                statistic=resolqt, bins=binnings, range=(0,400))
+    bin_resolY_PUPPI, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - puppiXY[:,1] *responseCorrection_puppi,
+                                statistic=resolqt, bins=binnings, range=(0,400))
 
     # and the upper and lower bounds
-    bin_resolX_ML_upper, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt_upper, bins=binnings, range=(0,400))
-    bin_resolY_ML_upper, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * sfs_ML, statistic=resolqt_upper, bins=binnings, range=(0,400))
-    bin_resolX_PUPPI_upper, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - puppiXY[:,0] * sfs_PUPPI, statistic=resolqt_upper, bins=binnings, range=(0,400))
-    bin_resolY_PUPPI_upper, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - puppiXY[:,1] * sfs_PUPPI, statistic=resolqt_upper, bins=binnings, range=(0,400))
+    bin_resolX_ML_upper,_,_ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * responseCorrection_ml, statistic=resolqt_upper, bins=binnings, range=(0,400))
+    bin_resolY_ML_upper, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * responseCorrection_ml, statistic=resolqt_upper, bins=binnings, range=(0,400))
+    bin_resolX_PUPPI_upper, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - puppiXY[:,0] * responseCorrection_puppi,
+                                    statistic=resolqt_upper, bins=binnings, range=(0,400))
+    bin_resolY_PUPPI_upper, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - puppiXY[:,1] * responseCorrection_puppi,
+                                    statistic=resolqt_upper, bins=binnings, range=(0,400))
 
-    bin_resolX_ML_lower, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * sfs_ML, statistic=resolqt_lower, bins=binnings, range=(0,400))
-    bin_resolY_ML_lower, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * sfs_ML, statistic=resolqt_lower, bins=binnings, range=(0,400))
-    bin_resolX_PUPPI_lower, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - puppiXY[:,0] * sfs_PUPPI, statistic=resolqt_lower, bins=binnings, range=(0,400))
-    bin_resolY_PUPPI_lower, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - puppiXY[:,1] * sfs_PUPPI, statistic=resolqt_lower, bins=binnings, range=(0,400))
+    bin_resolX_ML_lower,_,_ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * responseCorrection_ml,
+                                statistic=resolqt_lower, bins=binnings, range=(0,400))
+    bin_resolY_ML_lower, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * responseCorrection_ml,
+                                statistic=resolqt_lower, bins=binnings, range=(0,400))
+    bin_resolX_PUPPI_lower, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - puppiXY[:,0] *responseCorrection_puppi,
+                                    statistic=resolqt_lower, bins=binnings, range=(0,400))
+    bin_resolY_PUPPI_lower, _, _ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - puppiXY[:,1] * responseCorrection_puppi,
+                                    statistic=resolqt_lower, bins=binnings, range=(0,400))
 
-    # calculate ML and PUPPI resolutions weighted difference
-    weights = []
+    # calclate difference in resolutions for all 20 bins
+    bin_resolY_dif =bin_resolY_PUPPI-bin_resolY_ML
+    bin_resolX_dif =bin_resolX_PUPPI-bin_resolX_ML
+
+    # and an average difference in the resolution
+    # either weight the bins by the number of events inside
+    '''';weights = []
     nEvents = len(binnumber)
     for bin in np.arange(len(binnings)-1):
         weights.append(len(binnumber[binnumber==bin+1])/nEvents) #number of events in bin / total number of events
     xRes_avgDif = np.average(bin_resolX_PUPPI-bin_resolX_ML, weights=weights)
-    yRes_avgDif = np.average(bin_resolY_PUPPI-bin_resolY_ML, weights=weights)
+    yRes_avgDif = np.average(bin_resolY_PUPPI-bin_resolY_ML, weights=weights)'''
+    
+    #or compute the resolution of the entire dataset (in a bin spanning the domain)
+    oneBin=np.linspace(0,400,2)
+    oneBin_xRes_ml,_,_ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * responseCorrection_ml,
+                        statistic=resolqt, bins=oneBin, range=(0,400))
+    oneBin_yRes_ml,_,_ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] * responseCorrection_ml,
+                        statistic=resolqt, bins=oneBin, range=(0,400))
+    oneBin_xRes_puppi,_,_ = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * responseCorrection_puppi,
+                            statistic=resolqt, bins=oneBin, range=(0,400))
+    oneBin_yRes_puppi,_,_ = binned_statistic(true_ptPhi[:,0], trueXY[:,1] - mlXY[:,1] *responseCorrection_puppi,
+                            statistic=resolqt, bins=oneBin, range=(0,400))
+    
+    xRes_avgDif = 10*(oneBin_xRes_puppi[0]-oneBin_xRes_ml[0])
+    yRes_avgDif = 10*(oneBin_yRes_puppi[0]-oneBin_yRes_ml[0])
 
-    #make the plots
+    #x resolution 20 bins
     plt.figure()
     plt.hlines(bin_resolX_ML, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
                label='ML', linestyles='solid')
@@ -137,6 +167,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.errorbar(bin_edges[:-1]+12, bin_resolX_ML, yerr= xRes_ML_error, fmt='none', color='r')
     xRes_PUPPI_error = abs([bin_resolX_PUPPI_lower, bin_resolX_PUPPI_upper]-bin_resolX_PUPPI)
     plt.errorbar(bin_edges[:-1]+8, bin_resolX_PUPPI, yerr= xRes_PUPPI_error, fmt='none', color='g')
+    # +8 and +12 put the error bars slightly off the center of the horizontal lines
     plt.legend(loc='lower right')
     plt.xlim(0,400.0)
     plt.ylim(0,200)
@@ -145,9 +176,10 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.title(f'Average $\sigma$(METX) Difference = {round(xRes_avgDif,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolution_metx.png")
 
+    # y resolutions
     plt.figure()
     plt.hlines(bin_resolY_ML, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
-               label='Predict', linestyles='solid')
+               label='ML', linestyles='solid')
     plt.hlines(bin_resolY_PUPPI, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
                label='PUPPI', linestyles='solid')
     yRes_ML_error = abs([bin_resolY_ML_lower, bin_resolY_ML_upper]-bin_resolY_ML)
@@ -161,12 +193,10 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.ylabel('RespCorr $\sigma$(METY) [GeV]')
     plt.title(f'Average $\sigma$(METY) Difference = {round(yRes_avgDif,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolution_mety.png")
-
-    resolY_dif =bin_resolY_PUPPI-bin_resolY_ML
-    resolX_dif =bin_resolX_PUPPI-bin_resolX_ML
     
+    # x resolutions
     plt.figure()
-    plt.hlines(resolY_dif, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
+    plt.hlines(bin_resolY_dif, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
     plt.axhline(y=0, color='black', linestyle='-')
     plt.xlim(0,400.0)
     plt.ylim(-20,20)
@@ -174,9 +204,10 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.ylabel('PUPPI-ML $\sigma$(METY) [GeV]')
     plt.title(f'Average $\sigma$(METY) Difference = {round(yRes_avgDif,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolutionDif_metY.png")
-
+    
+    # y resolution
     plt.figure()
-    plt.hlines(resolX_dif, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
+    plt.hlines(bin_resolX_dif, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
     plt.axhline(y=0, color='black', linestyle='-')
     plt.xlim(0,400.0)
     plt.ylim(-20,20)
@@ -185,13 +216,13 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.title(f'Average $\sigma$(METX) Difference = {round(xRes_avgDif,3)}', fontsize = 22)
     plt.savefig(f"{path_out}resolutionDif_metX.png")
 
-def Make1DHists(truth, predict, PUPPI, xmin=0, xmax=400, nbins=100, density=False, xname="pt [GeV]", yname = "A.U.", outputname="1ddistribution.png"):
+def Make1DHists(truth, ML, PUPPI, xmin=0, xmax=400, nbins=100, density=False, xname="pt [GeV]", yname = "A.U.", outputname="1ddistribution.png"):
     import matplotlib.pyplot as plt
     import mplhep as hep
     plt.style.use(hep.style.CMS)
     plt.figure(figsize=(10,8))
     plt.hist(truth,    bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='k', label='Truth')
-    plt.hist(predict,  bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='r', label='Predict')
+    plt.hist(ML,  bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='r', label='ML')
     plt.hist(PUPPI, bins=nbins, range=(xmin, xmax), density=density, histtype='step', facecolor='g', label='PUPPI')
     plt.yscale('log')
     plt.legend(loc='upper right')
