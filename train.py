@@ -271,10 +271,9 @@ def main():
 
     os.makedirs(args.output,exist_ok=True)
 
-    print(args.quantized)
-    #if dataType == 'h5':
+    if dataType == 'h5':
         #trainFrom_h5(args)
-    #elif dataType == 'root':
+    elif dataType == 'root':
         #trainFrom_Root(args)
 
 if __name__ == "__main__":
