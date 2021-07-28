@@ -264,7 +264,7 @@ def main():
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
     parser.add_argument('--epochs', action='store', type=int, required=False, default=100)
-        parser.add_argument('--quantized', action='store', required=False, nargs='+', help='flag for quantized model and specify [total bits] [int bits]; empty for normal model')
+    parser.add_argument('--quantized', action='store', required=False, nargs='+', help='flag for quantized model and specify [total bits] [int bits]; empty for normal model')
     
     args = parser.parse_args()
     dataType = args.dataType
