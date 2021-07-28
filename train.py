@@ -102,7 +102,7 @@ def trainFrom_Root(args):
 
     # Load training model
     if quantized == None:
-        keras_model = dense_embedding(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
+        keras_model = dense_embedding(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation='tanh', embedding_input_dim= trainGenerator.emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
     else:
     
         logit_total_bits = int(quantized[0])
@@ -110,7 +110,7 @@ def trainFrom_Root(args):
         activation_total_bits = int(quantized[0])
         activation_int_bits = int(quantized[1])
         
-        keras_model = dense_embedding_quantized(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation_quantizer='quantized_relu',embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False, logit_quantizer = 'quantized_bits', logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits, activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits, alpha=1, use_stochastic_rounding=False)
+        keras_model = dense_embedding_quantized(n_features = n_features_pf, emb_out_dim=2, n_features_cat=n_features_pf_cat, n_dense_layers=2, activation_quantizer='quantized_relu',embedding_input_dim= trainGenerator.emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False, logit_quantizer = 'quantized_bits', logit_total_bits=logit_total_bits, logit_int_bits=logit_int_bits, activation_total_bits=activation_total_bits, activation_int_bits=activation_int_bits, alpha=1, use_stochastic_rounding=False)
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
