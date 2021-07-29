@@ -15,7 +15,7 @@ def dense_embedding(n_features=6,
                     embedding_input_dim={0: 13, 1: 3},
                     emb_out_dim=8,
                     with_bias=True,
-                    t_mode = 0
+                    t_mode = 0,
                     units=[64,32,16]):
     n_dense_layers = len(units)
     
