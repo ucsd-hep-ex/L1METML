@@ -10,14 +10,15 @@ import numpy as np
 
 def dense_embedding(n_features=6,
                     n_features_cat=2,
-                    n_dense_layers=3,
                     activation='relu',
                     number_of_pupcandis=100,
                     embedding_input_dim={0: 13, 1: 3},
                     emb_out_dim=8,
                     with_bias=True,
-                    t_mode = 0):
-
+                    t_mode = 0
+                    units=[64,32,16]):
+    n_dense_layers = len(units)
+    
     inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input')
     pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
     
@@ -31,8 +32,7 @@ def dense_embedding(n_features=6,
         embeddings.append(embedding)
 
     x = Concatenate()([inputs_cont, pxpy] + [emb for emb in embeddings])
-    
-    units = [16,32]
+
     for i_dense in range(n_dense_layers):
         x = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
@@ -62,7 +62,6 @@ def dense_embedding(n_features=6,
     
 def dense_embedding_quantized(n_features=6,
                                 n_features_cat=2,
-                                n_dense_layers=2,
                                 number_of_pupcandis=100,
                                 embedding_input_dim={0: 13, 1: 3},
                                 emb_out_dim=2,
@@ -75,8 +74,9 @@ def dense_embedding_quantized(n_features=6,
                                 activation_quantizer = 'quantized_relu',
                                 activation_int_bits=2,
                                 alpha=1,
-                                use_stochastic_rounding=False):
-
+                                use_stochastic_rounding=False,
+                                units=[64,32,16]):
+    n_dense_layers=len(units)
     
     logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
     activation_quantizer = getattr(qkeras.quantizers,activation_quantizer)(activation_total_bits, activation_int_bits)

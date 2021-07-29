@@ -83,6 +83,7 @@ def trainFrom_Root(args):
     inputPath = args.input
     path_out = args.output
     quantized = args.quantized
+    units = list(map(int, args.units))
 
     filesList = glob(os.path.join(f'{inputPath}','*.root'))
     filesList.sort(reverse=True)
@@ -105,12 +106,12 @@ def trainFrom_Root(args):
         keras_model = dense_embedding(n_features=n_features_pf,
                                         emb_out_dim=2,
                                         n_features_cat=n_features_pf_cat,
-                                        n_dense_layers=2,
                                         activation='tanh',
                                         embedding_input_dim=trainGenerator.emb_input_dim,
                                         number_of_pupcandis=maxNPF,
                                         t_mode=t_mode,
-                                        with_bias=False)
+                                        with_bias=False,
+                                        units=units)
     else:
     
         logit_total_bits = int(quantized[0])
@@ -121,7 +122,6 @@ def trainFrom_Root(args):
         keras_model = dense_embedding_quantized(n_features=n_features_pf,
                                                 emb_out_dim=2,
                                                 n_features_cat=n_features_pf_cat,
-                                                n_dense_layers=2,
                                                 activation_quantizer='quantized_relu',
                                                 embedding_input_dim= trainGenerator.emb_input_dim,
                                                 number_of_pupcandis=maxNPF,
@@ -133,7 +133,8 @@ def trainFrom_Root(args):
                                                 activation_total_bits=activation_total_bits,
                                                 activation_int_bits=activation_int_bits,
                                                 alpha=1,
-                                                use_stochastic_rounding=False)
+                                                use_stochastic_rounding=False,
+                                                units=units)
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
@@ -190,8 +191,9 @@ def trainFrom_h5(args):
     inputPath = args.input
     path_out = args.output
     quantized = args.quantized
+    units = list(map(int, args.units))
+        
     # Read inputs
-    
     # convert root files to h5 and store in same location
     h5files = []
     for ifile in glob(os.path.join(f'{inputPath}','*.root')):
@@ -234,12 +236,12 @@ def trainFrom_h5(args):
         keras_model = dense_embedding(n_features=n_features_pf,
                                         emb_out_dim=2,
                                         n_features_cat=n_features_pf_cat,
-                                        n_dense_layers=2,
                                         activation='tanh',
                                         embedding_input_dim=emb_input_dim,
                                         number_of_pupcandis=maxNPF,
                                         t_mode=t_mode,
-                                        with_bias=False)
+                                        with_bias=False,
+                                        units=units)
     else:
     
         logit_total_bits = int(quantized[0])
@@ -250,7 +252,6 @@ def trainFrom_h5(args):
         keras_model = dense_embedding_quantized(n_features=n_features_pf,
                                                 emb_out_dim=2,
                                                 n_features_cat=n_features_pf_cat,
-                                                n_dense_layers=2,
                                                 activation_quantizer='quantized_relu',
                                                 embedding_input_dim=emb_input_dim,
                                                 number_of_pupcandis=maxNPF,
@@ -262,7 +263,8 @@ def trainFrom_h5(args):
                                                 activation_total_bits=activation_total_bits,
                                                 activation_int_bits=activation_int_bits,
                                                 alpha=1,
-                                                use_stochastic_rounding=False)
+                                                use_stochastic_rounding=False,
+                                                units=units)
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
@@ -309,7 +311,8 @@ def main():
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
     parser.add_argument('--epochs', action='store', type=int, required=False, default=100)
-    parser.add_argument('--quantized', action='store', required=False, nargs='+', help='flag for quantized model and specify [total bits] [int bits]; empty for normal model')
+    parser.add_argument('--quantized', action='store', required=False, nargs='+', help='optional argument: flag for quantized model and specify [total bits] [int bits]; empty for normal model')
+    parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
     
     args = parser.parse_args()
     workflowType = args.workflowType
