@@ -157,6 +157,11 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     xRes_avgDif = 10*(oneBin_xRes_puppi[0]-oneBin_xRes_ml[0])
     yRes_avgDif = 10*(oneBin_yRes_puppi[0]-oneBin_yRes_ml[0])
 
+    binWidth = binnings[1] # =20
+    # +8 and +12 put the error bars slightly off the center of the horizontal lines
+    leftOfBinCenter = .4*binWidth # =8
+    rightOfBinCenter = .6*binWidth # =12
+    
     #x resolution 20 bins
     plt.figure()
     plt.hlines(bin_resolX_ML, bin_edges[:-1], bin_edges[1:], colors='r', lw=5,
@@ -164,10 +169,9 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.hlines(bin_resolX_PUPPI, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
                label='PUPPI', linestyles='solid')
     xRes_ML_error = abs([bin_resolX_ML_lower, bin_resolX_ML_upper]-bin_resolX_ML)
-    plt.errorbar(bin_edges[:-1]+12, bin_resolX_ML, yerr= xRes_ML_error, fmt='none', color='r')
+    plt.errorbar(bin_edges[:-1]+rightOfBinCenter, bin_resolX_ML, yerr= xRes_ML_error, fmt='none', color='r')
     xRes_PUPPI_error = abs([bin_resolX_PUPPI_lower, bin_resolX_PUPPI_upper]-bin_resolX_PUPPI)
-    plt.errorbar(bin_edges[:-1]+8, bin_resolX_PUPPI, yerr= xRes_PUPPI_error, fmt='none', color='g')
-    # +8 and +12 put the error bars slightly off the center of the horizontal lines
+    plt.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolX_PUPPI, yerr= xRes_PUPPI_error, fmt='none', color='g')
     plt.legend(loc='lower right')
     plt.xlim(0,400.0)
     plt.ylim(0,200)
@@ -183,9 +187,9 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     plt.hlines(bin_resolY_PUPPI, bin_edges[:-1], bin_edges[1:], colors='g', lw=5,
                label='PUPPI', linestyles='solid')
     yRes_ML_error = abs([bin_resolY_ML_lower, bin_resolY_ML_upper]-bin_resolY_ML)
-    plt.errorbar(bin_edges[:-1]+12, bin_resolY_ML, yerr= yRes_ML_error, fmt='none', color='r')
+    plt.errorbar(bin_edges[:-1]+rightOfBinCenter, bin_resolY_ML, yerr= yRes_ML_error, fmt='none', color='r')
     yRes_PUPPI_error = abs([bin_resolY_PUPPI_lower, bin_resolY_PUPPI_upper]-bin_resolY_PUPPI)
-    plt.errorbar(bin_edges[:-1]+8, bin_resolX_PUPPI, yerr= xRes_PUPPI_error, fmt='none', color='g')
+    plt.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolX_PUPPI, yerr= xRes_PUPPI_error, fmt='none', color='g')
     plt.legend(loc='lower right')
     plt.xlim(0,400.0)
     plt.ylim(0,200.0)

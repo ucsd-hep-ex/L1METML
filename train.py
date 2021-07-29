@@ -218,8 +218,9 @@ def trainFrom_h5(args):
     Xr = [Xi, Xp] + Xc
 
     indices = np.array([i for i in range(len(Yr))])
-    indices_train, indices_test = train_test_split(indices, test_size=0.1, random_state= 7)
-    indices_train, indices_valid = train_test_split(indices_train, test_size=1/9, random_state=7)
+    indices_train, indices_test = train_test_split(indices, test_size=1./7., random_state= 7)
+    indices_train, indices_valid = train_test_split(indices_train, test_size=1./6., random_state=7)
+    # roughly the same split as the root workflow
 
     Xr_train = [x[indices_train] for x in Xr]
     Xr_test = [x[indices_test] for x in Xr]
