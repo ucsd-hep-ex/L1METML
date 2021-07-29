@@ -8,9 +8,15 @@ import qkeras
 from qkeras.qlayers import QDense, QActivation
 import numpy as np
 
-def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3,
-    activation='relu', number_of_pupcandis=100, embedding_input_dim={0: 13, 1: 3},
-    emb_out_dim=8, with_bias=True, t_mode = 0):
+def dense_embedding(n_features=6,
+                    n_features_cat=2,
+                    n_dense_layers=3,
+                    activation='relu',
+                    number_of_pupcandis=100,
+                    embedding_input_dim={0: 13, 1: 3},
+                    emb_out_dim=8,
+                    with_bias=True,
+                    t_mode = 0):
 
     inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input')
     pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
@@ -55,12 +61,22 @@ def dense_embedding(n_features=6, n_features_cat=2, n_dense_layers=3,
     return keras_model
     
     
-def dense_embedding_quantized(n_features=6, n_features_cat=2, n_dense_layers=2,
-    number_of_pupcandis=100, embedding_input_dim={0: 13, 1: 3}, emb_out_dim=2,
-    with_bias=True, t_mode = 0, logit_total_bits=7,
-    logit_int_bits=2, activation_total_bits=7,
-    logit_quantizer = 'quantized_bits', activation_quantizer = 'quantized_relu',
-    activation_int_bits=2, alpha=1, use_stochastic_rounding=False):
+def dense_embedding_quantized(n_features=6,
+                                n_features_cat=2,
+                                n_dense_layers=2,
+                                number_of_pupcandis=100,
+                                embedding_input_dim={0: 13, 1: 3},
+                                emb_out_dim=2,
+                                with_bias=True,
+                                t_mode = 0,
+                                logit_total_bits=7,
+                                logit_int_bits=2,
+                                activation_total_bits=7,
+                                logit_quantizer = 'quantized_bits',
+                                activation_quantizer = 'quantized_relu',
+                                activation_int_bits=2,
+                                alpha=1,
+                                use_stochastic_rounding=False):
 
     
     logit_quantizer = getattr(qkeras.quantizers,logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
