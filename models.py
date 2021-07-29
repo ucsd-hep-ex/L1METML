@@ -8,8 +8,6 @@ import qkeras
 from qkeras.qlayers import QDense, QActivation
 import numpy as np
 
-units = [16,32]
-
 def dense_embedding(n_features=6,
                     n_features_cat=2,
                     n_dense_layers=3,
@@ -34,6 +32,7 @@ def dense_embedding(n_features=6,
 
     x = Concatenate()([inputs_cont, pxpy] + [emb for emb in embeddings])
     
+    units = [16,32]
     for i_dense in range(n_dense_layers):
         x = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
@@ -96,6 +95,7 @@ def dense_embedding_quantized(n_features=6,
 
     x = Concatenate()([inputs_cont, pxpy] + [emb for emb in embeddings])
     
+    units = [16,32]
     for i_dense in range(n_dense_layers):
         x = QDense(units[i_dense], kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)
