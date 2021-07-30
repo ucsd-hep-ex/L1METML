@@ -1,0 +1,32 @@
+name: Test
+
+on: pull_request
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # Install dependencies
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: l1metml
+          environment-file: environment.yml
+          python-version: 3.9
+          auto-activate-base: false
+
+      # Check dependencies
+      - name: Check Miniconda
+        shell: bash -l {0}
+        run: |
+          conda info
+          conda list
+          conda config --show-sources
+          conda config --show
+          printenv | sort
+
+      # Run autopep8
+      - name: Run autopep8
+        shell: bash -l {0}
+        run: |
+          autopep8 --in-place --aggressive --aggressive --recursive . --exit-code
