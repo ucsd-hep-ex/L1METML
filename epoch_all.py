@@ -18,7 +18,7 @@ for i, var in enumerate(table_split):
     print("{}\t {}".format(i, var))
 
     if '\n' in var:
-        table_split[i] = table_split[i].replace('\n','')
+        table_split[i] = table_split[i].replace('\n', '')
 
 
 num_var = int(input("Input number 0 ~ 10 : "))
@@ -35,11 +35,12 @@ array_var = []
 
 while True:
     line = loss_file.readline()
-    if not line: break
+    if not line:
+        break
 
     line_split = line.split(",")
     temp_var = line_split[num_var]
-    
+
     array_epoch.append(epoch_)
     array_var.append(temp_var)
 
@@ -57,11 +58,11 @@ plt.plot(array_epoch, array_var)
 plt.title(table_split[num_var])
 plt.xlabel("epoch")
 plt.ylabel(table_split[num_var])
-#plt.ylim(0,5000)
-#plt.ylim(0,plot_maxi)
-#plt.xlim(0,140)
+# plt.ylim(0,5000)
+# plt.ylim(0,plot_maxi)
+# plt.xlim(0,140)
 plt.grid()
 plt.show()
-plt.savefig("loss_plot/{}.png".format(table_split[num_var]))    
+plt.savefig("loss_plot/{}.png".format(table_split[num_var]))
 
 loss_file.close()

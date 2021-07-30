@@ -9,8 +9,9 @@ from qkeras.utils import _add_supported_quantized_objects
 co = {}
 _add_supported_quantized_objects(co)
 
+
 def print_dict(d, indent=0):
-    align=20
+    align = 20
     for key, value in d.items():
         print('  ' * indent + str(key), end='')
         if isinstance(value, dict):
@@ -18,6 +19,7 @@ def print_dict(d, indent=0):
             print_dict(value, indent+1)
         else:
             print(':' + ' ' * (20 - len(key) - 2 * indent) + str(value))
+
 
 model = tensorflow.keras.models.load_model('output/model.h5', compile=False, custom_objects=co)
 
@@ -116,4 +118,3 @@ print(df)
 
 
 hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='model_hls4ml.png')
-

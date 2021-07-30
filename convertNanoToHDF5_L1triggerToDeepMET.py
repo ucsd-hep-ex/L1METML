@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import optparse
 import sys
 import uproot
 import numpy as np
@@ -9,7 +10,7 @@ import h5py
 from tqdm import tqdm
 import os
 
-from utils import  to_np_array
+from utils import to_np_array
 
 '''
 widgets=[
@@ -17,18 +18,19 @@ widgets=[
 ]
 '''
 
+
 def deltaR(eta1, phi1, eta2, phi2):
     """ calculate deltaR """
     dphi = (phi1-phi2)
-    while dphi >  np.pi: dphi -= 2*np.pi
-    while dphi < -np.pi: dphi += 2*np.pi
+    while dphi > np.pi:
+        dphi -= 2*np.pi
+    while dphi < -np.pi:
+        dphi += 2*np.pi
     deta = eta1-eta2
     return np.hypot(deta, dphi)
 
 
-import optparse
-
-#configuration
+# configuration
 usage = 'usage: %prog [options]'
 parser = optparse.OptionParser(usage)
 parser.add_option('-i', '--input', dest='input', help='input file', default='', type='string')
@@ -42,8 +44,8 @@ if opt.input == '' or opt.output == '':
 
 ##
 varList = [
-	'nL1PuppiCands', 'L1PuppiCands_pt','L1PuppiCands_eta','L1PuppiCands_phi',
-	'L1PuppiCands_charge','L1PuppiCands_pdgId','L1PuppiCands_puppiWeight'
+        'nL1PuppiCands', 'L1PuppiCands_pt', 'L1PuppiCands_eta', 'L1PuppiCands_phi',
+        'L1PuppiCands_charge', 'L1PuppiCands_pdgId', 'L1PuppiCands_puppiWeight'
 ]
 
 # event-level variables
@@ -53,59 +55,59 @@ varList_mc = [
 ]
 
 d_encoding = {
-    'L1PuppiCands_charge':{-999.0: 0,
-                           -1.0: 1,
-                           0.0: 2,
-                           1.0: 3},
-    'L1PuppiCands_pdgId':{-999.0: 0,
-                          -211.0: 1,
-                          -130.0: 2,
-                          -22.0: 3,
-                          -13.0: 4,
-                          -11.0: 5,
-                          11.0: 5,
-                          13.0: 4,
-                          22.0: 3,
-                          130.0: 2,
-                          211.0: 1}
+    'L1PuppiCands_charge': {-999.0: 0,
+                            -1.0: 1,
+                            0.0: 2,
+                            1.0: 3},
+    'L1PuppiCands_pdgId': {-999.0: 0,
+                           -211.0: 1,
+                           -130.0: 2,
+                           -22.0: 3,
+                           -13.0: 4,
+                           -11.0: 5,
+                           11.0: 5,
+                           13.0: 4,
+                           22.0: 3,
+                           130.0: 2,
+                           211.0: 1}
 }
 
 if not opt.data:
     varList = varList + varList_mc
-    
+
 upfile = uproot.open(opt.input)
-tree = upfile['Events'].arrays( varList, entry_stop =opt.maxevents)
+tree = upfile['Events'].arrays(varList, entry_stop=opt.maxevents)
 # general setup
 maxNPuppi = 100
 nFeatures = 8
-maxEntries = len(tree['nL1PuppiCands']) 
+maxEntries = len(tree['nL1PuppiCands'])
 # input Puppi candidates
-X = np.zeros(shape=(maxEntries,maxNPuppi,nFeatures), dtype=float, order='F')
+X = np.zeros(shape=(maxEntries, maxNPuppi, nFeatures), dtype=float, order='F')
 # recoil estimators
-Y = np.zeros(shape=(maxEntries,2), dtype=float, order='F')
+Y = np.zeros(shape=(maxEntries, 2), dtype=float, order='F')
 
-pt = to_np_array(tree['L1PuppiCands_pt'],maxN=maxNPuppi)
-eta = to_np_array(tree['L1PuppiCands_eta'],maxN=maxNPuppi)
-phi = to_np_array(tree['L1PuppiCands_phi'],maxN=maxNPuppi)
-pdgid = to_np_array(tree['L1PuppiCands_pdgId'],maxN=maxNPuppi,pad=-999)
-charge = to_np_array(tree['L1PuppiCands_charge'],maxN=maxNPuppi,pad=-999)
-puppiw = to_np_array(tree['L1PuppiCands_puppiWeight'],maxN=maxNPuppi)
+pt = to_np_array(tree['L1PuppiCands_pt'], maxN=maxNPuppi)
+eta = to_np_array(tree['L1PuppiCands_eta'], maxN=maxNPuppi)
+phi = to_np_array(tree['L1PuppiCands_phi'], maxN=maxNPuppi)
+pdgid = to_np_array(tree['L1PuppiCands_pdgId'], maxN=maxNPuppi, pad=-999)
+charge = to_np_array(tree['L1PuppiCands_charge'], maxN=maxNPuppi, pad=-999)
+puppiw = to_np_array(tree['L1PuppiCands_puppiWeight'], maxN=maxNPuppi)
 
-X[:,:,0] = pt
-X[:,:,1] = pt * np.cos(phi)
-X[:,:,2] = pt * np.sin(phi)
-X[:,:,3] = eta
-X[:,:,4] = phi
-X[:,:,5] = puppiw
+X[:, :, 0] = pt
+X[:, :, 1] = pt * np.cos(phi)
+X[:, :, 2] = pt * np.sin(phi)
+X[:, :, 3] = eta
+X[:, :, 4] = phi
+X[:, :, 5] = puppiw
 
 # encoding
-X[:,:,6] = np.vectorize(d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
-X[:,:,7] = np.vectorize(d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
-    
+X[:, :, 6] = np.vectorize(d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
+X[:, :, 7] = np.vectorize(d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
+
 # truth info
 if not opt.data:
-    Y[:,0] += tree['genMet_pt'].to_numpy() * np.cos(tree['genMet_phi'].to_numpy())
-    Y[:,1] += tree['genMet_pt'].to_numpy() * np.sin(tree['genMet_phi'].to_numpy())
+    Y[:, 0] += tree['genMet_pt'].to_numpy() * np.cos(tree['genMet_phi'].to_numpy())
+    Y[:, 1] += tree['genMet_pt'].to_numpy() * np.sin(tree['genMet_phi'].to_numpy())
 
 with h5py.File(opt.output, 'w') as h5f:
     h5f.create_dataset('X',    data=X,   compression='lzf')
