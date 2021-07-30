@@ -12,7 +12,7 @@ jobs:
         with:
           activate-environment: l1metml
           environment-file: environment.yml
-          python-version: 3.7
+          python-version: 3.9
           auto-activate-base: false
 
       # Check dependencies
