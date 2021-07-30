@@ -1,4 +1,3 @@
-# Import libraries
 import tensorflow
 import tensorflow.keras.backend as K
 from tensorflow.keras import optimizers, initializers
@@ -56,6 +55,9 @@ def get_callbacks(path_out, sample_size, batch_size):
 
 def test(Yr_test, predict_test, PUPPI_pt, path_out):
 
+    extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
+    extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
+    
     MakePlots(Yr_test, predict_test, PUPPI_pt, path_out = path_out)
     
     Yr_test = convertXY2PtPhi(Yr_test)
@@ -64,8 +66,9 @@ def test(Yr_test, predict_test, PUPPI_pt, path_out):
 
     MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
-    extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
-    extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
+    
+    Phi_abs_error_opaque(PUPPI_pt[:,1], predict_test[:,1], Yr_test[:,1], name=path_out+'Phi_abs_err')
+    Pt_abs_error_opaque(PUPPI_pt[:,0], predict_test[:,0], Yr_test[:,0],name=path_out+'Pt_abs_error')
 
 def trainFrom_Root(args):
     # general setup
@@ -79,8 +82,11 @@ def trainFrom_Root(args):
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
+    quantized = args.quantized
+    units = list(map(int, args.units))
 
     filesList = glob(os.path.join(f'{inputPath}','*.root'))
+    filesList.sort(reverse=True)
     valid_nfiles = int(.1*len(filesList))
     if valid_nfiles == 0:
         valid_nfiles = 1
@@ -93,11 +99,42 @@ def trainFrom_Root(args):
     trainGenerator = DataGenerator(list_files=train_filesList,batch_size=batch_size)
     validGenerator = DataGenerator(list_files=valid_filesList,batch_size=batch_size)
     testGenerator = DataGenerator(list_files=test_filesList,batch_size=batch_size)
-    Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the methods, so that we can get the correct dimensions (train_generator.emb_input_dim)
+    Xr_train, Yr_train = trainGenerator[0] # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
 
     # Load training model
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh',embedding_input_dim = trainGenerator.emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
-
+    if quantized == None:
+        keras_model = dense_embedding(n_features=n_features_pf,
+                                        emb_out_dim=2,
+                                        n_features_cat=n_features_pf_cat,
+                                        activation='tanh',
+                                        embedding_input_dim=trainGenerator.emb_input_dim,
+                                        number_of_pupcandis=maxNPF,
+                                        t_mode=t_mode,
+                                        with_bias=False,
+                                        units=units)
+    else:
+    
+        logit_total_bits = int(quantized[0])
+        logit_int_bits = int(quantized[1])
+        activation_total_bits = int(quantized[0])
+        activation_int_bits = int(quantized[1])
+        
+        keras_model = dense_embedding_quantized(n_features=n_features_pf,
+                                                emb_out_dim=2,
+                                                n_features_cat=n_features_pf_cat,
+                                                activation_quantizer='quantized_relu',
+                                                embedding_input_dim= trainGenerator.emb_input_dim,
+                                                number_of_pupcandis=maxNPF,
+                                                t_mode = t_mode,
+                                                with_bias=False,
+                                                logit_quantizer = 'quantized_bits',
+                                                logit_total_bits=logit_total_bits,
+                                                logit_int_bits=logit_int_bits,
+                                                activation_total_bits=activation_total_bits,
+                                                activation_int_bits=activation_int_bits,
+                                                alpha=1,
+                                                use_stochastic_rounding=False,
+                                                units=units)
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
@@ -109,8 +146,6 @@ def trainFrom_Root(args):
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
         
-
-    # Set model config
     # Run training
 
     print(keras_model.summary())
@@ -120,8 +155,7 @@ def trainFrom_Root(args):
                               epochs=epochs,
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=validGenerator,
-                              callbacks=get_callbacks(path_out, len(trainGenerator), batch_size),
-                          )
+                              callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
     end_time = time.time() # check end time
     
     predict_test = keras_model.predict(testGenerator) * normFac
@@ -156,9 +190,10 @@ def trainFrom_h5(args):
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
-
+    quantized = args.quantized
+    units = list(map(int, args.units))
+        
     # Read inputs
-    
     # convert root files to h5 and store in same location
     h5files = []
     for ifile in glob(os.path.join(f'{inputPath}','*.root')):
@@ -185,8 +220,9 @@ def trainFrom_h5(args):
     Xr = [Xi, Xp] + Xc
 
     indices = np.array([i for i in range(len(Yr))])
-    indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state= 7)
-    indices_train, indices_valid = train_test_split(indices_train, test_size=0.2, random_state=7)
+    indices_train, indices_test = train_test_split(indices, test_size=1./7., random_state= 7)
+    indices_train, indices_valid = train_test_split(indices_train, test_size=1./6., random_state=7)
+    # roughly the same split as the root workflow
 
     Xr_train = [x[indices_train] for x in Xr]
     Xr_test = [x[indices_test] for x in Xr]
@@ -196,8 +232,39 @@ def trainFrom_h5(args):
     Yr_valid = Yr[indices_valid]
 
     # Load training model
-    keras_model = dense_embedding(n_features = n_features_pf, n_features_cat=n_features_pf_cat, n_dense_layers=3, activation='tanh', embedding_input_dim = emb_input_dim, number_of_pupcandis = maxNPF, t_mode = t_mode, with_bias=False)
-
+    if quantized == None:
+        keras_model = dense_embedding(n_features=n_features_pf,
+                                        emb_out_dim=2,
+                                        n_features_cat=n_features_pf_cat,
+                                        activation='tanh',
+                                        embedding_input_dim=emb_input_dim,
+                                        number_of_pupcandis=maxNPF,
+                                        t_mode=t_mode,
+                                        with_bias=False,
+                                        units=units)
+    else:
+    
+        logit_total_bits = int(quantized[0])
+        logit_int_bits = int(quantized[1])
+        activation_total_bits = int(quantized[0])
+        activation_int_bits = int(quantized[1])
+        
+        keras_model = dense_embedding_quantized(n_features=n_features_pf,
+                                                emb_out_dim=2,
+                                                n_features_cat=n_features_pf_cat,
+                                                activation_quantizer='quantized_relu',
+                                                embedding_input_dim=emb_input_dim,
+                                                number_of_pupcandis=maxNPF,
+                                                t_mode=t_mode,
+                                                with_bias=False,
+                                                logit_quantizer = 'quantized_bits',
+                                                logit_total_bits=logit_total_bits,
+                                                logit_int_bits=logit_int_bits,
+                                                activation_total_bits=activation_total_bits,
+                                                activation_int_bits=activation_int_bits,
+                                                alpha=1,
+                                                use_stochastic_rounding=False,
+                                                units=units)
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
@@ -208,8 +275,6 @@ def trainFrom_h5(args):
         keras_model.compile(loss=custom_loss, optimizer=optimizer,
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
-        
-    # Set model config
 
     # Run training
     print(keras_model.summary())
@@ -218,11 +283,10 @@ def trainFrom_h5(args):
     history = keras_model.fit(Xr_train,
                               Yr_train,
                               epochs=epochs,
-                              batch_size = batch_size,
+                              batch_size=batch_size,
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=(Xr_valid, Yr_valid),
-                              callbacks=get_callbacks(path_out, len(Yr_train), batch_size)
-                          )
+                              callbacks=get_callbacks(path_out, len(Yr_train), batch_size))
     end_time = time.time() # check end time
     
     predict_test = keras_model.predict(Xr_test) * normFac
@@ -240,28 +304,24 @@ def trainFrom_h5(args):
 
 def main():
     time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-    path = "./result/"+time_path+"_PUPPICandidates/"
 
-    # 4 arguments
-    # train from h5 or root?
-    # root file path (input)
-    # output path
-    # mode 0 or 1
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataType', action='store', type=str, required=True, choices=['h5', 'root'], help='designate input file path')
+    parser.add_argument('--workflowType', action='store', type=str, required=True, choices=['h5', 'root'], help='designate input file path')
     parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
     parser.add_argument('--epochs', action='store', type=int, required=False, default=100)
+    parser.add_argument('--quantized', action='store', required=False, nargs='+', help='optional argument: flag for quantized model and specify [total bits] [int bits]; empty for normal model')
+    parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
     
     args = parser.parse_args()
-    dataType = args.dataType
+    workflowType = args.workflowType
 
     os.makedirs(args.output,exist_ok=True)
 
-    if dataType == 'h5':
+    if workflowType == 'h5':
         trainFrom_h5(args)
-    elif dataType == 'root':
+    elif workflowType == 'root':
         trainFrom_Root(args)
 
 if __name__ == "__main__":
