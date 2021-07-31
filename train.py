@@ -54,15 +54,15 @@ def get_callbacks(path_out, sample_size, batch_size):
     return callbacks
 
 def test(Yr_test, predict_test, PUPPI_pt, path_out):
-
-    extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
-    extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
     
     MakePlots(Yr_test, predict_test, PUPPI_pt, path_out = path_out)
     
     Yr_test = convertXY2PtPhi(Yr_test)
     predict_test = convertXY2PtPhi(predict_test)
     PUPPI_pt = convertXY2PtPhi(PUPPI_pt)
+    
+    extract_result(predict_test, Yr_test, path_out, 'TTbar', 'ML')
+    extract_result(PUPPI_pt, Yr_test, path_out, 'TTbar', 'PU')
 
     MET_rel_error_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], name=''+path_out+'rel_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_test[:,0], PUPPI_pt[:,0], Yr_test[:,0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
