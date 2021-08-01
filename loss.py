@@ -6,10 +6,10 @@ def custom_loss(y_true, y_pred):
     import tensorflow.keras.backend as K
     import tensorflow as tf
 
-    px_truth = K.flatten(y_true[:,0])
-    py_truth = K.flatten(y_true[:,1])
-    px_pred = K.flatten(y_pred[:,0])
-    py_pred = K.flatten(y_pred[:,1])
+    px_truth = K.flatten(y_true[:, 0])
+    py_truth = K.flatten(y_true[:, 1])
+    px_pred = K.flatten(y_pred[:, 0])
+    py_pred = K.flatten(y_pred[:, 1])
 
     pt_truth = K.sqrt(px_truth*px_truth + py_truth*py_truth)
 

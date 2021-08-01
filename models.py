@@ -15,19 +15,25 @@ def dense_embedding(n_features=6,
                     embedding_input_dim={0: 13, 1: 3},
                     emb_out_dim=8,
                     with_bias=True,
-                    t_mode = 0,
-                    units=[64,32,16]):
+                    t_mode=0,
+                    units=[64, 32, 16]):
     n_dense_layers = len(units)
-    
+
     inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input')
     pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
-    
+
     embeddings = []
     inputs = [inputs_cont, pxpy]
     for i_emb in range(n_features_cat):
         input_cat = Input(shape=(number_of_pupcandis, 1), name='input_cat{}'.format(i_emb))
         inputs.append(input_cat)
-        embedding = Embedding(input_dim=embedding_input_dim[i_emb], output_dim=emb_out_dim, embeddings_initializer=initializers.RandomNormal(mean=0, stddev=0.4/emb_out_dim), name='embedding{}'.format(i_emb))(input_cat)
+        embedding = Embedding(
+            input_dim=embedding_input_dim[i_emb],
+            output_dim=emb_out_dim,
+            embeddings_initializer=initializers.RandomNormal(
+                mean=0,
+                stddev=0.4/emb_out_dim),
+            name='embedding{}'.format(i_emb))(input_cat)
         embedding = Reshape((number_of_pupcandis, emb_out_dim))(embedding)
         embeddings.append(embedding)
 
