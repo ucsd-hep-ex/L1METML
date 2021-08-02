@@ -101,7 +101,6 @@ def dense_embedding_quantized(n_features=6,
 
     x = Concatenate()([inputs_cont, pxpy] + [emb for emb in embeddings])
     
-    units = [16,32]
     for i_dense in range(n_dense_layers):
         x = QDense(units[i_dense], kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
         x = BatchNormalization(momentum=0.95)(x)

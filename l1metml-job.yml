@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-root-hyper-12-36
+  name: l1metml-root-hyper-12-36-quan2-8-2
 spec:
   template:
     spec:
@@ -13,7 +13,7 @@ spec:
         - "-c"
         - " git clone https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --workflowType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-hyper-12-36/ --mode 1 --epochs 100 --units 12 36"
+            python train.py --workflowType root --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/root-hyper-12-36-quan2-8-2/ --mode 1 --epochs 100 --units 12 36 --quantized 8 2"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol
@@ -21,9 +21,11 @@ spec:
           limits:
             memory: 50Gi
             cpu: "10"
+            nvidia.com/gpu: "1"
           requests:
             memory: 25Gi
             cpu: "10"
+            nvidia.com/gpu: "1"
       volumes:
       - name: l1metmlvol
         persistentVolumeClaim:
