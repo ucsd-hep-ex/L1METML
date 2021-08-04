@@ -164,92 +164,114 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     leftOfBinCenter = .4*binWidth # =8
     rightOfBinCenter = .6*binWidth # =12
     
+    fig1= plt.figure(figsize=(15,12), tight_layout=True)
+    fig2= plt.figure(figsize=(15,12),tight_layout=True)
+    plt.subplots_adjust(wspace=.2,
+                        hspace=0)
+    
     # plot x resolution 20 bins
-    plt.figure(figsize=(10,8))
-    plt.hlines(bin_resolX_ml, bin_edges[:-1], bin_edges[1:], colors='r', lw=3,
+    ax11 = fig1.add_subplot(2,2,1)
+    ax11.hlines(bin_resolX_ml, bin_edges[:-1], bin_edges[1:], colors='r', lw=3,
                label='ML', linestyles='solid')
-    plt.hlines(bin_resolX_puppi, bin_edges[:-1], bin_edges[1:], colors='g', lw=3,
+    ax11.hlines(bin_resolX_puppi, bin_edges[:-1], bin_edges[1:], colors='g', lw=3,
                label='PUPPI', linestyles='solid')
-    plt.errorbar(bin_edges[:-1]+rightOfBinCenter, bin_resolX_ml,
+    ax11.errorbar(bin_edges[:-1]+rightOfBinCenter, bin_resolX_ml,
                  yerr= bin_resolX_ml/rootN, fmt='none', color='r')
-    plt.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolX_puppi,
+    ax11.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolX_puppi,
                  yerr= bin_resolX_puppi/rootN, fmt='none', color='g')
-    plt.legend(loc='lower right')
-    plt.xlim(0,400.0)
-    plt.ylim(0,200)
-    plt.xlabel('Truth MET [GeV]')
-    plt.ylabel('RespCorr $\sigma$(METX) [GeV]')
-    plt.title('METx Resolution', fontsize = 22)
-    plt.savefig(f"{path_out}resolution_metx.png")
+    ax11.grid()
+    ax11.set_ylabel('RespCorr $\sigma$(MET) [GeV]', fontsize=12)
+    ax11.set_title('MET-x Resolution', fontsize = 22)
 
     # plot y resolutions 20 bins
-    plt.figure(figsize=(10,8))
-    plt.hlines(bin_resolY_ml, bin_edges[:-1], bin_edges[1:], colors='r', lw=3,
+    ax12 = fig1.add_subplot(2,2,2, sharey=ax11)
+    ax12.hlines(bin_resolY_ml, bin_edges[:-1], bin_edges[1:], colors='r', lw=3,
                label='ML', linestyles='solid')
-    plt.hlines(bin_resolY_puppi, bin_edges[:-1], bin_edges[1:], colors='g', lw=3,
+    ax12.hlines(bin_resolY_puppi, bin_edges[:-1], bin_edges[1:], colors='g', lw=3,
                label='PUPPI', linestyles='solid')
-    plt.errorbar(bin_edges[:-1]+rightOfBinCenter, bin_resolY_ml,
+    ax12.errorbar(bin_edges[:-1]+rightOfBinCenter, bin_resolY_ml,
                  yerr= bin_resolY_ml/rootN, fmt='none', color='r')
-    plt.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolY_puppi,
+    ax12.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolY_puppi,
                  yerr= bin_resolY_puppi/rootN, fmt='none', color='g')
-    plt.legend(loc='lower right')
-    plt.xlim(0, 400.0)
-    plt.ylim(0, 200.0)
-    plt.xlabel('Truth MET [GeV]')
-    plt.ylabel('RespCorr $\sigma$(METY) [GeV]')
-    plt.title('METy Resolution', fontsize = 22)
-    plt.savefig(f"{path_out}resolution_mety.png")
+    ax12.legend(loc='lower right')
+    ax12.grid()
+    ax12.set_title('MET-y Resolution', fontsize = 22)
+    
+    # plot resolution XY magnitude absolute differences
+    ax13 = fig1.add_subplot(2,2,3, sharex=ax11)
+    ax13.hlines(bin_resolXYmagnitude_difference, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
+    ax13.axhline(y=0, color='black', linestyle='-')
+    ax13.set_xlabel('Truth MET [GeV]', fontsize=12)
+    ax13.set_ylabel('PUPPI - ML $\sigma$(MET) [GeV]', fontsize=12)
+    ax13.grid()
+    ax13.set_title(f'Absolute Resolution Differences (PUPPI - ML)', fontsize = 17)
+    
+    # relative differences
+    ax14 = fig1.add_subplot(2,2,4, sharex=ax12)
+    ax14.hlines(bin_resolXYmagnitude_difference/truth_means, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid' )
+    ax14.axhline(y=0, color='black', linestyle='-')
+    ax14.set_ylim(min(bin_resolXYmagnitude_difference/truth_means)-.1,max(bin_resolXYmagnitude_difference/truth_means)+.1)
+    ax14.set_xlabel('Truth MET [GeV]', fontsize=12)
+    ax14.set_ylabel('(PUPPI - ML $\sigma$(MET))/TruthBinMean',fontsize=12)
+    ax14.grid()
+    ax14.set_title(f'Relative Resolution Differences (PUPPI - ML)/True Mean', fontsize = 17)
+    
+    fig1.text(0, 1.06, f'training: {file}', fontsize=15)
+    fig1.text(0, 1.03, f'average XY magnitude resolution difference ={round(averageXYmag_Res_difference,3)}', fontsize=15)
     
     # plot pt resolutions 20 bins
-    plt.figure(figsize=(10,8))
-    plt.hlines(bin_resolPt_ml, bin_edges[:-1], bin_edges[1:], colors='r', lw=3,
+    ax21 = fig2.add_subplot(2,2,1)
+    ax21.hlines(bin_resolPt_ml, bin_edges[:-1], bin_edges[1:], colors='r', lw=3,
                label='ML', linestyles='solid')
-    plt.hlines(bin_resolPt_puppi, bin_edges[:-1], bin_edges[1:], colors='g', lw=3,
+    ax21.hlines(bin_resolPt_puppi, bin_edges[:-1], bin_edges[1:], colors='g', lw=3,
                label='PUPPI', linestyles='solid')
-    plt.errorbar(bin_edges[:-1]+rightOfBinCenter, bin_resolPt_ml,
+    ax21.errorbar(bin_edges[:-1]+rightOfBinCenter, bin_resolPt_ml,
                  yerr= bin_resolPt_ml/rootN, fmt='none', color='r')
-    plt.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolPt_puppi,
+    ax21.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolPt_puppi,
                  yerr= bin_resolPt_puppi/rootN, fmt='none', color='g')
-    plt.legend(loc='lower right')
-    plt.xlim(0,400.0)
-    plt.ylim(0,200.0)
-    plt.xlabel('Truth MET [GeV]')
-    plt.ylabel('RespCorr $\sigma$(MET) [GeV]')
-    plt.title('MET (Pt) Resolution', fontsize = 22)
-    plt.savefig(f"{path_out}resolution_met_pt.png")
+    ax21.set_ylabel('RespCorr $\sigma$(MET) [GeV]', fontsize=12)
+    ax21.grid()
+    ax21.set_title('MET-pt Resolution', fontsize = 22)
     
     # plot phi resolutions 20 bins
-    plt.figure(figsize=(10,8))
-    plt.hlines(bin_resolPhi_ml, bin_edgesPhi[:-1], bin_edgesPhi[1:], colors='r', lw=3,
+    ax22 = fig2.add_subplot(2,2,2)
+    ax22.hlines(bin_resolPhi_ml, bin_edgesPhi[:-1], bin_edgesPhi[1:], colors='r', lw=3,
                label='ML', linestyles='solid')
-    plt.hlines(bin_resolPhi_puppi, bin_edgesPhi[:-1], bin_edgesPhi[1:], colors='g', lw=3,
+    ax22.hlines(bin_resolPhi_puppi, bin_edgesPhi[:-1], bin_edgesPhi[1:], colors='g', lw=3,
                label='PUPPI', linestyles='solid')
-    plt.errorbar(bin_edgesPhi[:-1]+.13, bin_resolPhi_ml,
+    ax22.errorbar(bin_edgesPhi[:-1]+.13, bin_resolPhi_ml,
                  yerr= bin_resolPhi_ml/rootN, fmt='none', color='r')
-    plt.errorbar(bin_edgesPhi[:-1]+.17, bin_resolPhi_puppi,
+    ax22.errorbar(bin_edgesPhi[:-1]+.17, bin_resolPhi_puppi,
                  yerr= bin_resolPhi_puppi/rootN, fmt='none', color='g')
-    plt.legend(loc='lower right')
-    plt.xlim(-3.3,3.3)
-    plt.ylim(0,5)
-    plt.xlabel('Truth MET [GeV]')
-    plt.ylabel('RespCorr $\sigma$(MET) Phi')
-    plt.title('MET (Phi) Resolution', fontsize = 22)
-    plt.savefig(f"{path_out}resolution_met_phi.png")
+    ax22.grid()
+    ax22.legend(loc='lower right')
+    ax22.set_title('MET-$\Phi$ Resolution', fontsize = 22)
     
-    # plot resolution (both XY magnitude and pt) differences
-    plt.figure(figsize=(10,8))
-    plt.hlines(bin_resolXYmagnitude_difference, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid', label='XYmag res difference' )
-    plt.hlines(bin_resolPt_difference, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid', color='r', label='pt res difference')
-    plt.axhline(y=0, color='black', linestyle='-')
-    plt.ylim(-20,20)
-    plt.xlabel('Truth MET [GeV]')
-    plt.ylabel('PUPPI - ML $\sigma$(MET) [GeV]')
-    plt.legend(loc='lower left')
-    plt.text(0, -10, f'average XY magnitude resolution difference ={round(averageXYmag_Res_difference,3)}', fontsize=13)
-    plt.text(0, -12, f'average Pt resolution difference ={round(averagePt_Res_difference,3)}', fontsize=13)
-    plt.title(f'Resolution Differences (PUPPI - ML)', fontsize = 16)
-    plt.savefig(f"{path_out}resolution_metDif.png")
-
+    # plot resolution pt absolute differences
+    ax23 = fig2.add_subplot(2,2,3, sharex=ax11)
+    ax23.hlines(bin_resolPt_difference, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
+    ax23.axhline(y=0, color='black', linestyle='-')
+    ax23.set_xlabel('Truth MET [GeV]', fontsize=12)
+    ax23.set_ylabel('PUPPI - ML $\sigma$(MET) [GeV]', fontsize=12)
+    ax23.grid()
+    ax23.set_title(f'Absolute Resolution Differences (PUPPI - ML)', fontsize = 17)
+    
+    # relative differences
+    ax24 = fig2.add_subplot(2,2,4, sharex=ax12)
+    ax24.hlines(bin_resolPt_difference/truth_means, bin_edges[:-1], bin_edges[1:], lw=5, linestyles='solid')
+    ax24.axhline(y=0, color='black', linestyle='-')
+    ax24.set_ylim(min(bin_resolPt_difference/truth_means)-.1,max(bin_resolPt_difference/truth_means)+.1)
+    ax24.set_xlabel('Truth MET [GeV]', fontsize=12)
+    ax24.set_ylabel('(PUPPI - ML $\sigma$(MET))/TruthBinMean',fontsize=12)
+    ax24.grid()
+    ax24.set_title(f'Relative Resolution Differences (PUPPI - ML)/True Mean', fontsize = 17)
+    
+    fig2.text(0, 1.06, f'training: {path_out}', fontsize=15)
+    fig2.text(0, 1.03, f'average pt resolution difference ={round(averagePt_Res_difference,3)}', fontsize=15)
+    
+    fig1.savefig(f"{path_out}XY_resolution_plots.png",bbox_inches="tight")
+    fig2.savefig(f"{path_out}pt_resolution_plots.png",bbox_inches="tight")
+    
 
 def Make1DHists(truth, ML, PUPPI, xmin=0, xmax=400, nbins=100, density=False, xname="pt [GeV]", yname="A.U.", outputname="1ddistribution.png"):
     import matplotlib.pyplot as plt
