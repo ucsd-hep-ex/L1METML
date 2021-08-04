@@ -216,7 +216,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     ax14.grid()
     ax14.set_title(f'Relative Resolution Differences (PUPPI - ML)/True Mean', fontsize = 17)
     
-    fig1.text(0, 1.06, f'training: {file}', fontsize=15)
+    fig1.text(0, 1.06, f'training: {path_out}', fontsize=15)
     fig1.text(0, 1.03, f'average XY magnitude resolution difference ={round(averageXYmag_Res_difference,3)}', fontsize=15)
     
     # plot pt resolutions 20 bins
