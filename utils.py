@@ -102,8 +102,8 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
         return(np.percentile(y,84)-np.percentile(y,16))/2.0
     
     # response correction factors
-    responseCorrection_ml = np.take(ml_means/truth_means,  np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
-    responseCorrection_puppi = np.take(puppi_means/truth_means, np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
+    responseCorrection_ml = np.take(truth_means/ml_means,  np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
+    responseCorrection_puppi = np.take(truth_means/puppi_means, np.digitize(true_ptPhi[:,0], binnings)-1, mode='clip')
 
     # compute resolutions inside all 20 bins
     bin_resolX_ml, bin_edges, binnumber = binned_statistic(true_ptPhi[:,0], trueXY[:,0] - mlXY[:,0] * responseCorrection_ml,
