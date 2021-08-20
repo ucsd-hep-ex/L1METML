@@ -73,7 +73,7 @@ def test(Yr_test, predict_test, PUPPI_pt, path_out):
     Pt_abs_error_opaque(PUPPI_pt[:, 0], predict_test[:, 0], Yr_test[:, 0], name=path_out+'Pt_abs_error')
 
 
-def trainFrom_Root(args):
+def train_dataGenerator(args):
     # general setup
     maxNPF = 100
     n_features_pf = 6
@@ -88,6 +88,7 @@ def trainFrom_Root(args):
     quantized = args.quantized
     units = list(map(int, args.units))
 
+    # separate files into training, validation, and testing
     filesList = glob(os.path.join(f'{inputPath}', '*.root'))
     filesList.sort(reverse=True)
     valid_nfiles = int(.1*len(filesList))
@@ -99,6 +100,7 @@ def trainFrom_Root(args):
     valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
     test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
 
+    # set up data generators; they perform h5 conversion if necessary and load in data batch by batch
     trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
     validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
     testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
@@ -180,7 +182,7 @@ def trainFrom_Root(args):
     fi.close()
 
 
-def trainFrom_h5(args):
+def train_loadAllData(args):
     # general setup
     maxNPF = 100
     n_features_pf = 6
@@ -224,7 +226,7 @@ def trainFrom_h5(args):
     indices = np.array([i for i in range(len(Yr))])
     indices_train, indices_test = train_test_split(indices, test_size=1./7., random_state=7)
     indices_train, indices_valid = train_test_split(indices_train, test_size=1./6., random_state=7)
-    # roughly the same split as the root workflow
+    # roughly the same split as the data generator workflow (train:valid:test=5:1:1)
 
     Xr_train = [x[indices_train] for x in Xr]
     Xr_test = [x[indices_test] for x in Xr]
@@ -310,7 +312,7 @@ def main():
     time_path = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--workflowType', action='store', type=str, required=True, choices=['h5', 'root'], help='designate input file path')
+    parser.add_argument('--workflowType', action='store', type=str, required=True, choices=['dataGenerator', 'loadAllData'], help='designate wheather youre using the data generator or loading all data into memory ')
     parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
@@ -323,10 +325,10 @@ def main():
 
     os.makedirs(args.output, exist_ok=True)
 
-    if workflowType == 'h5':
-        trainFrom_h5(args)
-    elif workflowType == 'root':
-        trainFrom_Root(args)
+    if workflowType == 'dataGenerator':
+        train_dataGenerator(args)
+    elif workflowType == 'loadAllData':
+        train_loadAllData(args)
 
 
 if __name__ == "__main__":
