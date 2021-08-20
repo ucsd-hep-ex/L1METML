@@ -182,7 +182,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     ax11.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolX_puppi,
                   yerr=bin_resolX_puppi/rootN, fmt='none', color='g')
     ax11.grid()
-    ax11.set_ylabel(r'$\sigma$(MET)$ [GeV]', fontsize=19)
+    ax11.set_ylabel(r'$\sigma(MET)$ [GeV]', fontsize=19)
     ax11.set_title('MET-x Resolution', fontsize=22)
 
     # plot y resolutions 20 bins
@@ -232,7 +232,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
                   yerr=bin_resolPt_ml/rootN, fmt='none', color='r')
     ax21.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolPt_puppi,
                   yerr=bin_resolPt_puppi/rootN, fmt='none', color='g')
-    ax21.set_ylabel(r'$\sigma$(MET)$ [GeV]', fontsize=20)
+    ax21.set_ylabel(r'$\sigma(MET)$ [GeV]', fontsize=20)
     ax21.grid()
     ax21.set_title('MET-pt Resolution', fontsize=22)
 
