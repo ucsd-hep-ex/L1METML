@@ -463,6 +463,7 @@ def Phi_abs_error(predict_met, gen_met, name='Met_res.pdf'):
     # plt.pause(5)
     plt.close("all")
 
+
 def Pt_abs_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)
     rel_err2 = (predict_met2 - gen_met)
@@ -479,10 +480,11 @@ def Pt_abs_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf'):
     plt.title('Abs Pt error', size=18, fontweight='bold', loc='right')
     plt.savefig(name)
     plt.show(block=False)
-    #plt.pause(5)
+    # plt.pause(5)
     plt.close("all")
-    
-def Phi_abs_error_opaque(predict_met, predict_met2,gen_met, name='Met_res.pdf'):
+
+
+def Phi_abs_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf'):
     rel_err = (predict_met - gen_met)
     rel_err2 = (predict_met2 - gen_met)
     plt.figure()
@@ -624,9 +626,9 @@ def MET_binned_predict_mean_opaque(predict_met, predict_met2, gen_met, binning, 
         X_error2[j] = np.std(gen_met[mask2])
         y_error2[j] = np.std(predict_met2[mask2])
 
-    plt.errorbar(X_genMET2, y_predict2, xerr = X_error2, yerr = y_error2,
+    plt.errorbar(X_genMET2, y_predict2, xerr=X_error2, yerr=y_error2,
                  label='PUPPI MET', color='green', uplims=y_error2, lolims=y_error2)
-    plt.errorbar(X_genMET, y_predict, xerr = X_error, yerr = y_error,
+    plt.errorbar(X_genMET, y_predict, xerr=X_error, yerr=y_error,
                  label='Predicted MET', color='red', uplims=y_error, lolims=y_error)
 
     # x = y plot
@@ -659,7 +661,7 @@ def MET_binned_predict_ratio(predict_met, gen_met, binning, mini, maxi, genMET_c
         y_predict[j] = np.mean(predict_met[mask]/gen_met[mask])
         X_error[j] = np.std(gen_met[mask])
         y_error[j] = np.std(predict_met[mask]/gen_met[mask])
-        
+
     plt.errorbar(X_genMET, y_predict, xerr=X_error, yerr=y_error,
                  label='cut = '+str(genMET_cut)+', '+str(comment)+'.')
 
