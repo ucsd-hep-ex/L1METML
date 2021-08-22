@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: l1metml-h5-datagen
+  name: l1metml-12-36
 spec:
   template:
     spec:
@@ -11,9 +11,9 @@ spec:
         command:
         - "/bin/bash"
         - "-c"
-        - " git clone -b h5_generator_or_conversion https://github.com/hanhiller/L1METML &&
+        - " git clone https://github.com/hanhiller/L1METML &&
             cd L1METML &&
-            python train.py --workflowType dataGenerator --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/h5-datagen/ --mode 1 --epochs 100 --units 12 36"
+            python train.py --workflowType loadAllData --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/12-36/ --mode 1 --epochs 100 --units 12 36"
         volumeMounts:
         - mountPath: /l1metmlvol
           name: l1metmlvol

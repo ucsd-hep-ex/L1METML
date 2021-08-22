@@ -430,13 +430,13 @@ def MET_rel_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf')
 
 
 def MET_abs_error(predict_met, gen_met, name='Met_res.pdf'):
-    rel_err = (predict_met - gen_met)
+    err = (predict_met - gen_met)
 
     mask = gen_met[:] > 100
-    rel_err = rel_err[~mask]
+    err = err[~mask]
 
     plt.figure()
-    plt.hist(rel_err, bins=np.linspace(-150., 150., 50+1))
+    plt.hist(err, bins=np.linspace(-150., 150., 50+1))
     plt.xlabel("abs error (predict - true)")
     plt.ylabel("Events")
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
@@ -446,14 +446,14 @@ def MET_abs_error(predict_met, gen_met, name='Met_res.pdf'):
 
 
 def Phi_abs_error(predict_met, gen_met, name='Met_res.pdf'):
-    rel_err = (predict_met - gen_met)
-    for i in range(rel_err.shape[0]):
-        if (rel_err[i] > math.pi):
-            rel_err[i] - 2*math.pi
-        if (rel_err[i] < math.pi):
-            rel_err[i] + 2*math.pi
+    err = (predict_met - gen_met)
+    for i in range(err.shape[0]):
+        if (err[i] > math.pi):
+            err[i] - 2*math.pi
+        if (err[i] < math.pi):
+            err[i] + 2*math.pi
     plt.figure()
-    plt.hist(rel_err, bins=np.linspace(-3.5, 3.5, 50+1))
+    plt.hist(err, bins=np.linspace(-3.5, 3.5, 50+1))
     plt.xlabel("abs error (predict - true)")
     plt.ylabel("Events")
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
@@ -464,14 +464,14 @@ def Phi_abs_error(predict_met, gen_met, name='Met_res.pdf'):
     plt.close("all")
 
 
-def Pt_abs_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf'):
-    rel_err = (predict_met - gen_met)
-    rel_err2 = (predict_met2 - gen_met)
+def Pt_abs_error_opaque(puppi_met, ml_met, gen_met, name='Met_res.pdf'):
+    puppi_err = (puppi_met - gen_met)
+    ml_err = (ml_met - gen_met)
     #minErr = min(np.array([rel_err, rel_err2]).flatten())
     #maxErr = max(np.array([rel_err, rel_err2]).flatten())
     plt.figure()
-    plt.hist(rel_err, bins=np.linspace(-250, 250, 50+1), alpha=0.5, label='puppi')
-    plt.hist(rel_err2, bins=np.linspace(-250, 250, 50+1), alpha=0.5, label='ML')
+    plt.hist(puppi_err, bins=np.linspace(-250, 250, 50+1), alpha=0.5, label='puppi')
+    plt.hist(ml_err, bins=np.linspace(-250, 250, 50+1), alpha=0.5, label='ML')
     plt.xlabel("abs error (predict - true)")
     plt.ylabel("Events")
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
@@ -484,30 +484,12 @@ def Pt_abs_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf'):
     plt.close("all")
 
 
-def Phi_abs_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf'):
-    rel_err = (predict_met - gen_met)
-    rel_err2 = (predict_met2 - gen_met)
+def Phi_abs_error_opaque(puppi_phi, ml_phi, gen_phi, name='Met_res.pdf'):
+    puppi_err = (puppi_phi - gen_phi)
+    ml_err = (ml_phi - gen_phi)
     plt.figure()
-    plt.hist(rel_err, bins=np.linspace(-3.5, 3.5, 50+1), alpha=0.5, label='puppi')
-    plt.hist(rel_err2, bins=np.linspace(-3.5, 3.5, 50+1), alpha=0.5, label='ML')
-    plt.xlabel("abs error (predict - true)")
-    plt.ylabel("Events")
-    plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
-    plt.figtext(0.35, 0.90, 'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14)
-    plt.legend()
-    plt.title('Abs Phi error', size=18, fontweight='bold', loc='right')
-    plt.savefig(name)
-    plt.show(block=False)
-    # plt.pause(5)
-    plt.close("all")
-
-
-def Phi_abs_error_opaque(predict_met, predict_met2, gen_met, name='Met_res.pdf'):
-    rel_err = (predict_met - gen_met)
-    rel_err2 = (predict_met2 - gen_met)
-    plt.figure()
-    plt.hist(rel_err, bins=np.linspace(-3.5, 3.5, 50+1), alpha=0.5, label='puppi')
-    plt.hist(rel_err2, bins=np.linspace(-3.5, 3.5, 50+1), alpha=0.5, label='ML')
+    plt.hist(puppi_err, bins=np.linspace(-3.5, 3.5, 50+1), alpha=0.5, label='puppi')
+    plt.hist(ml_err, bins=np.linspace(-3.5, 3.5, 50+1), alpha=0.5, label='ML')
     plt.xlabel("abs error (predict - true)")
     plt.ylabel("Events")
     plt.figtext(0.25, 0.90, 'CMS', fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
