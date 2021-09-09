@@ -27,7 +27,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         self.max_entry = max_entry
         self.open_files = [None]*len(list_files)
         running_total = 0
-        
+
         self.h5files = []
         for ifile in list_files:
             h5file_path = ifile.replace('.root', '.h5')

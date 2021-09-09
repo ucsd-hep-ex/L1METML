@@ -155,7 +155,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     # for now, i will compute both
 
     # the square root of the number of events in each bin
-    nEvents_inBin, _ = np.histogram(binnumber, bins=nbins, range=(1,nbins))
+    nEvents_inBin, _ = np.histogram(binnumber, bins=nbins, range=(1, nbins))
     rootN = np.sqrt(nEvents_inBin)
     # is used to calculate the error bars for each bin = res/rootN
 
@@ -188,9 +188,9 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     # plot y resolutions 20 bins
     ax12 = fig1.add_subplot(2, 2, 2, sharey=ax11)
     ax12.hlines(bin_resolY_ml, bin_edges[:-1], bin_edges[1:], colors='r', lw=3,
-                label='$\sigma_{ML}$', linestyles='solid')
+                label='$\\sigma_{ML}$', linestyles='solid')
     ax12.hlines(bin_resolY_puppi, bin_edges[:-1], bin_edges[1:], colors='g', lw=3,
-                label='$\sigma_{PUPPI}$', linestyles='solid')
+                label='$\\sigma_{PUPPI}$', linestyles='solid')
     ax12.errorbar(bin_edges[:-1]+rightOfBinCenter, bin_resolY_ml,
                   yerr=bin_resolY_ml/rootN, fmt='none', color='r')
     ax12.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolY_puppi,
@@ -239,9 +239,9 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     # plot phi resolutions 20 bins
     ax22 = fig2.add_subplot(2, 2, 2)
     ax22.hlines(bin_resolPhi_ml, bin_edgesPhi[:-1], bin_edgesPhi[1:], colors='r', lw=3,
-                label='$\sigma_{ML}$', linestyles='solid')
+                label='$\\sigma_{ML}$', linestyles='solid')
     ax22.hlines(bin_resolPhi_puppi, bin_edgesPhi[:-1], bin_edgesPhi[1:], colors='g', lw=3,
-                label='$\sigma_{PUPPI}$', linestyles='solid')
+                label='$\\sigma_{PUPPI}$', linestyles='solid')
     ax22.errorbar(bin_edgesPhi[:-1]+.13, bin_resolPhi_ml,
                   yerr=bin_resolPhi_ml/rootN, fmt='none', color='r')
     ax22.errorbar(bin_edgesPhi[:-1]+.17, bin_resolPhi_puppi,
