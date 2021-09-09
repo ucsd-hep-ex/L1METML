@@ -25,9 +25,9 @@ python convertNanoToHDF5_L1triggerToDeepMET.py -i [input .root file path] -o [ou
 
 ### Train
 ```bash
-python train.py --workflowType ['h5' or 'root': convert root to h5 files or use data generator on root files]  --input [path to input files] --output [output path (plot and weight will be stored)] --mode [0 or 1 (0 for L1MET model, 1 for DeepMET model)] --epochs [int] --quantized [total bits] [int bits] --units [dense layer 1 units] [dense layer 2 units] [etc.]
+python train.py --workflowType ['dataGenerator' or 'loadAllData': either use a data generator or load all data into memory]  --input [path to input files] --output [output path (plot and weight will be stored)] --mode [0 or 1 (0 for L1MET model, 1 for DeepMET model)] --epochs [int] --quantized [total bits] [int bits] --units [dense layer 1 units] [dense layer 2 units] [etc.]
 ```
 For example,
 ```bash
-python train.py --workflowType --root --input ./path/to/files/ --output ./path/to/result/ --mode 1 --epochs --quantized 8 4 --units 16 32
+python train.py --workflowType dataGenerator --input ./path/to/files/ --output ./path/to/result/ --mode 1 --epochs --quantized 8 2 --units 12 36
 ```
