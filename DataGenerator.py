@@ -1,10 +1,12 @@
+
 import tensorflow
 import tensorflow.keras as keras
 import numpy as np
 import uproot
 import awkward as ak
 from utils import convertXY2PtPhi, preProcessing, to_np_array
-from sklearn.model_selection import train_test_split
+import h5py
+import os
 
 
 class DataGenerator(tensorflow.keras.utils.Sequence):
@@ -17,45 +19,30 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         self.n_features_pf_cat = 2
         self.normFac = 1.
         self.batch_size = batch_size
-        self.list_files = list_files
         self.n_dim = n_dim
         self.n_channels = 8
-        self.features = ['nL1PuppiCands', 'L1PuppiCands_pt', 'L1PuppiCands_eta', 'L1PuppiCands_phi',
-                         'L1PuppiCands_charge', 'L1PuppiCands_pdgId', 'L1PuppiCands_puppiWeight']
-        self.labels = ['genMet_pt', 'genMet_phi']
-        self.d_encoding = {
-            'L1PuppiCands_charge': {-999.0: 0,
-                                    -1.0: 1,
-                                    0.0: 2,
-                                    1.0: 3},
-            'L1PuppiCands_pdgId': {-999.0: 0,
-                                   -211.0: 1,
-                                   -130.0: 2,
-                                   -22.0: 3,
-                                   -13.0: 4,
-                                   -11.0: 5,
-                                   11.0: 5,
-                                   13.0: 4,
-                                   22.0: 3,
-                                   130.0: 2,
-                                   211.0: 1}
-        }
         self.global_IDs = []
         self.local_IDs = []
         self.file_mapping = []
         self.max_entry = max_entry
-        self.open_files = [None]*len(self.list_files)
+        self.open_files = [None]*len(list_files)
         running_total = 0
-        for i, file_name in enumerate(self.list_files):
-            root_file = uproot.open(file_name)
-            self.open_files.append(root_file)
-            tree = root_file['Events']
-            tree_length = min(tree.num_entries, self.max_entry)
-            self.global_IDs.append(np.arange(running_total, running_total+tree_length))
-            self.local_IDs.append(np.arange(0, tree_length))
-            self.file_mapping.append(np.repeat([i], tree_length))
-            running_total += tree_length
-            root_file.close()
+
+        self.h5files = []
+        for ifile in list_files:
+            h5file_path = ifile.replace('.root', '.h5')
+            if not os.path.isfile(h5file_path):
+                os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
+            self.h5files.append(h5file_path)
+        for i, file_name in enumerate(self.h5files):
+            with h5py.File(file_name, "r") as h5_file:
+                self.open_files.append(h5_file)
+                nEntries = len(h5_file['X'])
+                self.global_IDs.append(np.arange(running_total, running_total+nEntries))
+                self.local_IDs.append(np.arange(0, nEntries))
+                self.file_mapping.append(np.repeat([i], nEntries))
+                running_total += nEntries
+                h5_file.close()
         self.global_IDs = np.concatenate(self.global_IDs)
         self.local_IDs = np.concatenate(self.local_IDs)
         self.file_mapping = np.concatenate(self.file_mapping)
@@ -77,10 +64,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         # Check if files needed open (if not open them)
         # Also if file is not needed, close it
-        for ifile, file_name in enumerate(self.list_files):
+        for ifile, file_name in enumerate(self.h5files):
             if ifile in unique_files:
                 if self.open_files[ifile] is None:
-                    self.open_files[ifile] = uproot.open(file_name)
+                    self.open_files[ifile] = h5py.File(file_name, "r")
             else:
                 if self.open_files[ifile] is not None:
                     self.open_files[ifile].close()
@@ -130,39 +117,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         # Double check that file is open
         if self.open_files[ifile] is None:
-            root_file = uproot.open(self.list_file[ifile])
+            h5_file = h5py.File(file_name, "r")
         else:
-            root_file = self.open_files[ifile]
+            h5_file = self.open_files[ifile]
 
-        tree = root_file['Events'].arrays(self.features+self.labels,
-                                          entry_start=entry_start,
-                                          entry_stop=entry_stop+1)
-
-        n_samples = len(tree[self.labels[0]])
-
-        X = np.zeros(shape=(n_samples, self.n_dim, self.n_channels), dtype=float, order='F')
-        y = np.zeros(shape=(n_samples, 2), dtype=float, order='F')
-
-        pt = to_np_array(tree['L1PuppiCands_pt'], maxN=self.n_dim)
-        eta = to_np_array(tree['L1PuppiCands_eta'], maxN=self.n_dim)
-        phi = to_np_array(tree['L1PuppiCands_phi'], maxN=self.n_dim)
-        pdgid = to_np_array(tree['L1PuppiCands_pdgId'], maxN=self.n_dim, pad=-999)
-        charge = to_np_array(tree['L1PuppiCands_charge'], maxN=self.n_dim, pad=-999)
-        puppiw = to_np_array(tree['L1PuppiCands_puppiWeight'], maxN=self.n_dim)
-
-        X[:, :, 0] = pt
-        X[:, :, 1] = pt * np.cos(phi)
-        X[:, :, 2] = pt * np.sin(phi)
-        X[:, :, 3] = eta
-        X[:, :, 4] = phi
-        X[:, :, 5] = puppiw
-
-        # encoding
-        X[:, :, 6] = np.vectorize(self.d_encoding['L1PuppiCands_pdgId'].__getitem__)(pdgid.astype(float))
-        X[:, :, 7] = np.vectorize(self.d_encoding['L1PuppiCands_charge'].__getitem__)(charge.astype(float))
-
-        # truth data
-        y[:, 0] += tree['genMet_pt'].to_numpy() * np.cos(tree['genMet_phi'].to_numpy())
-        y[:, 1] += tree['genMet_pt'].to_numpy() * np.sin(tree['genMet_phi'].to_numpy())
+        X = h5_file['X'][entry_start:entry_stop+1]
+        y = h5_file['Y'][entry_start:entry_stop+1]
 
         return X, y
