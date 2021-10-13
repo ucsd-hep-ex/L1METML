@@ -22,7 +22,7 @@ def convertXY2PtPhi(arrayXY):
     nevents = arrayXY.shape[0]
     arrayPtPhi = np.zeros((nevents, 2))
     arrayPtPhi[:, 0] = np.sqrt((arrayXY[:, 0]**2 + arrayXY[:, 1]**2))
-    arrayPtPhi[:, 1] = np.sign(arrayXY[:, 1])*np.arccos(arrayXY[:, 0]/arrayPtPhi[:, 0])
+    arrayPtPhi[:, 1] = np.arctan2(arrayXY[:, 1], arrayXY[:, 0])
     return arrayPtPhi
 
 
