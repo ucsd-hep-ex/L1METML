@@ -89,8 +89,11 @@ def train_dataGenerator(args):
     units = list(map(int, args.units))
 
     # separate files into training, validation, and testing
-    filesList = glob(os.path.join(f'{inputPath}', '*.root'))
+    filesList = glob(os.path.join(inputPath, '*.root'))
     filesList.sort(reverse=True)
+
+    assert len(filesList) >= 10, "Need at least 10 files for DataGenerator"
+
     valid_nfiles = int(.1*len(filesList))
     if valid_nfiles == 0:
         valid_nfiles = 1
