@@ -31,3 +31,13 @@ For example,
 ```bash
 python train.py --workflowType dataGenerator --input ./path/to/files/ --output ./path/to/result/ --mode 1 --epochs --quantized 8 2 --units 12 36
 ```
+
+### Test
+You need output results with input TTbar and SingleNeutrino.
+When you use SingleNeutrino sample as input please change 'TTbar' to 'SingleNeutrino' in test function in train.py. #L66-67
+
+SingleNeutrino sample is located in : https://cernbox.cern.ch/index.php/s/5inLVZpXreq1vOx
+
+```bash
+python rate_test.py --input [path to input files (output path of train.py)] --plot [ROC, rate, rate_com]
+```
