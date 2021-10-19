@@ -1,3 +1,4 @@
+import math
 import awkward as ak
 import numpy as np
 
@@ -108,6 +109,15 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     responseCorrection_ml = np.take(truth_means/ml_means,  np.digitize(true_ptPhi[:, 0], binnings)-1, mode='clip')
     responseCorrection_puppi = np.take(truth_means/puppi_means, np.digitize(true_ptPhi[:, 0], binnings)-1, mode='clip')
 
+    # Phi calculation
+    Phi_diff_ml = true_ptPhi[:, 1] - ml_ptPhi[:, 1]
+    Phi_diff_ml = np.where(Phi_diff_ml < -math.pi, Phi_diff_ml + 2*math.pi, Phi_diff_ml)
+    Phi_diff_ml = np.where(Phi_diff_ml > math.pi, Phi_diff_ml - 2*math.pi, Phi_diff_ml)
+
+    Phi_diff_puppi = true_ptPhi[:, 1] - puppi_ptPhi[:, 1]
+    Phi_diff_puppi = np.where(Phi_diff_puppi < -math.pi, Phi_diff_puppi + 2*math.pi, Phi_diff_puppi)
+    Phi_diff_puppi = np.where(Phi_diff_puppi > math.pi, Phi_diff_puppi - 2*math.pi, Phi_diff_puppi)
+
     # compute resolutions inside all 20 bins
     # the dirstribution true_pt - respCor*ml/puppi_pt should be centered at 0
     bin_resolX_ml, bin_edges, binnumber = binned_statistic(true_ptPhi[:, 0], trueXY[:, 0] - mlXY[:, 0] * responseCorrection_ml,
@@ -116,7 +126,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
                                            statistic=resolqt, bins=binnings, range=(0, 400))
     bin_resolPt_ml, _, _ = binned_statistic(true_ptPhi[:, 0], true_ptPhi[:, 0] - ml_ptPhi[:, 0] * responseCorrection_ml,
                                             statistic=resolqt, bins=binnings, range=(0, 400))
-    bin_resolPhi_ml, bin_edgesPhi, binnumberPhi = binned_statistic(true_ptPhi[:, 1], true_ptPhi[:, 1] - ml_ptPhi[:, 1],
+    bin_resolPhi_ml, bin_edgesPhi, binnumberPhi = binned_statistic(true_ptPhi[:, 1], Phi_diff_ml,
                                                                    statistic=resolqt, bins=phiBinnings, range=(-3.15, 3.15))
 
     bin_resolX_puppi, _, _ = binned_statistic(true_ptPhi[:, 0], trueXY[:, 0] - puppiXY[:, 0] * responseCorrection_puppi,
@@ -125,7 +135,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
                                               statistic=resolqt, bins=binnings, range=(0, 400))
     bin_resolPt_puppi, _, _ = binned_statistic(true_ptPhi[:, 0], true_ptPhi[:, 0] - puppi_ptPhi[:, 0] * responseCorrection_puppi,
                                                statistic=resolqt, bins=binnings, range=(0, 400))
-    bin_resolPhi_puppi, _, _ = binned_statistic(true_ptPhi[:, 1], true_ptPhi[:, 1] - puppi_ptPhi[:, 1],
+    bin_resolPhi_puppi, _, _ = binned_statistic(true_ptPhi[:, 1], Phi_diff_puppi,
                                                 statistic=resolqt, bins=phiBinnings, range=(-3.15, 3.15))
 
     # calclate the resolution "magnitude" inside all 20 bins
@@ -157,6 +167,8 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     # the square root of the number of events in each bin
     nEvents_inBin, _ = np.histogram(binnumber, bins=nbins, range=(1, nbins))
     rootN = np.sqrt(nEvents_inBin)
+    nEvents_inBin_phi, _ = np.histogram(binnumberPhi, bins=nbins, range=(1, nbins))
+    rootN_phi = np.sqrt(nEvents_inBin_phi)
     # is used to calculate the error bars for each bin = res/rootN
 
     # locations of error bars
@@ -232,6 +244,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
                   yerr=bin_resolPt_ml/rootN, fmt='none', color='r')
     ax21.errorbar(bin_edges[:-1]+leftOfBinCenter, bin_resolPt_puppi,
                   yerr=bin_resolPt_puppi/rootN, fmt='none', color='g')
+    ax21.set_xlabel('truth met [gev]', fontsize=19)
     ax21.set_ylabel(r'$\sigma(MET)$ [GeV]', fontsize=20)
     ax21.grid()
     ax21.set_title('MET-pt Resolution', fontsize=22)
@@ -243,9 +256,11 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
     ax22.hlines(bin_resolPhi_puppi, bin_edgesPhi[:-1], bin_edgesPhi[1:], colors='g', lw=3,
                 label='$\\sigma_{PUPPI}$', linestyles='solid')
     ax22.errorbar(bin_edgesPhi[:-1]+.13, bin_resolPhi_ml,
-                  yerr=bin_resolPhi_ml/rootN, fmt='none', color='r')
+                  yerr=bin_resolPhi_ml/rootN_phi, fmt='none', color='r')
     ax22.errorbar(bin_edgesPhi[:-1]+.17, bin_resolPhi_puppi,
-                  yerr=bin_resolPhi_puppi/rootN, fmt='none', color='g')
+                  yerr=bin_resolPhi_puppi/rootN_phi, fmt='none', color='g')
+    ax22.set_ylabel('radian', fontsize=20)
+    ax22.set_ylim(0., 1.)
     ax22.grid()
     ax22.set_xlabel(r'$\phi$ angle', fontsize=19)
     ax22.legend(loc='upper center', prop={'size': 19})
