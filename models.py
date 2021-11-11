@@ -20,13 +20,13 @@ def dense_embedding(n_features=6,
                     units=[64, 32, 16]):
     n_dense_layers = len(units)
 
-    inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input')
+    inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input_cont')
     pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
 
     embeddings = []
     inputs = [inputs_cont, pxpy]
     for i_emb in range(n_features_cat):
-        input_cat = Input(shape=(number_of_pupcandis, 1), name='input_cat{}'.format(i_emb))
+        input_cat = Input(shape=(number_of_pupcandis, ), name='input_cat{}'.format(i_emb))
         inputs.append(input_cat)
         embedding = Embedding(
             input_dim=embedding_input_dim[i_emb],
@@ -38,7 +38,11 @@ def dense_embedding(n_features=6,
         embedding = Reshape((number_of_pupcandis, emb_out_dim))(embedding)
         embeddings.append(embedding)
 
-    x = Concatenate()([inputs_cont] + [emb for emb in embeddings])
+    # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
+    # x = Concatenate()([inputs_cont] + [emb for emb in embeddings])
+    x = inputs_cont
+    for emb in embeddings:
+        x = Concatenate()([x, emb])
 
     for i_dense in range(n_dense_layers):
         x = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(x)
@@ -88,13 +92,13 @@ def dense_embedding_quantized(n_features=6,
     logit_quantizer = getattr(qkeras.quantizers, logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
     activation_quantizer = getattr(qkeras.quantizers, activation_quantizer)(activation_total_bits, activation_int_bits)
 
-    inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input')
+    inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input_cont')
     pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
 
     embeddings = []
     inputs = [inputs_cont, pxpy]
     for i_emb in range(n_features_cat):
-        input_cat = Input(shape=(number_of_pupcandis, 1), name='input_cat{}'.format(i_emb))
+        input_cat = Input(shape=(number_of_pupcandis, ), name='input_cat{}'.format(i_emb))
         inputs.append(input_cat)
         embedding = Embedding(
             input_dim=embedding_input_dim[i_emb],
@@ -106,7 +110,11 @@ def dense_embedding_quantized(n_features=6,
         embedding = Reshape((number_of_pupcandis, emb_out_dim))(embedding)
         embeddings.append(embedding)
 
-    x = Concatenate()([inputs_cont] + [emb for emb in embeddings])
+    # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
+    # x = Concatenate()([inputs_cont] + [emb for emb in embeddings])
+    x = inputs_cont
+    for emb in embeddings:
+        x = Concatenate()([x, emb])
 
     for i_dense in range(n_dense_layers):
         x = QDense(units[i_dense], kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)

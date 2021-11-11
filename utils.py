@@ -47,8 +47,8 @@ def preProcessing(A, normFac, EVT=None):
     inputs = np.concatenate((pt, eta, phi, puppi), axis=2)
     pxpy = np.concatenate((px, py), axis=2)
 
-    inputs_cat0 = A[:, :, 6:7]  # encoded PF pdgId
-    inputs_cat1 = A[:, :, 7:8]  # encoded PF charge
+    inputs_cat0 = A[:, :, 6]  # encoded PF pdgId
+    inputs_cat1 = A[:, :, 7]  # encoded PF charge
 
     return inputs, pxpy, inputs_cat0, inputs_cat1
 
