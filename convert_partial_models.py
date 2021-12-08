@@ -1,3 +1,4 @@
+import setGPU
 import tensorflow
 from models import dense_embedding
 from tensorflow.keras.layers import Input, Concatenate
@@ -6,7 +7,7 @@ import numpy as np
 import hls4ml
 import pandas as pd
 from qkeras.utils import _add_supported_quantized_objects
-from models import dense_embedding
+from models import dense_embedding, dense_embedding_quantized
 co = {}
 _add_supported_quantized_objects(co)
 
@@ -25,22 +26,29 @@ def print_dict(d, indent=0):
 # load full model:
 # model = tensorflow.keras.models.load_model('output/model.h5', compile=False, custom_objects=co)
 # prepare new model:
-n_puppi_cands = 100
+n_puppi_cands = 16
+reuse_factor = 1
+precision = 'ap_fixed<8,3>'
+io_type = 'io_parallel'
 batch_size = 1
-model = dense_embedding(n_features=6,
-                        n_features_cat=2,
-                        activation='relu',
-                        number_of_pupcandis=n_puppi_cands,
-                        embedding_input_dim={0: 13, 1: 3},
-                        emb_out_dim=8,
-                        with_bias=False,
-                        t_mode=1,
-                        units=[64, 32, 16])
+model = dense_embedding_quantized(n_features=6,
+                                  n_features_cat=2,
+                                  number_of_pupcandis=n_puppi_cands,
+                                  embedding_input_dim={0: 13, 1: 3},
+                                  emb_out_dim=8,
+                                  with_bias=False,
+                                  t_mode=1,
+                                  units=[12, 36],
+                                  logit_total_bits=8,
+                                  logit_int_bits=2,
+                                  activation_total_bits=8,
+                                  activation_int_bits=2)
 # load just weights:
 # model.load_weights('output/model.h5')
 
 # check everthing works
 model.summary()
+model.save('output/model.h5')
 
 # now let's break up the model
 # save a dictionary of the model
@@ -59,7 +67,6 @@ output_layer = model_dict['output'](x)
 partial_model_2 = Model(inputs=[input_layer_1, input_layer_2], outputs=output_layer, name='partial_model_2')
 partial_model_2.summary()
 
-model.save('output/model.h5')
 partial_model_1.save('output/partial_model_1.h5')
 partial_model_2.save('output/partial_model_2.h5')
 
@@ -90,29 +97,28 @@ print(y_2)
 np.testing.assert_array_equal(y, y_2)
 
 model_to_convert = partial_model_1
-config = hls4ml.utils.config_from_keras_model(model_to_convert, granularity='name')
+config = hls4ml.utils.config_from_keras_model(model_to_convert, granularity='name',
+                                              default_reuse_factor=reuse_factor, default_precision=precision)
 
-config['Model'] = {}
-config['Model']['ReuseFactor'] = 1
-config['Model']['Strategy'] = 'Resource'
-config['Model']['Precision'] = 'ap_fixed<16,6>'
-#config['SkipOptimizers'] = ['optimize_pointwise_conv']
+config['LayerName']['input_cat0']['Precision']['result'] = 'ap_uint<4>'
+config['LayerName']['input_cat1']['Precision']['result'] = 'ap_uint<4>'
+# skip optimize_pointwise_conv
+# config['SkipOptimizers'] = ['optimize_pointwise_conv']
 # for layer in config['LayerName'].keys():
 #    config['LayerName'][layer]['Trace'] = True
 
 print("-----------------------------------")
 print_dict(config)
 print("-----------------------------------")
-
 hls_model = hls4ml.converters.convert_from_keras_model(model_to_convert,
                                                        hls_config=config,
-                                                       io_type='io_stream',
-                                                       output_dir='hls_output',
+                                                       io_type=io_type,
+                                                       output_dir='hls_output_{}'.format(io_type),
                                                        part='xcvu9p-flgb2104-2-i',
                                                        clock_period=5)
 hls_model.compile()
 
-hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='output/model_hls4ml.png')
+hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='hls_output_{}/model_hls4ml.png'.format(io_type))
 
 y_1_hls = hls_model.predict([X.astype(np.float32), X_cat0.astype(np.float32), X_cat1.astype(np.float32)])
 df = pd.DataFrame({'keras': y_1.flatten(), 'hls4ml': y_1_hls.flatten()})
@@ -120,3 +126,4 @@ print(df)
 
 
 hls_model.build(synth=True)
+hls4ml.report.read_vivado_report('hls_output_{}'.format(io_type))
