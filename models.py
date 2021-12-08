@@ -35,14 +35,13 @@ def dense_embedding(n_features=6,
                 mean=0,
                 stddev=0.4/emb_out_dim),
             name='embedding{}'.format(i_emb))(input_cat)
-        embedding = Reshape((number_of_pupcandis, emb_out_dim))(embedding)
         embeddings.append(embedding)
 
+
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
-    # x = Concatenate()([inputs_cont] + [emb for emb in embeddings])
-    x = inputs_cont
-    for emb in embeddings:
-        x = Concatenate()([x, emb])
+    # x = Concatenate()([inputs_cont] + embeddings)
+    emb_concat = Concatenate()(embeddings)
+    x = Concatenate()([inputs_cont, emb_concat])
 
     for i_dense in range(n_dense_layers):
         x = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(x)

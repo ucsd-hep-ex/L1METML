@@ -59,6 +59,9 @@ output_layer = model_dict['output'](x)
 partial_model_2 = Model(inputs=[input_layer_1, input_layer_2], outputs=output_layer, name='partial_model_2')
 partial_model_2.summary()
 
+model.save('output/model.h5')
+partial_model_1.save('output/partial_model_1.h5')
+partial_model_2.save('output/partial_model_2.h5')
 
 # let's check the partial models give the same answer as the original model
 # random inputs
@@ -109,13 +112,11 @@ hls_model = hls4ml.converters.convert_from_keras_model(model_to_convert,
                                                        clock_period=5)
 hls_model.compile()
 
-hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='model_hls4ml.png')
+hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='output/model_hls4ml.png')
 
 y_1_hls = hls_model.predict([X.astype(np.float32), X_cat0.astype(np.float32), X_cat1.astype(np.float32)])
 df = pd.DataFrame({'keras': y_1.flatten(), 'hls4ml': y_1_hls.flatten()})
 print(df)
 
-partial_model_1.save('output/partial_model_1.h5')
-partial_model_2.save('output/partial_model_2.h5')
 
 hls_model.build(synth=True)
