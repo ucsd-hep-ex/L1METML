@@ -30,6 +30,8 @@ n_puppi_cands = 16
 reuse_factor = 1
 precision = 'ap_fixed<8,3>'
 io_type = 'io_parallel'
+strategy = 'Resource'
+output_dir = 'hls_output_{}_{}_rf{}_puppi{}'.format(io_type, strategy, reuse_factor, n_puppi_cands)
 batch_size = 1
 model = dense_embedding_quantized(n_features=6,
                                   n_features_cat=2,
@@ -48,7 +50,7 @@ model = dense_embedding_quantized(n_features=6,
 
 # check everthing works
 model.summary()
-model.save('output/model.h5')
+model.save('{}/model.h5'.format(output_dir))
 
 # now let's break up the model
 # save a dictionary of the model
@@ -67,8 +69,8 @@ output_layer = model_dict['output'](x)
 partial_model_2 = Model(inputs=[input_layer_1, input_layer_2], outputs=output_layer, name='partial_model_2')
 partial_model_2.summary()
 
-partial_model_1.save('output/partial_model_1.h5')
-partial_model_2.save('output/partial_model_2.h5')
+partial_model_1.save('{}/partial_model_1.h5'.format(output_dir))
+partial_model_2.save('{}/partial_model_2.h5'.format(output_dir))
 
 # let's check the partial models give the same answer as the original model
 # random inputs
@@ -99,7 +101,7 @@ np.testing.assert_array_equal(y, y_2)
 model_to_convert = partial_model_1
 config = hls4ml.utils.config_from_keras_model(model_to_convert, granularity='name',
                                               default_reuse_factor=reuse_factor, default_precision=precision)
-
+config['Model']['Strategy'] = strategy
 config['LayerName']['input_cat0']['Precision']['result'] = 'ap_uint<4>'
 config['LayerName']['input_cat1']['Precision']['result'] = 'ap_uint<4>'
 # skip optimize_pointwise_conv
@@ -113,12 +115,12 @@ print("-----------------------------------")
 hls_model = hls4ml.converters.convert_from_keras_model(model_to_convert,
                                                        hls_config=config,
                                                        io_type=io_type,
-                                                       output_dir='hls_output_{}'.format(io_type),
+                                                       output_dir=output_dir,
                                                        part='xcvu9p-flgb2104-2-i',
                                                        clock_period=5)
 hls_model.compile()
 
-hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='hls_output_{}/model_hls4ml.png'.format(io_type))
+hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='{}/model_hls4ml.png'.format(output_dir))
 
 y_1_hls = hls_model.predict([X.astype(np.float32), X_cat0.astype(np.float32), X_cat1.astype(np.float32)])
 df = pd.DataFrame({'keras': y_1.flatten(), 'hls4ml': y_1_hls.flatten()})
@@ -126,4 +128,4 @@ print(df)
 
 
 hls_model.build(synth=True)
-hls4ml.report.read_vivado_report('hls_output_{}'.format(io_type))
+hls4ml.report.read_vivado_report(output_dir)
