@@ -140,15 +140,14 @@ def dense_embedding_quantized(n_features=6,
     return keras_model
 
 
-def graph_embedding(De=64,
-                    scale_e=2,
-                    scale_n=2,
-                    n_features=6,
+def graph_embedding(n_features=6,
                     n_features_cat=2,
                     activation='relu',
                     number_of_pupcandis=100,
                     embedding_input_dim={0: 13, 1: 3},
-                    emb_out_dim=8):
+                    emb_out_dim=8,
+                    units=[64, 32, 16]):
+    n_dense_layers = len(units)
     name = 'met'
 
     inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input_cont')
@@ -188,20 +187,13 @@ def graph_embedding(De=64,
     B = Concatenate(axis=1)([ORr, ORs])  # Concatenates Or and Os  ( no relations features Ra matrix )
     # Outputis new array = [batch, 2x features, edges]
 
-    # Edges MLP (takes as inputs nodes features and fully conected graph edges)
-    # Transpose input matrix permutating columns 1&2
-    inp_e = Permute((2, 1), input_shape=B.shape[1:])(B)
-    # Output is new array = [batch, edges, 2x features]
-
-    # NN inference: run the NN on each edge (each pair of nodes) and output for each edge has a vector
-    # Define the Edges MLP layers
-    nhidden_e = int((2 * P)*scale_e)
-    h = Dense(nhidden_e)(inp_e)
-    h = Activation(activation)(h)
-    h = Dense(int(nhidden_e/2))(h)
-    h = Activation(activation)(h)
-    h = Dense(De)(h)
-    out_e = Activation(activation)(h)
+    # Edges MLP
+    h = Permute((2, 1), input_shape=B.shape[1:])(B)
+    for i_dense in range(n_dense_layers):
+        h = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
+        h = BatchNormalization(momentum=0.95)(h)
+        h = Activation(activation=activation)(h)
+    out_e = h
 
     # Transpose output and permutes columns 1&2
     out_e = Permute((2, 1))(out_e)
@@ -215,13 +207,11 @@ def graph_embedding(De=64,
     # Transpose input and permutes columns 1&2
     inp_n = Permute((2, 1), input_shape=inp_n.shape[1:])(inp_n)
 
-    # 2nd NN inference
-    # Define the Nodes MLP layers
-    nhidden_n = int((P + De)*scale_n)  # number of neurons in Nodes MLP hidden layer
-    h = Dense(nhidden_n)(inp_n)
-    h = Activation(activation)(h)
-    h = Dense(int(nhidden_n/2))(h)
-    h = Activation(activation)(h)
+    # Nodes MLP
+    for i_dense in range(n_dense_layers):
+        h = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
+        h = BatchNormalization(momentum=0.95)(h)
+        h = Activation(activation=activation)(h)
     w = Dense(1, name='met_weight', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(h)
     w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
     x = Multiply()([w, pxpy])

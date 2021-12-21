@@ -109,15 +109,24 @@ def train_dataGenerator(args):
 
     # Load training model
     if quantized is None:
-        keras_model = dense_embedding(n_features=n_features_pf,
-                                      emb_out_dim=2,
-                                      n_features_cat=n_features_pf_cat,
-                                      activation='tanh',
-                                      embedding_input_dim=trainGenerator.emb_input_dim,
-                                      number_of_pupcandis=maxNPF,
-                                      t_mode=t_mode,
-                                      with_bias=False,
-                                      units=units)
+        if model == 'dense_embedding':
+            keras_model = dense_embedding(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=trainGenerator.emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          t_mode=t_mode,
+                                          with_bias=False,
+                                          units=units)
+        elif model == 'graph_embedding':
+            keras_model = graph_embedding(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=trainGenerator.emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          units=units)
     else:
         logit_total_bits = int(quantized[0])
         logit_int_bits = int(quantized[1])
@@ -328,6 +337,7 @@ def main():
     parser.add_argument('--epochs', action='store', type=int, required=False, default=100)
     parser.add_argument('--quantized', action='store', required=False, nargs='+', help='optional argument: flag for quantized model and specify [total bits] [int bits]; empty for normal model')
     parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
+    parser.add_argument('--model', action='store', required=False, choices=['dense_embedding', 'graph_embedding'], default='dense_embedding', help='optional argument: model')
 
     args = parser.parse_args()
     workflowType = args.workflowType
