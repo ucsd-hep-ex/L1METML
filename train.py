@@ -86,6 +86,7 @@ def train_dataGenerator(args):
     inputPath = args.input
     path_out = args.output
     quantized = args.quantized
+    model = args.model
     units = list(map(int, args.units))
 
     # separate files into training, validation, and testing

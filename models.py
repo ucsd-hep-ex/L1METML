@@ -1,5 +1,5 @@
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape, Multiply, Add, GlobalAveragePooling1D, Activation
+from tensorflow.keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape, Multiply, Add, GlobalAveragePooling1D, Activation, Permute
 import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow import slice
@@ -205,7 +205,7 @@ def graph_embedding(n_features=6,
     inp_n = Concatenate(axis=1)([x, out_e])
 
     # Transpose input and permutes columns 1&2
-    inp_n = Permute((2, 1), input_shape=inp_n.shape[1:])(inp_n)
+    h = Permute((2, 1), input_shape=inp_n.shape[1:])(inp_n)
 
     # Nodes MLP
     for i_dense in range(n_dense_layers):
