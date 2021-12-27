@@ -80,7 +80,7 @@ def train_dataGenerator(args):
     n_features_pf_cat = 2
     normFac = 1.
     epochs = args.epochs
-    batch_size = 1024
+    batch_size = args.batch_size
     preprocessed = True
     t_mode = args.mode
     inputPath = args.input
@@ -200,7 +200,7 @@ def train_loadAllData(args):
     n_features_pf_cat = 2
     normFac = 1.
     epochs = args.epochs
-    batch_size = 1024
+    batch_size = args.batch_size
     preprocessed = True
     t_mode = args.mode
     inputPath = args.input
@@ -335,7 +335,8 @@ def main():
     parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
-    parser.add_argument('--epochs', action='store', type=int, required=False, default=100)
+    parser.add_argument('--epochs', action='store', type=int, required=False, default=100, help='number of epochs to train for')
+    parser.add_argument('--batch-size', action='store', type=int, required=False, default=1024, help='batch size')
     parser.add_argument('--quantized', action='store', required=False, nargs='+', help='optional argument: flag for quantized model and specify [total bits] [int bits]; empty for normal model')
     parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
     parser.add_argument('--model', action='store', required=False, choices=['dense_embedding', 'graph_embedding'], default='dense_embedding', help='optional argument: model')
