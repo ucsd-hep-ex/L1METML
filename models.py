@@ -142,12 +142,12 @@ def dense_embedding_quantized(n_features=6,
 
 
 # Create the sender and receiver relations matrices
-def assign_matrices(N,Nr):
+def assign_matrices(N, Nr):
     Rr = np.zeros([N, Nr], dtype=np.float32)
     Rs = np.zeros([N, Nr], dtype=np.float32)
-    receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0]!=i[1]]
+    receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
     for i, (r, s) in enumerate(receiver_sender_list):
-        Rr[r, i]  = 1
+        Rr[r, i] = 1
         Rs[s, i] = 1
     return Rs, Rr
 
@@ -238,8 +238,5 @@ def graph_embedding(n_features=6,
     keras_model.get_layer('tmul_{}_1'.format(name)).set_weights([Rr])
     keras_model.get_layer('tmul_{}_2'.format(name)).set_weights([Rs])
     keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
-
-    for layer in keras_model.layers:
-        print(layer.get_config(), layer.get_weights())
 
     return keras_model
