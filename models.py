@@ -7,6 +7,7 @@ from tensorflow.keras import initializers
 import qkeras
 from qkeras.qlayers import QDense, QActivation
 import numpy as np
+import itertools
 
 
 def dense_embedding(n_features=6,
