@@ -235,10 +235,9 @@ def graph_embedding(n_features=6,
 
     # Create a fully connected adjacency matrix
     Rs, Rr = assign_matrices(N, Nr)
-    for name in ['enc', 'dec']:
-        keras_model.get_layer('tmul_{}_1'.format(name)).set_weights([np.expand_dims(Rr, axis=0)])
-        keras_model.get_layer('tmul_{}_2'.format(name)).set_weights([np.expand_dims(Rs, axis=0)])
-        keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.expand_dims(np.transpose(Rr), axis=0)])
+    keras_model.get_layer('tmul_{}_1'.format(name)).set_weights([Rr])
+    keras_model.get_layer('tmul_{}_2'.format(name)).set_weights([Rs])
+    keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
 
     for layer in keras_model.layers:
         print(layer.get_config(), layer.get_weights())
