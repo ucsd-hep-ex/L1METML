@@ -19,6 +19,7 @@ import datetime
 import tqdm
 import h5py
 from glob import glob
+import itertools
 
 # Import custom modules
 
@@ -28,6 +29,16 @@ from models import *
 from utils import *
 from loss import custom_loss
 from DataGenerator import DataGenerator
+
+def deltaR(eta1, phi1, eta2, phi2):
+    """ calculate deltaR """
+    dphi = (phi1-phi2)
+    while dphi > np.pi:
+        dphi -= 2*np.pi
+    while dphi < -np.pi:
+        dphi += 2*np.pi
+    deta = eta1-eta2
+    return np.hypot(deta, dphi)
 
 
 def get_callbacks(path_out, sample_size, batch_size):
@@ -207,6 +218,7 @@ def train_loadAllData(args):
     path_out = args.output
     quantized = args.quantized
     units = list(map(int, args.units))
+    compute_ef = args.compute_edge_feat
 
     # Read inputs
     # convert root files to h5 and store in same location
@@ -222,17 +234,48 @@ def train_loadAllData(args):
 
     Xorg, Y = read_input(h5files)
     Y = Y / -normFac
+    
+    receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
+    
+    if compute_ef == 1:
+        set_size = Xorg.shape[0]
+        ef = np.zeros([set_size, Nr, 1])
+        print("Computing edge features")
+        for count, edge in enumerate(receiver_sender_list):
+            eta = Xorg[:, :, 3:4]
+            phi = Xorg[:, :, 4:5]
+            receiver = edge[0]
+            sender = edge[1]
+            eta1 = eta[:, receiver, :]
+            phi1 = phi[:, receiver, :]
+            eta2 = eta[:, sender, :]
+            phi2 = phi[:, sender, :]
+            dR = deltaR(eta1, phi1, eta2, phi2)
+            ef[:,count,:] = (dR)
+        print("edge features computed")
+        
+        Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
+        Xc = [Xc1, Xc2]
+    
+        emb_input_dim = {
+            i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
+        }
 
-    Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
-    Xc = [Xc1, Xc2]
+        # Prepare training/val data
+        Yr = Y
+        Xr = [Xi, Xp] + Xc + ef
+            
+    else:
+        Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
+        Xc = [Xc1, Xc2]
+    
+        emb_input_dim = {
+            i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
+        }
 
-    emb_input_dim = {
-        i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
-    }
-
-    # Prepare training/val data
-    Yr = Y
-    Xr = [Xi, Xp] + Xc
+        # Prepare training/val data
+        Yr = Y
+        Xr = [Xi, Xp] + Xc
 
     indices = np.array([i for i in range(len(Yr))])
     indices_train, indices_test = train_test_split(indices, test_size=1./7., random_state=7)
@@ -248,15 +291,26 @@ def train_loadAllData(args):
 
     # Load training model
     if quantized is None:
-        keras_model = dense_embedding(n_features=n_features_pf,
-                                      emb_out_dim=2,
-                                      n_features_cat=n_features_pf_cat,
-                                      activation='tanh',
-                                      embedding_input_dim=emb_input_dim,
-                                      number_of_pupcandis=maxNPF,
-                                      t_mode=t_mode,
-                                      with_bias=False,
-                                      units=units)
+        if model == 'dense_embedding':
+            keras_model = dense_embedding(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          t_mode=t_mode,
+                                          with_bias=False,
+                                          units=units)
+        
+        elif model == 'graph_embedding':
+            keras_model = graph_embedding(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=trainGenerator.emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          units=units)
+        
     else:
         logit_total_bits = int(quantized[0])
         logit_int_bits = int(quantized[1])
@@ -340,6 +394,7 @@ def main():
     parser.add_argument('--quantized', action='store', required=False, nargs='+', help='optional argument: flag for quantized model and specify [total bits] [int bits]; empty for normal model')
     parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
     parser.add_argument('--model', action='store', required=False, choices=['dense_embedding', 'graph_embedding'], default='dense_embedding', help='optional argument: model')
+    parser.add_argument('--compute-edge-feat', action='store', type=int, required=True, choices=[0, 1], help='0 for no edge features, 1 to include edge features')
 
     args = parser.parse_args()
     workflowType = args.workflowType
