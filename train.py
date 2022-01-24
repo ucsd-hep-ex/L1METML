@@ -220,6 +220,8 @@ def train_loadAllData(args):
     units = list(map(int, args.units))
     compute_ef = args.compute_edge_feat
 
+    print('starting')
+    
     # Read inputs
     # convert root files to h5 and store in same location
     h5files = []
@@ -232,15 +234,17 @@ def train_loadAllData(args):
     # It may be desireable to set specific files as the train, test, valid data sets
     # For now I keep train.py used: selection from a list of indicies
 
+    print('right before Xorg')
+    
     Xorg, Y = read_input(h5files)
     Y = Y / -normFac
     
     receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
     
     if compute_ef == 1:
+        print("Computing edge features")
         set_size = Xorg.shape[0]
         ef = np.zeros([set_size, Nr, 1])
-        print("Computing edge features")
         for count, edge in enumerate(receiver_sender_list):
             eta = Xorg[:, :, 3:4]
             phi = Xorg[:, :, 4:5]
@@ -266,6 +270,7 @@ def train_loadAllData(args):
         Xr = [Xi, Xp] + Xc + ef
             
     else:
+        print("else path")
         Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
         Xc = [Xc1, Xc2]
     
