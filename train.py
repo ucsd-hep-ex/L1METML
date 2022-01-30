@@ -33,10 +33,10 @@ from DataGenerator import DataGenerator
 def deltaR(eta1, phi1, eta2, phi2):
     """ calculate deltaR """
     dphi = (phi1-phi2)
-    while dphi > np.pi:
-        dphi -= 2*np.pi
-    while dphi < -np.pi:
-        dphi += 2*np.pi
+    gt_pi_idx = (dphi > np.pi)
+    lt_pi_idx = (dphi < -np.pi)
+    dphi[gt_pi_idx] -= 2*np.pi
+    dphi[lt_pi_idx] += 2*np.pi
     deta = eta1-eta2
     return np.hypot(deta, dphi)
 
@@ -219,6 +219,7 @@ def train_loadAllData(args):
     quantized = args.quantized
     units = list(map(int, args.units))
     compute_ef = args.compute_edge_feat
+    model = args.model
 
     print('starting')
     
@@ -239,6 +240,9 @@ def train_loadAllData(args):
     Xorg, Y = read_input(h5files)
     Y = Y / -normFac
     
+    N = maxNPF
+    Nr = N*(N-1)
+    
     receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
     
     if compute_ef == 1:
@@ -255,19 +259,19 @@ def train_loadAllData(args):
             eta2 = eta[:, sender, :]
             phi2 = phi[:, sender, :]
             dR = deltaR(eta1, phi1, eta2, phi2)
-            ef[:,count,:] = (dR)
+            ef[:,count,:] = dR
         print("edge features computed")
         
         Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
         Xc = [Xc1, Xc2]
-    
+
         emb_input_dim = {
             i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
         }
 
         # Prepare training/val data
         Yr = Y
-        Xr = [Xi, Xp] + Xc + ef
+        Xr = [Xi, Xp] + Xc + [ef]
             
     else:
         print("else path")
