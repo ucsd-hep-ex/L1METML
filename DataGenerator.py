@@ -80,6 +80,16 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
 
+    def deltaR(eta1, phi1, eta2, phi2):
+        """ calculate deltaR """
+        dphi = (phi1-phi2)
+        gt_pi_idx = (dphi > np.pi)
+        lt_pi_idx = (dphi < -np.pi)
+        dphi[gt_pi_idx] -= 2*np.pi
+        dphi[lt_pi_idx] += 2*np.pi
+        deta = eta1-eta2
+        return np.hypot(deta, dphi)
+        
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
         # X : (n_samples, n_dim, n_channels)
@@ -101,6 +111,26 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # process inputs
         Y = self.y / (-self.normFac)
         Xi, Xp, Xc1, Xc2 = preProcessing(self.X, self.normFac)
+        
+        N = self.maxNPF
+        Nr = N*(N-1)
+
+        if self.compute_ef == 1:
+            print("Computing edge features")
+            eta = Xi[:,:,1:2]
+            phi = Xi[:,:,2:3]
+            receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
+            set_size = Xi.shape[0]
+            ef = np.zeros([set_size, Nr, 1])
+            for count, edge in enumerate(receiver_sender_list):
+                receiver = edge[0]
+                sender = edge[1]
+                eta1 = eta[:, receiver, :]
+                phi1 = phi[:, receiver, :]
+                eta2 = eta[:, sender, :]
+                phi2 = phi[:, sender, :]
+                dR = deltaR(eta1, phi1, eta2, phi2)
+                ef[:,count,:] = dR
 
         Xc = [Xc1, Xc2]
         # dimension parameter for keras model
@@ -108,7 +138,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         # Prepare training/val data
         Yr = Y
-        Xr = [Xi, Xp] + Xc
+        Xr = [Xi, Xp] + Xc + [ef]
 
         return Xr, Yr
 
