@@ -201,7 +201,6 @@ def graph_embedding(n_features=6,
     ORr = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_1'.format(name))(x)
     ORs = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_2'.format(name))(x)
     node_feat = Concatenate(axis=1)([ORr, ORs])  # Concatenates Or and Os  ( no relations features Ra matrix )
-    B = Concatenate(axis=1)([node_feat, edge_feat])
     # Outputis new array = [batch, 2x features, edges]
 
     # Edges MLP
