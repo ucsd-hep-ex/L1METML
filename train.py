@@ -412,7 +412,7 @@ def main():
     parser.add_argument('--quantized', action='store', required=False, nargs='+', help='optional argument: flag for quantized model and specify [total bits] [int bits]; empty for normal model')
     parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
     parser.add_argument('--model', action='store', required=False, choices=['dense_embedding', 'graph_embedding'], default='dense_embedding', help='optional argument: model')
-    parser.add_argument('--compute_edge_feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
+    parser.add_argument('--compute-edge-feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
 
     args = parser.parse_args()
     workflowType = args.workflowType
