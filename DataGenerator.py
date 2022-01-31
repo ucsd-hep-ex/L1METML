@@ -7,7 +7,7 @@ import awkward as ak
 from utils import convertXY2PtPhi, preProcessing, to_np_array
 import h5py
 import os
-
+import itertools
 
 class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
