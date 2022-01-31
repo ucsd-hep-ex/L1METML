@@ -99,6 +99,7 @@ def train_dataGenerator(args):
     quantized = args.quantized
     model = args.model
     units = list(map(int, args.units))
+    compute_ef = args.compute_edge_feat
 
     # separate files into training, validation, and testing
     filesList = glob(os.path.join(inputPath, '*.root'))
