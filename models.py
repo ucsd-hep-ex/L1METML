@@ -181,8 +181,7 @@ def graph_embedding(n_features=6,
 
     N = number_of_pupcandis
     Nr = N*(N-1)
-    if compute_ef == 1:
-        edge_feat = Input(shape=(Nr, 1), name='edge_feat')        
+    edge_feat = Input(shape=(Nr, 1), name='edge_feat')        
         
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
