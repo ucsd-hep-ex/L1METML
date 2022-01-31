@@ -179,6 +179,10 @@ def graph_embedding(n_features=6,
             name='embedding{}'.format(i_emb))(input_cat)
         embeddings.append(embedding)
 
+    N = number_of_pupcandis
+    Nr = N*(N-1)
+    edge_feat = Input(shape=(Nr, 1), name='edge_feat')        
+        
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
     emb_concat = Concatenate()(embeddings)
@@ -196,7 +200,9 @@ def graph_embedding(n_features=6,
     # Marshaling function
     ORr = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_1'.format(name))(x)
     ORs = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_2'.format(name))(x)
-    B = Concatenate(axis=1)([ORr, ORs])  # Concatenates Or and Os  ( no relations features Ra matrix )
+    edge_feat = Permute((2,1), input_shape=edge_feat.shape[1:])(edge_feat)
+    node_feat = Concatenate(axis=1)([ORr, ORs])  # Concatenates Or and Os  ( no relations features Ra matrix )
+    B = Concatenate(axis=1)([node_feat, edge_feat])
     # Outputis new array = [batch, 2x features, edges]
 
     # Edges MLP
