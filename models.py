@@ -152,7 +152,7 @@ def assign_matrices(N, Nr):
     return Rs, Rr
 
 
-def graph_embedding(compute_ef,n_features=6,
+def graph_embedding(n_features=6,
                     n_features_cat=2,
                     activation='relu',
                     number_of_pupcandis=100,
