@@ -147,7 +147,7 @@ def train_dataGenerator(args):
                                           activation='tanh',
                                           embedding_input_dim=trainGenerator.emb_input_dim,
                                           number_of_pupcandis=maxNPF,
-                                          units=units)
+                                          units=units, compute_ef=compute_ef)
     else:
         logit_total_bits = int(quantized[0])
         logit_int_bits = int(quantized[1])
