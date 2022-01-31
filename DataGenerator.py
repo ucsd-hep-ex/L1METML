@@ -12,7 +12,7 @@ import os
 class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
 
-    def __init__(self, list_files, batch_size=1024, n_dim=100,
+    def __init__(self, list_files, batch_size=1024, n_dim=100, maxNPF=100, compute_ef=0,
                  max_entry=100000000):
         'Initialization'
         self.n_features_pf = 6
@@ -26,6 +26,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         self.file_mapping = []
         self.max_entry = max_entry
         self.open_files = [None]*len(list_files)
+        self.maxNPF = maxNPF
+        self.compute_ef = compute_ef
         running_total = 0
 
         self.h5files = []
@@ -132,14 +134,15 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 dR = deltaR(eta1, phi1, eta2, phi2)
                 ef[:,count,:] = dR
 
+        print("edge features computed")
         Xc = [Xc1, Xc2]
         # dimension parameter for keras model
         self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
 
         # Prepare training/val data
         Yr = Y
+        print("concatenating")
         Xr = [Xi, Xp] + Xc + [ef]
-
         return Xr, Yr
 
     def __get_features_labels(self, ifile, entry_start, entry_stop):
