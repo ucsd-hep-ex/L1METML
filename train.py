@@ -113,12 +113,20 @@ def train_dataGenerator(args):
     valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
     test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
 
-    # set up data generators; they perform h5 conversion if necessary and load in data batch by batch
-    trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
-    validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
-    testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
-    Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
-
+    if compute_ef == 1:
+        
+        # set up data generators; they perform h5 conversion if necessary and load in data batch by batch
+        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1)
+        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1)
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, compute_ef=1)
+        Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
+        
+    else:
+        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
+        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
+        Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
+    
     # Load training model
     if quantized is None:
         if model == 'dense_embedding':
