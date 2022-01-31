@@ -204,7 +204,7 @@ def graph_embedding(n_features=6,
     # Outputis new array = [batch, 2x features, edges]
 
     # Edges MLP
-    h = Permute((2, 1), input_shape=B.shape[1:])(B)
+    h = Permute((2, 1), input_shape=B.shape[1:])(node_feat)
     h = Concatenate(axis=2)([node_feat, edge_feat])
     for i_dense in range(n_dense_layers):
         h = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
