@@ -142,7 +142,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             # Prepare training/val data
             Yr = Y
             print("concatenating")
-            Xr = [Xi, Xp] + Xc
+            Xr = [Xi, Xp] + Xc + [ef]
             return Xr, Yr
         
         else:
@@ -153,7 +153,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             # Prepare training/val data
             Yr = Y
             print("concatenating")
-            Xr = [Xi, Xp] + Xc + [ef]
+            Xr = [Xi, Xp] + Xc
             return Xr, Yr
 
     def __get_features_labels(self, ifile, entry_start, entry_stop):
