@@ -82,7 +82,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
 
-    def deltaR(eta1, phi1, eta2, phi2):
+    def deltaR(self, eta1, phi1, eta2, phi2):
         """ calculate deltaR """
         dphi = (phi1-phi2)
         gt_pi_idx = (dphi > np.pi)
@@ -131,7 +131,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 phi1 = phi[:, receiver, :]
                 eta2 = eta[:, sender, :]
                 phi2 = phi[:, sender, :]
-                dR = deltaR(eta1, phi1, eta2, phi2)
+                dR = self.deltaR(eta1, phi1, eta2, phi2)
                 ef[:,count,:] = dR
 
             print("edge features computed")
