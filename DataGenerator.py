@@ -118,7 +118,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         Nr = N*(N-1)
 
         if self.compute_ef == 1:
-            print("Computing edge features")
             eta = Xi[:,:,1:2]
             phi = Xi[:,:,2:3]
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
@@ -134,14 +133,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 dR = self.deltaR(eta1, phi1, eta2, phi2)
                 ef[:,count,:] = dR
 
-            print("edge features computed")
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
 
             # Prepare training/val data
             Yr = Y
-            print("concatenating")
             Xr = [Xi, Xp] + Xc + [ef]
             return Xr, Yr
         
