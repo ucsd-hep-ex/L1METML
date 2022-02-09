@@ -91,6 +91,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         dphi[lt_pi_idx] += 2*np.pi
         deta = eta1-eta2
         return np.hypot(deta, dphi)
+    
+    def kT(self,pti,ptj,dR):
+        min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
+        kT = min_pt * dR
+        return kT
         
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
@@ -120,9 +125,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         if self.compute_ef == 1:
             eta = Xi[:,:,1:2]
             phi = Xi[:,:,2:3]
+            pt = Xi[:,:,0:1]
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, 1])
+            ef = np.zeros([set_size, Nr, 2])
             for count, edge in enumerate(receiver_sender_list):
                 receiver = edge[0]
                 sender = edge[1]
@@ -130,8 +136,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 phi1 = phi[:, receiver, :]
                 eta2 = eta[:, sender, :]
                 phi2 = phi[:, sender, :]
+                pt1 = pt[:, receiver, :]
+                pt2 = pt[:, sender, :]
                 dR = self.deltaR(eta1, phi1, eta2, phi2)
-                ef[:,count,:] = dR
+                kT = self.kT(pt1,pt2,dR)
+                ef[:,count,0:1] = dR
+                ef[:,count,1:2] = kT
 
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
