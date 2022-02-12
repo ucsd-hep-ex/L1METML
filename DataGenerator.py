@@ -98,9 +98,13 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         return kT
     
     def z(self, pti, ptj):
-        min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
-        z = min_pt/(pti + ptj)
-        return (np.log10(z)/5)
+        if pti == 0 and ptj == 0:
+            z = 0
+            return z
+        else:
+            min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
+            z = min_pt/(pti + ptj)
+            return z
         
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
