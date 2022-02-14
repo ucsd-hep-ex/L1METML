@@ -92,11 +92,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         deta = eta1-eta2
         return np.hypot(deta, dphi)
     
-    def kT(self,pti,ptj,dR):
-        min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
-        kT = min_pt * dR
-        return kT
-    
+#    def kT(self,pti,ptj,dR):
+ #       min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
+  #      kT = min_pt * dR
+   #     return kT
+
     #def z(self, pti, ptj):
      #       min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
       #      z = min_pt/(pti + ptj)
@@ -135,7 +135,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             pt = Xi[:,:,0:1]
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, 2])
+            ef = np.zeros([set_size, Nr, 1])
             for count, edge in enumerate(receiver_sender_list):
                 receiver = edge[0]
                 sender = edge[1]
@@ -146,12 +146,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 pt1 = pt[:, receiver, :]
                 pt2 = pt[:, sender, :]
                 dR = self.deltaR(eta1, phi1, eta2, phi2)
-                kT = self.kT(pt1,pt2,dR)
+                #kT = self.kT(pt1,pt2,dR)
                 #z = self.z(pt1,pt2)
                 ef[:,count,0:1] = dR
-                ef[:,count,1:2] = kT
+               #ef[:,count,1:2] = kT
                 
-                print('dR shape')
+                '''print('dR shape')
                 print(dR.shape)
                 print('-----')
                 print('kT shape')
@@ -162,7 +162,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 print('-----')
                 print('Xi shape')
                 print(Xi.shape)
-                #ef[:,count,2:3] = z
+                #ef[:,count,2:3] = z'''
 
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
