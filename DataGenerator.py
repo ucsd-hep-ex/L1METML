@@ -147,13 +147,14 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 pt2 = pt[:, sender, :]
                 dR = self.deltaR(eta1, phi1, eta2, phi2)
                 kT = self.kT(pt1,pt2,dR)
-                print(dR.shape())
-                print(kT.shape())
+                print(dR.shape)
+                print(kT.shape)
                 #z = self.z(pt1,pt2)
                 ef[:,count,0:1] = dR
                 ef[:,count,1:2] = kT
                 
                 print(ef.shape)
+                print(Xi.shape)
                 #ef[:,count,2:3] = z
 
             Xc = [Xc1, Xc2]
