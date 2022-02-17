@@ -95,17 +95,18 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     def kT(self,pti,ptj,dR):
         min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
         kT = min_pt * dR
+        print(kT)
         kT = np.log10(kT)
         kT[np.isneginf(kT)] = 0
         return kT
 
-    def z(self, pti, ptj):
-        min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
-        z = min_pt/(pti + ptj)
-        z[np.isnan(z)] = 1
-        z[np.isinf(z)] = 1
-        z = np.log(z) / 5
-        return z
+    #def z(self, pti, ptj):
+        #min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
+        #z = min_pt/(pti + ptj)
+        #z[np.isnan(z)] = 1
+        #z[np.isinf(z)] = 1
+        #z = np.log(z) / 5
+        #return z
     
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
