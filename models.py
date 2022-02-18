@@ -182,7 +182,7 @@ def graph_embedding(compute_ef, n_features=6,
     N = number_of_pupcandis
     Nr = N*(N-1)
     if compute_ef == 1:
-        edge_feat = Input(shape=(Nr, 2), name='edge_feat')
+        edge_feat = Input(shape=(Nr, 3), name='edge_feat')
         inputs.append(edge_feat)
         
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
