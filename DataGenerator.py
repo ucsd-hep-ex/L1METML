@@ -137,6 +137,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             eta = Xi[:,:,1:2]
             phi = Xi[:,:,2:3]
             pt = Xi[:,:,0:1]
+            print('pt')
+            print(pt)
+            print('--------------')
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
             ef = np.zeros([set_size, Nr, 3])
