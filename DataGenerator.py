@@ -95,8 +95,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     def kT(self,pti,ptj,dR):
         min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
         kT = min_pt * dR
-        kT = np.log10(kT)
-        kT[np.isneginf(kT)] = 0
+        #kT = np.log10(kT)
+        #kT[np.isneginf(kT)] = 0
         return kT
 
     def z(self, pti, ptj):
