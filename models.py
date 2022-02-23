@@ -209,6 +209,7 @@ def graph_embedding(compute_ef, n_features=6,
     h = Permute((2, 1), input_shape=node_feat.shape[1:])(node_feat)
     if compute_ef == 1:
         h = Concatenate(axis=2)([h, edge_feat])
+        print(h)
     for i_dense in range(n_dense_layers):
         h = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
         h = BatchNormalization(momentum=0.95)(h)
