@@ -100,12 +100,13 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         return kT
 
     def z(self, pti, ptj):
+        epsilon = 1.0e-12
         min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
-        z = min_pt/(pti + ptj)
-        z[np.isnan(z)] = 1
-        z[np.isinf(z)] = 1
-        z[z==0] = 1
-        z = np.log(z) / 5
+        z = min_pt/(pti + ptj + epsilon)
+        #z[np.isnan(z)] = 0
+        #z[np.isinf(z)] = 0
+        #z[z==0] = 1
+        #z = np.log(z) / 5
         return z
     
     def __data_generation(self, unique_files, starts, stops):
