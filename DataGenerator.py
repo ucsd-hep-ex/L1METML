@@ -82,22 +82,22 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
 
-    '''def deltaR(self, eta1, phi1, eta2, phi2):
-        """ calculate deltaR """
-        dphi = (phi1-phi2)
-        gt_pi_idx = (dphi > np.pi)
-        lt_pi_idx = (dphi < -np.pi)
-        dphi[gt_pi_idx] -= 2*np.pi
-        dphi[lt_pi_idx] += 2*np.pi
-        deta = eta1-eta2
-        return np.hypot(deta, dphi)
+    #def deltaR(self, eta1, phi1, eta2, phi2):
+    #    """ calculate deltaR """
+    #    dphi = (phi1-phi2)
+    #    gt_pi_idx = (dphi > np.pi)
+    #    lt_pi_idx = (dphi < -np.pi)
+    #    dphi[gt_pi_idx] -= 2*np.pi
+    #    dphi[lt_pi_idx] += 2*np.pi
+    #    deta = eta1-eta2
+    #    return np.hypot(deta, dphi)
     
-    def kT(self,pti,ptj,dR):
-        min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
-        kT = min_pt * dR
-        #kT = np.log10(kT)
-        #kT[np.isneginf(kT)] = 0
-        return kT'''
+    #def kT(self,pti,ptj,dR):
+    #    min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
+    #    kT = min_pt * dR
+    #    #kT = np.log10(kT)
+    #    #kT[np.isneginf(kT)] = 0
+    #    return kT
 
     def z(self, pti, ptj):
         epsilon = 1.0e-12
