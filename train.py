@@ -192,7 +192,7 @@ def train_dataGenerator(args):
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
     end_time = time.time()  # check end time
 
-    keras_function = K.function([keras_model.input], [keras_model.layers['concatenate_edge'].output])
+    keras_function = K.function([keras_model.input], [keras_model.layers[concatenate_edge].output])
     output = keras_function([trainGenerator, 1])
     print(output.shape)
     
