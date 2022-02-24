@@ -82,7 +82,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
 
-    def deltaR(self, eta1, phi1, eta2, phi2):
+    '''def deltaR(self, eta1, phi1, eta2, phi2):
         """ calculate deltaR """
         dphi = (phi1-phi2)
         gt_pi_idx = (dphi > np.pi)
@@ -97,7 +97,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         kT = min_pt * dR
         #kT = np.log10(kT)
         #kT[np.isneginf(kT)] = 0
-        return kT
+        return kT'''
 
     def z(self, pti, ptj):
         epsilon = 1.0e-12
@@ -150,11 +150,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 phi2 = phi[:, sender, :]
                 pt1 = pt[:, receiver, :]
                 pt2 = pt[:, sender, :]
-                dR = self.deltaR(eta1, phi1, eta2, phi2)
-                kT = self.kT(pt1,pt2,dR)
+                #dR = self.deltaR(eta1, phi1, eta2, phi2)
+                #kT = self.kT(pt1,pt2,dR)
                 z = self.z(pt1,pt2)
-                ef[:,count,0:1] = dR
-                ef[:,count,1:2] = kT
+                #ef[:,count,0:1] = dR
+                #ef[:,count,1:2] = kT
                 ef[:,count,2:3] = z
                 
                 '''print('dR shape')
