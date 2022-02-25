@@ -199,9 +199,10 @@ def train_dataGenerator(args):
     #concatenate_layer = Model(inputs=trainGenerator,
     #                                       outputs=keras_model.get_layer('concatenate_edge').output)
     output = keras_model.get_layer('concatenate_edge').output
+    output_array = output.numpy()
     #output = concatenate_layer(trainGenerator)
-    print(output.shape)
-    print(output)
+    print(output_array.shape)
+    print(output_array)
     print('--------')
     
     predict_test = keras_model.predict(testGenerator) * normFac
