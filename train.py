@@ -198,7 +198,10 @@ def train_dataGenerator(args):
     
     concatenate_layer = Model(inputs=keras_model.inputs,
                                            outputs=keras_model.get_layer('concatenate_edge').output)
-    intermediate_output = intermediate_layer_model(trainGenerator)
+    output = intermediate_layer_model(trainGenerator)
+    print(output.shape)
+    print(output)
+    print('--------')
     
     predict_test = keras_model.predict(testGenerator) * normFac
     all_PUPPI_pt = []
