@@ -209,10 +209,10 @@ def train_dataGenerator(args):
     output = K.function(inputs = keras_model.layers[0].input, outputs = keras_model.layers[14].output)
     
     # extract output
-    layer_output = get_layer_output(trainGenerator)
+    layer_output = output(trainGenerator)
     
-    print(output_array.shape)
-    print(output_array)
+    print(layer_output.shape)
+    print(layer_output)
     print('--------')
 
     
