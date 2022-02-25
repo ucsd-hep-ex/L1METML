@@ -198,12 +198,24 @@ def train_dataGenerator(args):
     
     #concatenate_layer = Model(inputs=trainGenerator,
     #                                       outputs=keras_model.get_layer('concatenate_edge').output)
-    output = keras_model.get_layer('concatenate_edge').output
-    output_array = output.numpy()
+    #output = keras_model.get_layer('concatenate_edge').output
+    #output_array = output.numpy()
     #output = concatenate_layer(trainGenerator)
+
+    
+    from tensorflow.keras import backend as K
+
+    # create a Keras function to get i-th layer
+    output = K.function(inputs = keras_model.layers[13].input, outputs = keras_model.layers[14].output)
+    
+    # extract output
+    layer_output = get_layer_output(trainGenerator[0])
+    
     print(output_array.shape)
     print(output_array)
     print('--------')
+
+    
     
     predict_test = keras_model.predict(testGenerator) * normFac
     all_PUPPI_pt = []
