@@ -206,7 +206,7 @@ def train_dataGenerator(args):
     from tensorflow.keras import backend as K
 
     # create a Keras function to get i-th layer
-    output = K.function(inputs = keras_model.layers[13].input, outputs = keras_model.layers[14].output)
+    output = K.function(inputs = keras_model.layers[0].input, outputs = keras_model.layers[14].output)
     
     # extract output
     layer_output = get_layer_output(trainGenerator[0])
