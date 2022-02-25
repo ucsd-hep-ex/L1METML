@@ -198,7 +198,7 @@ def train_dataGenerator(args):
     
     concatenate_layer = Model(inputs=keras_model.inputs,
                                            outputs=keras_model.get_layer('concatenate_edge').output)
-    output = intermediate_layer_model(trainGenerator)
+    output = concatenate_layer(trainGenerator)
     print(output.shape)
     print(output)
     print('--------')
