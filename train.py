@@ -211,9 +211,17 @@ def train_dataGenerator(args):
     # extract output
     layer_output = output(trainGenerator[0][0])
     
+    output_pti = layer_output[5,34,0]
+    output_ptj = layer_output[5,34,9]
+    output_z = layer_output[5,34,16]
+    
+    
     print(layer_output.shape)
     print(layer_output)
     print('--------')
+    print('output_pti', output_pti, '  output_ptj', output_ptj, '  output_z', output_z)
+    print('--------')
+    
 
     
     
