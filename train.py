@@ -184,6 +184,39 @@ def train_dataGenerator(args):
     # Run training
     print(keras_model.summary())
 
+    from tensorflow.keras import backend as K
+
+    # create a Keras function to get i-th layer
+    output = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
+    model_inputs = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
+    
+    # extract output
+    layer_output = output(trainGenerator[0][0])
+    layer_input = model_inputs(trainGenerator[0][0])
+    
+    
+    output_pti = layer_output[5,34,0]
+    output_ptj = layer_output[5,34,8]
+    output_etai = layer_output[5,34,1]
+    output_etaj = layer_output[5,34,9]
+    output_phii = layer_output[5,34,2]
+    output_phij = layer_output[5,34,10]
+    output_dR = layer_output[5,34,16]
+    output_kT = layer_output[5,34,17]
+    output_z = layer_output[5,34,18]
+    i_idx = (layer_input == output_pti)
+    j_idx = (layer_input == output_ptj)
+    
+    print(layer_output[5,34,:])
+    print('--------')
+    print('i_idx'', i_idx, '  j_idx', j_idx)
+    print('--------')
+    print(layer_output.shape)
+    print('--------')
+    print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
+          '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_kT', output_kT, '  output_z', output_z)
+    print('--------')
+    
     start_time = time.time()  # check start time
     history = keras_model.fit(trainGenerator,
                               epochs=epochs,
@@ -203,38 +236,7 @@ def train_dataGenerator(args):
     #output = concatenate_layer(trainGenerator)
 
     
-    from tensorflow.keras import backend as K
 
-    # create a Keras function to get i-th layer
-    output = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
-    model_inputs = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
-    
-    # extract output
-    layer_output = output(trainGenerator[0][0])
-    layer_input = model_inputs(trainGenerator[0][0])
-    
-    
-    input_4 = layer_input[5,34,:]
-    output_pti = layer_output[5,34,0]
-    output_ptj = layer_output[5,34,8]
-    output_etai = layer_output[5,34,1]
-    output_etaj = layer_output[5,34,9]
-    output_phii = layer_output[5,34,2]
-    output_phij = layer_output[5,34,10]
-    output_dR = layer_output[5,34,16]
-    output_kT = layer_output[5,34,17]
-    output_z = layer_output[5,34,18]
-    
-    
-    print('--------')
-    print('inputs', input_4)
-    print('--------')
-    print(layer_output.shape)
-    print(layer_output)
-    print('--------')
-    print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
-          '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_kT', output_kT, '  output_z', output_z)
-    print('--------')
     
 
     
