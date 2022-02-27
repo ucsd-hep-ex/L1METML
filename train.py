@@ -204,12 +204,12 @@ def train_dataGenerator(args):
     output_dR = layer_output[5,15,16]
     output_kT = layer_output[5,15,17]
     output_z = layer_output[5,15,18]
-    i_idx = (layer_input == output_pti)
-    j_idx = (layer_input == output_ptj)
+    i_idx = np.where(layer_input == output_pti)
+    j_idx = np.where(layer_input == output_ptj)
     
     print(layer_output[5,15,:])
     print('--------')
-    print('i', layer_input[i_idx], '  j', layer_input[j_idx])
+    print('i', i_idx '  j', j_idx)
     print('--------')
     print(layer_output.shape)
     print('--------')
