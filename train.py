@@ -212,14 +212,21 @@ def train_dataGenerator(args):
     layer_output = output(trainGenerator[0][0])
     
     output_pti = layer_output[5,34,0]
-    output_ptj = layer_output[5,34,9]
-    output_z = layer_output[5,34,16]
+    output_ptj = layer_output[5,34,8]
+    output_etai = layer_output[5,34,1]
+    output_etaj = layer_output[5,34,9]
+    output_phii = layer_output[5,34,2]
+    output_phij = layer_output[5,34,10]
+    output_dR = layer_output[5,34,16]
+    output_kT = layer_output[5,34,17]
+    output_z = layer_output[5,34,18]
     
     
     print(layer_output.shape)
     print(layer_output)
     print('--------')
-    print('output_pti', output_pti, '  output_ptj', output_ptj, '  output_z', output_z)
+    print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
+          '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_kT', output_kT, '  output_z', output_z)
     print('--------')
     
 
