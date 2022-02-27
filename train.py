@@ -207,10 +207,14 @@ def train_dataGenerator(args):
 
     # create a Keras function to get i-th layer
     output = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
+    model_inputs = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
     
     # extract output
     layer_output = output(trainGenerator[0][0])
+    layer_input = model_inputs(trainGenerator[0][0])
     
+    
+    input_4 = layer_input[5,34,:]
     output_pti = layer_output[5,34,0]
     output_ptj = layer_output[5,34,8]
     output_etai = layer_output[5,34,1]
@@ -222,6 +226,9 @@ def train_dataGenerator(args):
     output_z = layer_output[5,34,18]
     
     
+    print('--------')
+    print('inputs', input_4)
+    print('--------')
     print(layer_output.shape)
     print(layer_output)
     print('--------')
