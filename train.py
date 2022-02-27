@@ -209,7 +209,8 @@ def train_dataGenerator(args):
     
     print(layer_output[5,15,:])
     print('--------')
-    print('i', i_idx, '  j', j_idx)
+    #print('i', i_idx, '  j', j_idx)
+    print(layer_input[5,:])
     print('--------')
     print(layer_output.shape)
     print('--------')
