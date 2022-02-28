@@ -191,26 +191,26 @@ def train_dataGenerator(args):
     model_inputs = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
     
     # extract output
-    layer_output = output(trainGenerator[0][0])
-    layer_input = model_inputs(trainGenerator[0][0])
+    layer_output = output(trainGenerator[0][107])
+    layer_input = model_inputs(trainGenerator[0][107])
     
     
-    output_pti = layer_output[152,213,0]
-    output_ptj = layer_output[152,213,8]
-    output_etai = layer_output[152,213,1]
-    output_etaj = layer_output[152,213,9]
-    output_phii = layer_output[152,213,2]
-    output_phij = layer_output[152,213,10]
-    output_dR = layer_output[152,213,16]
-    output_kT = layer_output[152,213,17]
-    output_z = layer_output[152,213,18]
+    output_pti = layer_output[245,176,0]
+    output_ptj = layer_output[245,176,8]
+    output_etai = layer_output[245,176,1]
+    output_etaj = layer_output[245,176,9]
+    output_phii = layer_output[245,176,2]
+    output_phij = layer_output[245,176,10]
+    output_dR = layer_output[245,176,16]
+    output_kT = layer_output[245,176,17]
+    output_z = layer_output[245,176,18]
     i_idx = np.where(layer_input == output_pti)
     j_idx = np.where(layer_input == output_ptj)
     
-    print(layer_output[152,213,:])
+    print(layer_output[245,176,:])
     print('--------')
     #print('i', i_idx, '  j', j_idx)
-    print(layer_input[152,:])
+    print(layer_input[245,:])
     print('--------')
     print(layer_output.shape)
     print('--------')
