@@ -210,7 +210,7 @@ def train_dataGenerator(args):
     print(layer_output[48,213,:])
     print('--------')
     #print('i', i_idx, '  j', j_idx)
-    print(layer_input[5,:])
+    print(layer_input[48,:])
     print('--------')
     print(layer_output.shape)
     print('--------')
