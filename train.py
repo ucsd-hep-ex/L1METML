@@ -195,19 +195,19 @@ def train_dataGenerator(args):
     layer_input = model_inputs(trainGenerator[0][0])
     
     
-    output_pti = layer_output[5,15,0]
-    output_ptj = layer_output[5,15,8]
-    output_etai = layer_output[5,15,1]
-    output_etaj = layer_output[5,15,9]
-    output_phii = layer_output[5,15,2]
-    output_phij = layer_output[5,15,10]
-    output_dR = layer_output[5,15,16]
-    output_kT = layer_output[5,15,17]
-    output_z = layer_output[5,15,18]
+    output_pti = layer_output[48,213,0]
+    output_ptj = layer_output[48,213,8]
+    output_etai = layer_output[48,213,1]
+    output_etaj = layer_output[48,213,9]
+    output_phii = layer_output[48,213,2]
+    output_phij = layer_output[48,213,10]
+    output_dR = layer_output[48,213,16]
+    output_kT = layer_output[48,213,17]
+    output_z = layer_output[48,213,18]
     i_idx = np.where(layer_input == output_pti)
     j_idx = np.where(layer_input == output_ptj)
     
-    print(layer_output[5,15,:])
+    print(layer_output[48,213,:])
     print('--------')
     #print('i', i_idx, '  j', j_idx)
     print(layer_input[5,:])
