@@ -191,8 +191,8 @@ def train_dataGenerator(args):
     model_inputs = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
     
     # extract output
-    layer_output = output(trainGenerator[0][35])
-    layer_input = model_inputs(trainGenerator[0][35])
+    layer_output = output(trainGenerator[35][0])
+    layer_input = model_inputs(trainGenerator[35][0])
     
     
     output_pti = layer_output[245,176,0]
