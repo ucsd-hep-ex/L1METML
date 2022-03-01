@@ -12,6 +12,7 @@ USER ${NB_UID}
 
 # Install Tensorflow
 RUN pip install --quiet --no-cache-dir \
+    coffea \
     uproot \
     awkward \
     uproot \
