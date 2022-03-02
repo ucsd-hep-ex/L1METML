@@ -188,11 +188,13 @@ def train_dataGenerator(args):
 
     # create a Keras function to get i-th layer
     output = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
-    model_inputs = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
+    model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
+    model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[39].output)
     
     # extract output
     layer_output = output(trainGenerator[35][0])
-    layer_input = model_inputs(trainGenerator[35][0])
+    layer_input_cont = model_inputs_cont(trainGenerator[35][0])
+    layer_input_pxpy = model_inputs_pxpy(trainGenerator[35][0])
     
     
     output_pti = layer_output[58,1108,0]
@@ -202,20 +204,23 @@ def train_dataGenerator(args):
     output_phii = layer_output[58,1108,2]
     output_phij = layer_output[58,1108,10]
     output_dR = layer_output[58,1108,16]
-    output_kT = layer_output[58,1108,17]
-    output_z = layer_output[58,1108,18]
+    output_m2 = layer_output[58,1108,17]
+    #output_z = layer_output[58,1108,18]
     i_idx = np.where(layer_input == output_pti)
     j_idx = np.where(layer_input == output_ptj)
     
     print(layer_output[58,1108,:])
     print('--------')
-    #print('i', i_idx, '  j', j_idx)
-    print(layer_input[58,:])
+    print('layer_input_cont')
+    print(layer_input_cont[58,:])
+    print('--------')
+    print('layer_input_pxpy')
+    print(layer_input_pxpy[58,:])
     print('--------')
     print(layer_output.shape)
     print('--------')
     print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
-          '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_kT', output_kT, '  output_z', output_z)
+          '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_m2', output_m2) #, '  output_z', output_z)
     print('--------')
     
     start_time = time.time()  # check start time
