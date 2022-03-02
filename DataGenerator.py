@@ -145,7 +145,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             px = Xp[:,:,0:1]
             py = Xp[:,:,1:2]
             pz = pt*np.sinh(eta)
-            p_vector = np.concatenate((px,py,pz), axis=-1))
+            p_vector = np.concatenate((px,py,pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
             ef = np.zeros([set_size, Nr, 2])
