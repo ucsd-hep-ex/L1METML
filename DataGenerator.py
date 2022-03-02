@@ -110,7 +110,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     #    return z
     
     def m2(self, pi, pj):
-        m2 = np.linalg.norm((pi+pj),axis=-1) ** 2
+        m2 = np.linalg.norm((pi+pj),axis=-1,keepdims=True) ** 2
         return m2
     
     def __data_generation(self, unique_files, starts, stops):
