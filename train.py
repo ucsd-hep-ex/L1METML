@@ -192,30 +192,30 @@ def train_dataGenerator(args):
     model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[39].output)
     
     # extract output
-    layer_output = output(trainGenerator[35][0])
-    layer_input_cont = model_inputs_cont(trainGenerator[35][0])
-    layer_input_pxpy = model_inputs_pxpy(trainGenerator[35][0])
+    layer_output = output(trainGenerator[51][0])
+    layer_input_cont = model_inputs_cont(trainGenerator[51][0])
+    layer_input_pxpy = model_inputs_pxpy(trainGenerator[51][0])
     
     
-    output_pti = layer_output[58,1108,0]
-    output_ptj = layer_output[58,1108,8]
-    output_etai = layer_output[58,1108,1]
-    output_etaj = layer_output[58,1108,9]
-    output_phii = layer_output[58,1108,2]
-    output_phij = layer_output[58,1108,10]
-    output_dR = layer_output[58,1108,16]
-    output_m2 = layer_output[58,1108,17]
-    #output_z = layer_output[58,1108,18]
+    output_pti = layer_output[3,1209,0]
+    output_ptj = layer_output[3,1209,8]
+    output_etai = layer_output[3,1209,1]
+    output_etaj = layer_output[3,1209,9]
+    output_phii = layer_output[3,1209,2]
+    output_phij = layer_output[3,1209,10]
+    output_dR = layer_output[3,1209,16]
+    output_m2 = layer_output[3,1209,17]
+    #output_z = layer_output[3,1209,18]
     #i_idx = np.where(layer_input == output_pti)
     #j_idx = np.where(layer_input == output_ptj)
     
-    print(layer_output[58,1108,:])
+    print(layer_output[3,1209,:])
     print('--------')
     print('layer_input_cont')
-    print(layer_input_cont[58,:])
+    print(layer_input_cont[3,:])
     print('--------')
     print('layer_input_pxpy')
-    print(layer_input_pxpy[58,:])
+    print(layer_input_pxpy[3,:])
     print('--------')
     print(layer_output.shape)
     print('--------')
