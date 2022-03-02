@@ -206,8 +206,8 @@ def train_dataGenerator(args):
     output_dR = layer_output[58,1108,16]
     output_m2 = layer_output[58,1108,17]
     #output_z = layer_output[58,1108,18]
-    i_idx = np.where(layer_input == output_pti)
-    j_idx = np.where(layer_input == output_ptj)
+    #i_idx = np.where(layer_input == output_pti)
+    #j_idx = np.where(layer_input == output_ptj)
     
     print(layer_output[58,1108,:])
     print('--------')
