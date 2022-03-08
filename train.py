@@ -86,7 +86,7 @@ def test(Yr_test, predict_test, PUPPI_pt, path_out):
 
 def train_dataGenerator(args):
     # general setup
-    maxNPF = 100
+    maxNPF = args.maxNPF
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
@@ -186,7 +186,7 @@ def train_dataGenerator(args):
 
     from tensorflow.keras import backend as K
 
-    '''# create a Keras function to get i-th layer
+    # create a Keras function to get i-th layer
     output = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
     model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
     model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[39].output)
@@ -204,7 +204,7 @@ def train_dataGenerator(args):
     output_phii = layer_output[3,1209,2]
     output_phij = layer_output[3,1209,10]
     output_dR = layer_output[3,1209,16]
-    output_m2 = layer_output[3,1209,17]
+    #output_m2 = layer_output[3,1209,17]
     #output_z = layer_output[3,1209,18]
     #i_idx = np.where(layer_input == output_pti)
     #j_idx = np.where(layer_input == output_ptj)
@@ -220,8 +220,8 @@ def train_dataGenerator(args):
     print(layer_output.shape)
     print('--------')
     print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
-          '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_m2', output_m2) #, '  output_z', output_z)
-    print('--------')'''
+          '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR) #, '  output_m2', output_m2 , '  output_z', output_z)
+    print('--------')
     
     start_time = time.time()  # check start time
     history = keras_model.fit(trainGenerator,
@@ -255,7 +255,7 @@ def train_dataGenerator(args):
 
 def train_loadAllData(args):
     # general setup
-    maxNPF = 100
+    maxNPF = maxNPF
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
@@ -453,6 +453,7 @@ def main():
     parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
     parser.add_argument('--model', action='store', required=False, choices=['dense_embedding', 'graph_embedding'], default='dense_embedding', help='optional argument: model')
     parser.add_argument('--compute-edge-feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
+    parser.add_argument('--maxNPF', action='store', type=int, required=False, default=100, help='maximum number of PUPPI candidates')
 
     args = parser.parse_args()
     workflowType = args.workflowType
