@@ -119,7 +119,7 @@ def train_dataGenerator(args):
         # set up data generators; they perform h5 conversion if necessary and load in data batch by batch
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1)
         validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1)
-        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, compute_ef=1)
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
         
     else:
@@ -186,7 +186,7 @@ def train_dataGenerator(args):
 
     from tensorflow.keras import backend as K
 
-    # create a Keras function to get i-th layer
+    '''# create a Keras function to get i-th layer
     output = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
     model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
     model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[39].output)
@@ -221,7 +221,7 @@ def train_dataGenerator(args):
     print('--------')
     print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
           '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR) #, '  output_m2', output_m2 , '  output_z', output_z)
-    print('--------')
+    print('--------')'''
     
     start_time = time.time()  # check start time
     history = keras_model.fit(trainGenerator,
