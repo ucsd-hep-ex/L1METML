@@ -186,7 +186,7 @@ def train_dataGenerator(args):
 
     from tensorflow.keras import backend as K
 
-    # create a Keras function to get i-th layer
+    '''# create a Keras function to get i-th layer
     output = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
     model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
     model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[39].output)
@@ -221,7 +221,7 @@ def train_dataGenerator(args):
     print('--------')
     print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
           '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_m2', output_m2) #, '  output_z', output_z)
-    print('--------')
+    print('--------')'''
     
     start_time = time.time()  # check start time
     history = keras_model.fit(trainGenerator,
@@ -231,21 +231,6 @@ def train_dataGenerator(args):
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
     end_time = time.time()  # check end time
 
-    #keras_function = K.function([keras_model.input], [keras_model.layers[concatenate_edge].output])
-    #output = keras_function([trainGenerator, 1])
-    #print(output.shape)
-    
-    #concatenate_layer = Model(inputs=trainGenerator,
-    #                                       outputs=keras_model.get_layer('concatenate_edge').output)
-    #output = keras_model.get_layer('concatenate_edge').output
-    #output_array = output.numpy()
-    #output = concatenate_layer(trainGenerator)
-
-    
-
-    
-
-    
     
     predict_test = keras_model.predict(testGenerator) * normFac
     all_PUPPI_pt = []
