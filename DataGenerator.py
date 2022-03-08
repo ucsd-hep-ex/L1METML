@@ -99,15 +99,15 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         #kT[np.isneginf(kT)] = 0
         return kT
 
-    #def z(self, pti, ptj):
-    #    epsilon = 1.0e-12
-    #    min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
-    #    z = min_pt/(pti + ptj + epsilon)
-    #    #z[np.isnan(z)] = 0
-    #    #z[np.isinf(z)] = 0
-    #    #z[z==0] = 1
-    #    #z = np.log(z) / 5
-    #    return z
+    def z(self, pti, ptj):
+        epsilon = 1.0e-12
+        min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
+        z = min_pt/(pti + ptj + epsilon)
+        #z[np.isnan(z)] = 0
+        #z[np.isinf(z)] = 0
+        #z[z==0] = 1
+        #z = np.log(z) / 5
+        return z
     
     def m2(self, pi, pj):
         m2 = np.linalg.norm((pi+pj),axis=-1,keepdims=True) ** 2
@@ -142,13 +142,13 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             eta = Xi[:,:,1:2]
             phi = Xi[:,:,2:3]
             pt = Xi[:,:,0:1]
-            px = Xp[:,:,0:1]
-            py = Xp[:,:,1:2]
-            pz = pt*np.sinh(eta)
-            p_vector = np.concatenate((px,py,pz), axis=-1)
+            #px = Xp[:,:,0:1]
+            #py = Xp[:,:,1:2]
+            #pz = pt*np.sinh(eta)
+            #p_vector = np.concatenate((px,py,pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, 2])
+            ef = np.zeros([set_size, Nr, 1])
             for count, edge in enumerate(receiver_sender_list):
                 receiver = edge[0]
                 sender = edge[1]
@@ -158,14 +158,14 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 phi2 = phi[:, sender, :]
                 pt1 = pt[:, receiver, :]
                 pt2 = pt[:, sender, :]
-                p1 = p_vector[:, receiver, :]
-                p2 = p_vector[:, sender, :]
+                #p1 = p_vector[:, receiver, :]
+                #p2 = p_vector[:, sender, :]
                 dR = self.deltaR(eta1, phi1, eta2, phi2)
-                m2 = self.m2(p1,p2)
+                #m2 = self.m2(p1,p2)
                 #kT = self.kT(pt1,pt2,dR)
                 #z = self.z(pt1,pt2)
                 ef[:,count,0:1] = dR
-                ef[:,count,1:2] = m2
+                #ef[:,count,1:2] = m2
                 #ef[:,count,1:2] = kT
                 #ef[:,count,2:3] = z
                 
