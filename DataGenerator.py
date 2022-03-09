@@ -66,6 +66,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         unique_files = np.unique(files)
         starts = np.array([min(indexes[files == i]) for i in unique_files])
         stops = np.array([max(indexes[files == i]) for i in unique_files])
+        print("starts:  ', starts, np.shape(starts))
+        print("stops:  ', stops, np.shape(stops))
 
         # Check if files needed open (if not open them)
         # Also if file is not needed, close it
@@ -126,10 +128,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # Generate data
         for ifile, start, stop in zip(unique_files, starts, stops):
             self.X, self.y = self.__get_features_labels(ifile, start, stop)
-            print('X.shape:  ', len(self.X))
+            #print('X.shape:  ', len(self.X))
             Xs.append(self.X)
-            print('X:  ', self.X[0], np.shape(self.X[0]))
+            #print('X:  ', self.X[0], np.shape(self.X[0]))
             ys.append(self.y)
+        print('stop:  ', stop)
 
         # Stack data if going over multiple files
         if len(unique_files) > 1:
