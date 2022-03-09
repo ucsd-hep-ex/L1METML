@@ -40,6 +40,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             with h5py.File(file_name, "r") as h5_file:
                 self.open_files.append(h5_file)
                 nEntries = len(h5_file['X'])
+                print('nEntries:  ', nEntries)
                 self.global_IDs.append(np.arange(running_total, running_total+nEntries))
                 self.local_IDs.append(np.arange(0, nEntries))
                 self.file_mapping.append(np.repeat([i], nEntries))
