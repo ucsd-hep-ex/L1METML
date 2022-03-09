@@ -59,6 +59,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # Generate indexes of the batch
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
         files = self.file_mapping[index*self.batch_size:(index+1)*self.batch_size]
+        
+        print('indexes:  ', indexes)
+        print('files:  ', files)
 
         unique_files = np.unique(files)
         starts = np.array([min(indexes[files == i]) for i in unique_files])
@@ -123,6 +126,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # Generate data
         for ifile, start, stop in zip(unique_files, starts, stops):
             self.X, self.y = self.__get_features_labels(ifile, start, stop)
+            print('X.shape:  ', X.shape())
             Xs.append(self.X)
             ys.append(self.y)
 
@@ -185,6 +189,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
+            print('emb_input_dim:  ', self.emb_input_dim)
 
             # Prepare training/val data
             Yr = Y
