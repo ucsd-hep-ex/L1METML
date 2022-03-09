@@ -128,7 +128,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             self.X, self.y = self.__get_features_labels(ifile, start, stop)
             print('X.shape:  ', len(self.X))
             Xs.append(self.X)
-            print('Xs:  ', Xs)
+            print('Xs:  ', Xs.shape())
             ys.append(self.y)
 
         # Stack data if going over multiple files
