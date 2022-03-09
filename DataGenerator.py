@@ -66,8 +66,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         unique_files = np.unique(files)
         starts = np.array([min(indexes[files == i]) for i in unique_files])
         stops = np.array([max(indexes[files == i]) for i in unique_files])
-        print("starts:  ', starts, np.shape(starts))
-        print("stops:  ', stops, np.shape(stops))
+        print('starts:  ', starts, np.shape(starts))
+        print('stops:  ', stops, np.shape(stops))
 
         # Check if files needed open (if not open them)
         # Also if file is not needed, close it
