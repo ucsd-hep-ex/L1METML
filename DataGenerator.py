@@ -133,7 +133,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             self.X, self.y = self.__get_features_labels(ifile, start, stop)
             #print('X.shape:  ', len(self.X))
             Xs.append(self.X)
-            #print('X:  ', self.X[0], np.shape(self.X[0]))
+            print('X:  ', self.X, np.shape(self.X))
             ys.append(self.y)
         print('stop:  ', stop)
 
