@@ -222,7 +222,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         else:
             h5_file = self.open_files[ifile]
 
-        X = h5_file['X'][entry_start:entry_stop+1]
-        y = h5_file['Y'][entry_start:entry_stop+1]
+        X = h5_file['X'][entry_start:entry_stop+1,0:self.maxNPF]
+        y = h5_file['Y'][entry_start:entry_stop+1,0:self.maxNPF]
 
         return X, y
