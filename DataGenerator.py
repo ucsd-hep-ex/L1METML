@@ -40,7 +40,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             with h5py.File(file_name, "r") as h5_file:
                 self.open_files.append(h5_file)
                 nEntries = len(h5_file['X'])
-                print('nEntries:  ', nEntries)
                 self.global_IDs.append(np.arange(running_total, running_total+nEntries))
                 self.local_IDs.append(np.arange(0, nEntries))
                 self.file_mapping.append(np.repeat([i], nEntries))
@@ -60,15 +59,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # Generate indexes of the batch
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
         files = self.file_mapping[index*self.batch_size:(index+1)*self.batch_size]
-        
-        print('indexes:  ', indexes)
-        print('files:  ', files)
-
         unique_files = np.unique(files)
         starts = np.array([min(indexes[files == i]) for i in unique_files])
         stops = np.array([max(indexes[files == i]) for i in unique_files])
-        print('starts:  ', starts, np.shape(starts))
-        print('stops:  ', stops, np.shape(stops))
 
         # Check if files needed open (if not open them)
         # Also if file is not needed, close it
