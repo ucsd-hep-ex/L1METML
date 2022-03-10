@@ -126,7 +126,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             Xs.append(self.X)
             #print('X:  ', self.X, np.shape(self.X))
             ys.append(self.y)
-        print('stop:  ', stop)
 
         # Stack data if going over multiple files
         if len(unique_files) > 1:
