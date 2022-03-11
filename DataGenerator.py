@@ -186,7 +186,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
-            print('emb_input_dim:  ', self.emb_input_dim)
+            #print('emb_input_dim:  ', self.emb_input_dim)
 
             # Prepare training/val data
             Yr = Y
