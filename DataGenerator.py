@@ -149,7 +149,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             #p_vector = np.concatenate((px,py,pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, 1])
+            ef = np.zeros([set_size, Nr, 3])
             for count, edge in enumerate(receiver_sender_list):
                 receiver = edge[0]
                 sender = edge[1]
@@ -163,12 +163,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 #p2 = p_vector[:, sender, :]
                 dR = self.deltaR(eta1, phi1, eta2, phi2)
                 #m2 = self.m2(p1,p2)
-                #kT = self.kT(pt1,pt2,dR)
-                #z = self.z(pt1,pt2)
+                kT = self.kT(pt1,pt2,dR)
+                z = self.z(pt1,pt2)
                 ef[:,count,0:1] = dR
                 #ef[:,count,1:2] = m2
-                #ef[:,count,1:2] = kT
-                #ef[:,count,2:3] = z
+                ef[:,count,1:2] = kT
+                ef[:,count,2:3] = z
                 
                 '''print('dR shape')
                 print(dR.shape)
