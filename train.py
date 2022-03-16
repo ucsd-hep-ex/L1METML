@@ -197,25 +197,25 @@ def train_dataGenerator(args):
     layer_input_pxpy = model_inputs_pxpy(trainGenerator[156][0])
     
     
-    output_pti = layer_output[45,820,0]
-    output_ptj = layer_output[45,820,8]
-    output_etai = layer_output[45,820,1]
-    output_etaj = layer_output[45,820,9]
-    output_phii = layer_output[45,820,2]
-    output_phij = layer_output[45,820,10]
-    output_dR = layer_output[45,820,16]
-    output_kT = layer_output[45,820,17]
-    output_z = layer_output[45,820,18]
+    output_pti = layer_output[189,811,0]
+    output_ptj = layer_output[189,811,8]
+    output_etai = layer_output[189,811,1]
+    output_etaj = layer_output[189,811,9]
+    output_phii = layer_output[189,811,2]
+    output_phij = layer_output[189,811,10]
+    output_dR = layer_output[189,811,16]
+    output_kT = layer_output[189,811,17]
+    output_z = layer_output[189,811,18]
     #i_idx = np.where(layer_input == output_pti)
     #j_idx = np.where(layer_input == output_ptj)
     
-    print(layer_output[45,820,:])
+    print(layer_output[189,820,:])
     print('--------')
     print('layer_input_cont')
-    print(layer_input_cont[45,:])
+    print(layer_input_cont[189,:])
     print('--------')
     print('layer_input_pxpy')
-    print(layer_input_pxpy[45,:])
+    print(layer_input_pxpy[189,:])
     print('--------')
     print(layer_output.shape)
     print('--------')
