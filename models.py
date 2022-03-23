@@ -182,8 +182,12 @@ def graph_embedding(compute_ef, n_features=6,
     N = number_of_pupcandis
     Nr = N*(N-1)
     if compute_ef == 1:
-        edge_feat = Input(shape=(Nr, 3), name='edge_feat')
+        num_of_edge_feat = 3
+        edge_feat = Input(shape=(Nr, num_of_edge_feat), name='edge_feat')
         inputs.append(edge_feat)
+        #init_scl = 1 / (16 + num_of_edge_feat)
+        #scl_array = init_scl * np.ones([16 + num_of_edge_feat])
+        #scl = Dense( (16+num_of_edge_feat), activation='softmax', bias_initializer='initializers.Ones()', name='scalars')(scl_array)
         
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
@@ -209,6 +213,7 @@ def graph_embedding(compute_ef, n_features=6,
     h = Permute((2, 1), input_shape=node_feat.shape[1:])(node_feat)
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
+        #h = Multiply()(x,scl)
     for i_dense in range(n_dense_layers):
         h = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
         h = BatchNormalization(momentum=0.95)(h)
