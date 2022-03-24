@@ -187,7 +187,7 @@ def graph_embedding(compute_ef, n_features=6,
         inputs.append(edge_feat)
         #init_scl = 1 / (16 + num_of_edge_feat)
         init_scl_array = np.ones([16 + num_of_edge_feat])
-        scl = Dense( (16+num_of_edge_feat), activation='softmax', bias_initializer='initializers.Ones()', name='scalars')(init_scl_array)
+        scl = Dense( (16+num_of_edge_feat), activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(init_scl_array)
         
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
