@@ -186,8 +186,8 @@ def graph_embedding(compute_ef, n_features=6,
         edge_feat = Input(shape=(Nr, num_of_edge_feat), name='edge_feat')
         inputs.append(edge_feat)
         #init_scl = 1 / (16 + num_of_edge_feat)
-        #scl_array = init_scl * np.ones([16 + num_of_edge_feat])
-        #scl = Dense( (16+num_of_edge_feat), activation='softmax', bias_initializer='initializers.Ones()', name='scalars')(scl_array)
+        init_scl_array = np.ones([16 + num_of_edge_feat])
+        scl = Dense( (16+num_of_edge_feat), activation='softmax', bias_initializer='initializers.Ones()', name='scalars')(init_scl_array)
         
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
@@ -251,5 +251,7 @@ def graph_embedding(compute_ef, n_features=6,
     keras_model.get_layer('tmul_{}_1'.format(name)).set_weights([Rr])
     keras_model.get_layer('tmul_{}_2'.format(name)).set_weights([Rs])
     keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
+    zeros = np.zeros((16 + num_of_edge_feat), (16 + num_of_edge_feat))
+    keras_model.get_layer('scalars').set_weights(zeros)
 
     return keras_model
