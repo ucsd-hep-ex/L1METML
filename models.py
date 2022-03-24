@@ -208,13 +208,13 @@ def graph_embedding(compute_ef, n_features=6,
 
     #init_scl = 1 / (16 + num_of_edge_feat)
     #init_scl_array = np.ones([16 + num_of_edge_feat])
-    scl = Dense(16+num_of_edge_feat, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(x)
+    scl = Dense(16+num_of_edge_feat, trainable=False, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(x)
     
     # Edges MLP
     h = Permute((2, 1), input_shape=node_feat.shape[1:])(node_feat)
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
-        #h = Multiply()(x,scl)
+        h = Multiply()(x,scl)
     for i_dense in range(n_dense_layers):
         h = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
         h = BatchNormalization(momentum=0.95)(h)
