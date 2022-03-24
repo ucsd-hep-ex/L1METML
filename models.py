@@ -252,7 +252,7 @@ def graph_embedding(compute_ef, n_features=6,
     keras_model.get_layer('tmul_{}_1'.format(name)).set_weights([Rr])
     keras_model.get_layer('tmul_{}_2'.format(name)).set_weights([Rs])
     keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
-    zeros = np.zeros(256, 16 + num_of_edge_feat)  # 256 is batch size
+    zeros = np.zeros((256, 16 + num_of_edge_feat))  # 256 is batch size
     keras_model.get_layer('scalars').set_weights(zeros)
 
     return keras_model
