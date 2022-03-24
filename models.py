@@ -190,10 +190,6 @@ def graph_embedding(compute_ef, n_features=6,
     # x = Concatenate()([inputs_cont] + embeddings)
     emb_concat = Concatenate()(embeddings)
     x = Concatenate()([inputs_cont, emb_concat])
-
-    #init_scl = 1 / (16 + num_of_edge_feat)
-    #init_scl_array = np.ones([16 + num_of_edge_feat])
-    scl = Dense( (16+num_of_edge_feat), activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(x)
     
     N = number_of_pupcandis
     P = n_features+n_features_cat
@@ -210,6 +206,10 @@ def graph_embedding(compute_ef, n_features=6,
     node_feat = Concatenate(axis=1)([ORr, ORs])  # Concatenates Or and Os  ( no relations features Ra matrix )
     # Outputis new array = [batch, 2x features, edges]
 
+    #init_scl = 1 / (16 + num_of_edge_feat)
+    #init_scl_array = np.ones([16 + num_of_edge_feat])
+    scl = Dense(16+num_of_edge_feat, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(x)
+    
     # Edges MLP
     h = Permute((2, 1), input_shape=node_feat.shape[1:])(node_feat)
     if compute_ef == 1:
@@ -252,7 +252,7 @@ def graph_embedding(compute_ef, n_features=6,
     keras_model.get_layer('tmul_{}_1'.format(name)).set_weights([Rr])
     keras_model.get_layer('tmul_{}_2'.format(name)).set_weights([Rs])
     keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
-    zeros = np.zeros((256, 16 + num_of_edge_feat))  # 256 is batch size
+    zeros = np.zeros((16, 16+num_of_edge_feat))
     keras_model.get_layer('scalars').set_weights(zeros)
 
     return keras_model
