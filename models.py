@@ -253,7 +253,7 @@ def graph_embedding(compute_ef, n_features=6,
     keras_model.get_layer('tmul_{}_2'.format(name)).set_weights([Rs])
     keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
     w_zeros = np.zeros((16, 16+num_of_edge_feat))
-    b_zeros = np.zeros((19))
+    b_zeros = np.ones((19))
     init_zeros = np.zeros((16, ,16))
     keras_model.get_layer('scalars_init').set_weights([init_zeros])
     keras_model.get_layer('scalars').set_weights([w_zeros,b_zeros])
