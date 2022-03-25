@@ -210,7 +210,7 @@ def graph_embedding(compute_ef, n_features=6,
     h = Permute((2, 1), input_shape=node_feat.shape[1:])(node_feat)
     #init_scl = 1 / (16 + num_of_edge_feat)
     #init_scl_array = np.ones([16 + num_of_edge_feat])
-    init_scl_input = Dense(16, trainable=False)(h)
+    init_scl_input = Dense(16, trainable=False, use_bias=False, name='scalars_init')(h)
     scl = Dense(16+num_of_edge_feat, trainable=True, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(init_scl_input)
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
@@ -254,6 +254,8 @@ def graph_embedding(compute_ef, n_features=6,
     keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
     w_zeros = np.zeros((16, 16+num_of_edge_feat))
     b_zeros = np.zeros((19))
+    init_zeros = np.zeros((16, ,16))
+    keras_model.get_layer('scalars_init').set_weights([init_zeros])
     keras_model.get_layer('scalars').set_weights([w_zeros,b_zeros])
 
     return keras_model
