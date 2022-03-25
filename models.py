@@ -205,14 +205,12 @@ def graph_embedding(compute_ef, n_features=6,
     ORs = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_2'.format(name))(x)
     node_feat = Concatenate(axis=1)([ORr, ORs])  # Concatenates Or and Os  ( no relations features Ra matrix )
     # Outputis new array = [batch, 2x features, edges]
-
-    #init_scl = 1 / (16 + num_of_edge_feat)
-    #init_scl_array = np.ones([16 + num_of_edge_feat])
-    s = Permute((2, 1), input_shape=x.shape[1:])(node_feat)
-    scl = Dense(16+num_of_edge_feat, trainable=False, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(s)
     
     # Edges MLP
     h = Permute((2, 1), input_shape=node_feat.shape[1:])(node_feat)
+    #init_scl = 1 / (16 + num_of_edge_feat)
+    #init_scl_array = np.ones([16 + num_of_edge_feat])
+    scl = Dense(16+num_of_edge_feat, trainable=False, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(h)
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
         h = Multiply()([h,scl])
