@@ -212,6 +212,7 @@ def graph_embedding(compute_ef, n_features=6,
     #init_scl_array = np.ones([16 + num_of_edge_feat])
     init_scl_input = Dense(16, trainable=False, use_bias=False, name='scalars_init')(h)
     scl = Dense(16+num_of_edge_feat, trainable=True, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(init_scl_input)
+    scl = K.print_tensor(scl, message='scalars:  ')
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
         h = Multiply()([h,scl])
