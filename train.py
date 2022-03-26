@@ -195,29 +195,32 @@ def train_dataGenerator(args):
     scalars_multiply = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[17].output)
     
     # extract output
-    layer_output = concatenate_edge(trainGenerator[156][0])
+    concatenate_edge_output = concatenate_edge(trainGenerator[156][0])
     layer_input_cont = model_inputs_cont(trainGenerator[156][0])
     layer_input_pxpy = model_inputs_pxpy(trainGenerator[156][0])
+    scalars_init_output = scalars_init(trainGenerator[156][0])
+    scalars_output = scalars(trainGenerator[156][0])
+    scalars_multiply_output = scalars_multiply(trainGenerator[156][0])
     
-    print('scalars_init:  ', scalars_init[189,:,:])
-    print('scalars:  ', scalars[189,35,:])
-    print('scalars_multiply:  ', scalars_multiply[189,35,:])
-    print('concatenate_edge:  ', concatenate_edge[189,35,:])
+    print('scalars_init:  ', scalars_init_output[189,:,:])
+    print('scalars:  ', scalars_output[189,35,:])
+    print('scalars_multiply:  ', scalars_multiply_output[189,35,:])
+    print('concatenate_edge:  ', concatenate_edge_output[189,35,:])
     
     
-    #output_pti = layer_output[189,811,0]
-    #output_ptj = layer_output[189,811,8]
-    #output_etai = layer_output[189,811,1]
-    #output_etaj = layer_output[189,811,9]
-    #output_phii = layer_output[189,811,2]
-    #output_phij = layer_output[189,811,10]
-    #output_dR = layer_output[189,811,16]
-    #output_kT = layer_output[189,811,17]
-    #output_z = layer_output[189,811,18]
+    #output_pti = concatenate_edge_output[189,811,0]
+    #output_ptj = concatenate_edge_output[189,811,8]
+    #output_etai = concatenate_edge_output[189,811,1]
+    #output_etaj = concatenate_edge_output[189,811,9]
+    #output_phii = concatenate_edge_output[189,811,2]
+    #output_phij = concatenate_edge_output[189,811,10]
+    #output_dR = concatenate_edge_output[189,811,16]
+    #output_kT = concatenate_edge_output[189,811,17]
+    #output_z = concatenate_edge_output[189,811,18]
     #i_idx = np.where(layer_input == output_pti)
     #j_idx = np.where(layer_input == output_ptj)
     
-    #print(layer_output[189,820,:])
+    #print(concatenate_edge_output[189,820,:])
     #print('--------')
     #print('layer_input_cont')
     #print(layer_input_cont[189,:])
@@ -225,7 +228,7 @@ def train_dataGenerator(args):
     #print('layer_input_pxpy')
     #print(layer_input_pxpy[189,:])
     #print('--------')
-    #print(layer_output.shape)
+    #print(concatenate_edge_output.shape)
     #print('--------')
     #print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
     #      '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_kT', output_kT, '  output_z', output_z)
