@@ -191,7 +191,7 @@ def train_dataGenerator(args):
     model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
     model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[42].output)
     scalars_init = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
-    scalars_dense = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[16].output)
+    scalars = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[16].output)
     scalars_multiply = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[17].output)
     
     # extract output
@@ -199,32 +199,37 @@ def train_dataGenerator(args):
     layer_input_cont = model_inputs_cont(trainGenerator[156][0])
     layer_input_pxpy = model_inputs_pxpy(trainGenerator[156][0])
     
+    print('scalars_init:  ', scalars_init[189,:,:])
+    print('scalars:  ', scalars[189,35,:])
+    print('scalars_multiply:  ', scalars_multiply[189,35,:])
+    print('concatenate_edge:  ', concatenate_edge[189,35,:])
     
-    output_pti = layer_output[189,811,0]
-    output_ptj = layer_output[189,811,8]
-    output_etai = layer_output[189,811,1]
-    output_etaj = layer_output[189,811,9]
-    output_phii = layer_output[189,811,2]
-    output_phij = layer_output[189,811,10]
-    output_dR = layer_output[189,811,16]
-    output_kT = layer_output[189,811,17]
-    output_z = layer_output[189,811,18]
+    
+    #output_pti = layer_output[189,811,0]
+    #output_ptj = layer_output[189,811,8]
+    #output_etai = layer_output[189,811,1]
+    #output_etaj = layer_output[189,811,9]
+    #output_phii = layer_output[189,811,2]
+    #output_phij = layer_output[189,811,10]
+    #output_dR = layer_output[189,811,16]
+    #output_kT = layer_output[189,811,17]
+    #output_z = layer_output[189,811,18]
     #i_idx = np.where(layer_input == output_pti)
     #j_idx = np.where(layer_input == output_ptj)
     
-    print(layer_output[189,820,:])
-    print('--------')
-    print('layer_input_cont')
-    print(layer_input_cont[189,:])
-    print('--------')
-    print('layer_input_pxpy')
-    print(layer_input_pxpy[189,:])
-    print('--------')
-    print(layer_output.shape)
-    print('--------')
-    print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
-          '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_kT', output_kT, '  output_z', output_z)
-    print('--------')
+    #print(layer_output[189,820,:])
+    #print('--------')
+    #print('layer_input_cont')
+    #print(layer_input_cont[189,:])
+    #print('--------')
+    #print('layer_input_pxpy')
+    #print(layer_input_pxpy[189,:])
+    #print('--------')
+    #print(layer_output.shape)
+    #print('--------')
+    #print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
+    #      '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_kT', output_kT, '  output_z', output_z)
+    #print('--------')
     
     start_time = time.time()  # check start time
     history = keras_model.fit(trainGenerator,
