@@ -187,12 +187,15 @@ def train_dataGenerator(args):
     from tensorflow.keras import backend as K
 
     # create a Keras function to get i-th layer
-    output = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
+    concatenate_edge = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[15].output)
     model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
-    model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[39].output)
+    model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[42].output)
+    scalars_init = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[14].output)
+    scalars_dense = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[16].output)
+    scalars_multiply = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[17].output)
     
     # extract output
-    layer_output = output(trainGenerator[156][0])
+    layer_output = concatenate_edge(trainGenerator[156][0])
     layer_input_cont = model_inputs_cont(trainGenerator[156][0])
     layer_input_pxpy = model_inputs_pxpy(trainGenerator[156][0])
     
