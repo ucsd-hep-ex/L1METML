@@ -202,10 +202,10 @@ def train_dataGenerator(args):
     scalars_output = scalars(trainGenerator[156][0])
     scalars_multiply_output = scalars_multiply(trainGenerator[156][0])
     
-    print('scalars_init:  ', scalars_init_output[0,:,:])
-    print('scalars:  ', scalars_output[0,35,:])
-    print('scalars_multiply:  ', scalars_multiply_output[0,35,:])
-    print('concatenate_edge:  ', concatenate_edge_output[0,35,:])
+    #print('scalars_init:  ', scalars_init_output[0,:,:])
+    #print('scalars:  ', scalars_output[0,35,:])
+    #print('scalars_multiply:  ', scalars_multiply_output[0,35,:])
+    #print('concatenate_edge:  ', concatenate_edge_output[0,35,:])
     
     
     #output_pti = concatenate_edge_output[189,811,0]
