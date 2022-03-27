@@ -215,7 +215,9 @@ def graph_embedding(compute_ef, n_features=6,
     scl = K.print_tensor(scl, message='scalars:  ')
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
+        h = K.print_tensor(h, message='concatenate_layer:  ')
         h = Multiply()([h,scl])
+        h = K.print_tensor(h, message='scalar_multiply:  ')
     for i_dense in range(n_dense_layers):
         h = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
         h = BatchNormalization(momentum=0.95)(h)
