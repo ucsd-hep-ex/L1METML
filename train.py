@@ -195,12 +195,12 @@ def train_dataGenerator(args):
     #scalars_multiply = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[18].output)
     
     # extract output
-    concatenate_edge_output = concatenate_edge(trainGenerator[156][0])
-    layer_input_cont = model_inputs_cont(trainGenerator[156][0])
-    layer_input_pxpy = model_inputs_pxpy(trainGenerator[156][0])
-    scalars_init_output = scalars_init(trainGenerator[156][0])
-    scalars_output = scalars(trainGenerator[156][0])
-    scalars_multiply_output = scalars_multiply(trainGenerator[156][0])
+    #concatenate_edge_output = concatenate_edge(trainGenerator[156][0])
+    #layer_input_cont = model_inputs_cont(trainGenerator[156][0])
+    #layer_input_pxpy = model_inputs_pxpy(trainGenerator[156][0])
+    #scalars_init_output = scalars_init(trainGenerator[156][0])
+    #scalars_output = scalars(trainGenerator[156][0])
+    #scalars_multiply_output = scalars_multiply(trainGenerator[156][0])
     
     #print('scalars_init:  ', scalars_init_output[0,:,:])
     #print('scalars:  ', scalars_output[0,35,:])
