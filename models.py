@@ -191,6 +191,7 @@ def graph_embedding(compute_ef, n_features=6,
     # x = Concatenate()([inputs_cont] + embeddings)
     emb_concat = Concatenate()(embeddings)
     x = Concatenate()([inputs_cont, emb_concat])
+    x = K.print_tensor(x, message='inputs:  ')
     
     N = number_of_pupcandis
     P = n_features+n_features_cat
