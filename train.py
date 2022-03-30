@@ -196,7 +196,7 @@ def train_dataGenerator(args):
     
     # extract output
     #concatenate_edge_output = concatenate_edge(trainGenerator[156][0])
-    layer_input_cont = model_inputs_cont(trainGenerator[156][0])
+    #layer_input_cont = model_inputs_cont(trainGenerator[156][0])
     #layer_input_pxpy = model_inputs_pxpy(trainGenerator[156][0])
     #scalars_init_output = scalars_init(trainGenerator[156][0])
     #scalars_output = scalars(trainGenerator[156][0])
@@ -223,7 +223,7 @@ def train_dataGenerator(args):
     #print(concatenate_edge_output[189,820,:])
     #print('--------')
     print('layer_input_cont')
-    print(layer_input_cont[189,:])
+    #print(layer_input_cont[189,:])
     #print('--------')
     #print('layer_input_pxpy')
     #print(layer_input_pxpy[189,:])
