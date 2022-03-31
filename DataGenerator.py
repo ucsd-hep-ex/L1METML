@@ -124,18 +124,18 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             self.X, self.y = self.__get_features_labels(ifile, start, stop)
             print(np.shape(self.X))
             count75 = 0
-            count50 = 0
-            count0 = 0
+            count90 = 0
+            count60 = 0
             for batch_idx in range(self.batch_size):
                 if (np.all(self.X[batch_idx,75,:] == np.zeros(8))):
                     count75 += 1
-                elif (np.all(self.X[batch_idx,50,:] == np.zeros(8))):
-                    count50 += 1
-                elif (np.all(self.X[batch_idx,0,:] == np.zeros(8))):
-                    count0 += 1
+                elif (np.all(self.X[batch_idx,90,:] == np.zeros(8))):
+                    count90 += 1
+                elif (np.all(self.X[batch_idx,60,:] == np.zeros(8))):
+                    count60 += 1
+            print('count90:  ', count90)
             print('count75:  ', count75)
-            print('count50:  ', count50)
-            print('count0:  ', count0)
+            print('count60:  ', count60)
             Xs.append(self.X)
             ys.append(self.y)
 
