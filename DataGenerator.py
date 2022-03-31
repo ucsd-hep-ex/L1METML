@@ -129,10 +129,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             for batch_idx in range(self.batch_size):
                 if (np.all(self.X[batch_idx,75,:] == np.zeros(8))):
                     count75 += 1
-                elif (np.all(self.X[batch_idx,90,:] == np.zeros(8))):
-                    count90 += 1
                     print('90:  ', self.X[batch_idx,90,:])
                     print('75:  ', self.X[batch_idx,75,:])
+                elif (np.all(self.X[batch_idx,90,:] == np.zeros(8))):
+                    count90 += 1
                 elif (np.all(self.X[batch_idx,60,:] == np.zeros(8))):
                     count60 += 1
 
