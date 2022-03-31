@@ -126,11 +126,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             count50 = 0
             count0 = 0
             for batch_idx in range(self.batch_size):
-                if (np.all(x[batch_idx,75,:] == np.zeros(19))):
+                if (np.all(self.X[batch_idx,75,:] == np.zeros(19))):
                     count75 += 1
-                elif (np.all(x[batch_idx,50,:] == np.zeros(19))):
+                elif (np.all(self.X[batch_idx,50,:] == np.zeros(19))):
                     count50 += 1
-                elif (np.all(x[batch_idx,0,:] == np.zeros(19))):
+                elif (np.all(self.X[batch_idx,0,:] == np.zeros(19))):
                     count0 += 1
             print(count75)
             print(count50)
