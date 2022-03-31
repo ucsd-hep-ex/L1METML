@@ -122,6 +122,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # Generate data
         for ifile, start, stop in zip(unique_files, starts, stops):
             self.X, self.y = self.__get_features_labels(ifile, start, stop)
+            print(np.shape(self.X))
             count75 = 0
             count50 = 0
             count0 = 0
@@ -132,9 +133,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                     count50 += 1
                 elif (np.all(self.X[batch_idx,0,:] == np.zeros(8))):
                     count0 += 1
-            print(count75)
-            print(count50)
-            print(count0)
+            print('count75:  ', count75)
+            print('count50:  ', count50)
+            print('count0:  ', count0)
             Xs.append(self.X)
             ys.append(self.y)
 
