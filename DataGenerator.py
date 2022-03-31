@@ -122,11 +122,20 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # Generate data
         for ifile, start, stop in zip(unique_files, starts, stops):
             self.X, self.y = self.__get_features_labels(ifile, start, stop)
-            print(self.X)
-            print(np.shape(self.X))
-            #print('X.shape:  ', len(self.X))
+            count75 = 0
+            count50 = 0
+            count0 = 0
+            for batch_idx in range(self.batch_size)
+                if (np.all(x[batch_idx,75,:] == np.zeros(19))):
+                    count75 += 1
+                elif (np.all(x[batch_idx,50,:] == np.zeros(19))):
+                    count50 += 1
+                elif (np.all(x[batch_idx,0,:] == np.zeros(19))):
+                    count0 += 1
+            print(count75)
+            print(count50)
+            print(count0)
             Xs.append(self.X)
-            #print('X:  ', self.X, np.shape(self.X))
             ys.append(self.y)
 
         # Stack data if going over multiple files
