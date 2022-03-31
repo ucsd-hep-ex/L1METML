@@ -210,13 +210,13 @@ def graph_embedding(compute_ef, n_features=6,
     h = Permute((2, 1), input_shape=node_feat.shape[1:])(node_feat)
     #init_scl = 1 / (16 + num_of_edge_feat)
     #init_scl_array = np.ones([16 + num_of_edge_feat])
-    init_scl_input = Dense(16, trainable=False, use_bias=False, name='scalars_init')(h)
-    scl = Dense(16+num_of_edge_feat, trainable=True, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(init_scl_input)
+    #init_scl_input = Dense(16, trainable=False, use_bias=False, name='scalars_init')(h)
+    #scl = Dense(16+num_of_edge_feat, trainable=True, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(init_scl_input)
     #scl = K.print_tensor(scl, message='scalars:  ')
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
         #h = K.print_tensor(h, message='concatenate_layer:  ')
-        h = Multiply()([h,scl])
+        #h = Multiply()([h,scl])
         #h = K.print_tensor(h, message='scalar_multiply:  ')
     for i_dense in range(n_dense_layers):
         h = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
