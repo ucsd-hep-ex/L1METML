@@ -136,6 +136,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             print('count90:  ', count90)
             print('count75:  ', count75)
             print('count60:  ', count60)
+            print(self.X[batch_idx,75,:])
             Xs.append(self.X)
             ys.append(self.y)
 
