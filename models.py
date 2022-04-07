@@ -152,6 +152,64 @@ def assign_matrices(N, Nr):
     return Rs, Rr
 
 
+def node_select(compute_ef, n_features=6,
+                    n_features_cat=2,
+                    activation='relu',
+                    number_of_pupcandis=100,
+                    embedding_input_dim={0: 13, 1: 3},
+                    emb_out_dim=8,
+                    units=[64, 32, 16]):
+  
+    inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input_cont')
+    pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
+
+    embeddings = []
+    inputs = [inputs_cont, pxpy]
+    for i_emb in range(n_features_cat):
+        input_cat = Input(shape=(number_of_pupcandis, ), name='input_cat{}'.format(i_emb))
+        inputs.append(input_cat)
+        embedding = Embedding(
+            input_dim=embedding_input_dim[i_emb],
+            output_dim=emb_out_dim,
+            embeddings_initializer=initializers.RandomNormal(
+                mean=0,
+                stddev=0.4/emb_out_dim),
+            name='embedding{}'.format(i_emb))(input_cat)
+        embeddings.append(embedding)
+        
+    emb_concat = Concatenate()(embeddings)
+    x = Concatenate()([inputs_cont, emb_concat])
+    x = BatchNormalization()(x) #(batch,nodes,features)
+    
+    # Swap axes of input data (batch,nodes,features) -> (batch,features,nodes)
+    x = Permute((2, 1), input_shape=x.shape[1:])(x)
+    
+    
+    #node selection
+    
+    F_prime = 6
+    wx = Dense(F_prime, use_bias=False, trainable=True, name='W')(x)   #(nodes,F')
+    
+    # Swap axes of input data (batch,nodes,features) -> (batch,F',nodes)
+    x = Permute((2, 1), input_shape=x.shape[1:])(x)
+    
+    ORs = Dense(Nr, use_bias=False, trainable=False, name='sending'.format(name))(wx)   # Neighborhood aggregation   (F', Nr)
+    ORr = Dense(N, use_bias=False, trainable=False, name='receiving'.format(name))(ORs)   (F', N)
+    
+    x = Permute((2, 1), input_shape=x.shape[1:])(ORr)            (N, F')
+    w0 = Dense(1, use_bias=False, trainable=True, name='w0')(x)  (N,1)
+
+    keras_model = Model(inputs=inputs, outputs=w0)
+  
+    Rs, Rr = assign_matrices(N, Nr)
+    keras_model.get_layer('sending.format(name)).set_weights([np.transpose(Rr)])
+    keras_model.get_layer('receiving'.format(name)).set_weights([Rs])
+    return keras_model
+    
+    
+    
+  
+  
 def graph_embedding(compute_ef, n_features=6,
                     n_features_cat=2,
                     activation='relu',
