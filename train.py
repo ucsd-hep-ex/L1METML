@@ -148,6 +148,16 @@ def train_dataGenerator(args):
                                           embedding_input_dim=trainGenerator.emb_input_dim,
                                           number_of_pupcandis=maxNPF,
                                           units=units, compute_ef=compute_ef)
+            
+        elif model == 'node_select':
+            keras_model = node_select(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=trainGenerator.emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          units=units, compute_ef=compute_ef)
+        
     else:
         logit_total_bits = int(quantized[0])
         logit_int_bits = int(quantized[1])
