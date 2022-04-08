@@ -197,12 +197,14 @@ def node_select(compute_ef, n_features=6,
     ORr = Dense(N, use_bias=False, trainable=False, name='receiving'.format(name))(ORs)   #(F', N)
     
     x = Permute((2, 1), input_shape=x.shape[1:])(ORr)            #(N, F')
-    w0 = Dense(1, use_bias=False, trainable=True, name='w0')(x)  #(N,1)
+    w0 = Dense(1, activation='relu', use_bias=False, trainable=True, name='w0')(x)  #(N,1)
+    
+    
 
     keras_model = Model(inputs=inputs, outputs=w0)
   
     Rs, Rr = assign_matrices(N, Nr)
-    keras_model.get_layer('sending.format(name)).set_weights([np.transpose(Rr)])
+    keras_model.get_layer('sending').set_weights([np.transpose(Rr)])
     keras_model.get_layer('receiving'.format(name)).set_weights([Rs])
     return keras_model
     
