@@ -151,6 +151,11 @@ def assign_matrices(N, Nr):
         Rs[s, i] = 1
     return Rs, Rr
 
+  
+def S(tensor, threshold):
+  x = tf.where(tf.math.greater_equal(tensor, T), 1, 0)
+  return x
+
 
 def node_select(compute_ef, n_features=6,
                     n_features_cat=2,
@@ -159,6 +164,9 @@ def node_select(compute_ef, n_features=6,
                     embedding_input_dim={0: 13, 1: 3},
                     emb_out_dim=8,
                     units=[64, 32, 16]):
+
+    N = number_of_pupcandis
+    Nr = N*(N-1)
   
     inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input_cont')
     pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
@@ -197,7 +205,19 @@ def node_select(compute_ef, n_features=6,
     ORr = Dense(N, use_bias=False, trainable=False, name='receiving'.format(name))(ORs)   #(F', N)
     
     x = Permute((2, 1), input_shape=x.shape[1:])(ORr)            #(N, F')
-    w0 = Dense(1, activation='relu', use_bias=False, trainable=True, name='w0')(x)  #(N,1)
+    p = Dense(1, activation='relu', use_bias=False, trainable=True, name='p')(x)  #(N,1), W0 weightmatrix
+    
+    S = Lambda(S(p,T)) # node selection function
+    
+    # Selective Aggregation and Feature Update
+    
+    # alpha
+    
+    
+    # A matrix
+    A = Multiply(S, wx)
+    A = Multiply(alhpa, A)
+    
     
     
 
@@ -207,6 +227,8 @@ def node_select(compute_ef, n_features=6,
     keras_model.get_layer('sending').set_weights([np.transpose(Rr)])
     keras_model.get_layer('receiving'.format(name)).set_weights([Rs])
     return keras_model
+  
+ 
     
     
     
