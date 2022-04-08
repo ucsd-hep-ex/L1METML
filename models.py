@@ -194,10 +194,10 @@ def node_select(compute_ef, n_features=6,
     x = Permute((2, 1), input_shape=x.shape[1:])(x)
     
     ORs = Dense(Nr, use_bias=False, trainable=False, name='sending'.format(name))(wx)   # Neighborhood aggregation   (F', Nr)
-    ORr = Dense(N, use_bias=False, trainable=False, name='receiving'.format(name))(ORs)   (F', N)
+    ORr = Dense(N, use_bias=False, trainable=False, name='receiving'.format(name))(ORs)   #(F', N)
     
-    x = Permute((2, 1), input_shape=x.shape[1:])(ORr)            (N, F')
-    w0 = Dense(1, use_bias=False, trainable=True, name='w0')(x)  (N,1)
+    x = Permute((2, 1), input_shape=x.shape[1:])(ORr)            #(N, F')
+    w0 = Dense(1, use_bias=False, trainable=True, name='w0')(x)  #(N,1)
 
     keras_model = Model(inputs=inputs, outputs=w0)
   
