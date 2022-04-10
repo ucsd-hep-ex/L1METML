@@ -198,7 +198,7 @@ def train_dataGenerator(args):
 
     # create a Keras function to get i-th layer
     #concatenate_edge = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[16].output)
-    model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
+    #model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
     #model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[42].output)
     #scalars_init = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[13].output)
     #scalars = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[15].output)
