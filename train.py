@@ -193,6 +193,7 @@ def train_dataGenerator(args):
         verbose = 1
 
     # Run training
+    print('len_of_trainGenerator', len(trainGenerator[0]))
     print(keras_model.summary())
 
     from tensorflow.keras import backend as K
