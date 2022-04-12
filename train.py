@@ -121,6 +121,7 @@ def train_dataGenerator(args):
         validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1)
         testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
+        print('len_of_trainGenerator', len(trainGenerator[0]))
         
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
