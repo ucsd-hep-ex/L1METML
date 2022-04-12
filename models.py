@@ -264,7 +264,7 @@ def graph_embedding(compute_ef, n_features=6,
     N = number_of_pupcandis
     Nr = N*(N-1)
     if compute_ef == 1:
-        num_of_edge_feat = 3
+        num_of_edge_feat = 1
         edge_feat = Input(shape=(Nr, num_of_edge_feat), name='edge_feat')
         inputs.append(edge_feat)
         
@@ -295,7 +295,7 @@ def graph_embedding(compute_ef, n_features=6,
     #init_scl_input = Dense(16, trainable=False, use_bias=False, name='scalars_init')(h)
     #scl = Dense(16+num_of_edge_feat, trainable=True, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(init_scl_input)
     #scl = K.print_tensor(scl, message='scalars:  ')
-    edge_units = [ 64, 32, 16 ]
+    edge_units = [ 64, 64, 64 ]
     n_edge_dense_layers = len(edge_units)
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
