@@ -80,6 +80,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
+        print(self.indexes)
 
     def deltaR(self, eta1, phi1, eta2, phi2):
         """ calculate deltaR """
