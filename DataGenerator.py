@@ -80,7 +80,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
-        print(self.indexes)
 
     def deltaR(self, eta1, phi1, eta2, phi2):
         """ calculate deltaR """
@@ -201,6 +200,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 print(Xi.shape)
                 ef[:,count,2:3] = z'''
 
+            print(self.indexes)
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
