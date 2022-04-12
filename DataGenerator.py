@@ -180,12 +180,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 #p2 = p_vector[:, sender, :]
                 dR = self.deltaR(eta1, phi1, eta2, phi2)
                 #m2 = self.m2(p1,p2)
-                kT = self.kT(pt1,pt2,dR)
-                z = self.z(pt1,pt2)
+                #kT = self.kT(pt1,pt2,dR)
+                #z = self.z(pt1,pt2)
                 ef[:,count,0:1] = dR
                 #ef[:,count,1:2] = m2
-                ef[:,count,1:2] = kT
-                ef[:,count,2:3] = z
+                #ef[:,count,1:2] = kT
+                #ef[:,count,2:3] = z
                 
                 '''print('dR shape')
                 print(dR.shape)
