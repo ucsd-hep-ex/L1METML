@@ -30,7 +30,7 @@ from utils import *
 from loss import custom_loss
 from DataGenerator import DataGenerator
 
-def Make1DHists(edge_feat, nbins=100, density=False, xname, outputname, yname="# of edges"):
+'''def Make1DHists(edge_feat, nbins=100, density=False, xname, outputname, yname="# of edges"):
     import matplotlib.pyplot as plt
     import mplhep as hep
     plt.style.use(hep.style.CMS)
@@ -39,7 +39,7 @@ def Make1DHists(edge_feat, nbins=100, density=False, xname, outputname, yname="#
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.savefig(outputname)
-    plt.close()
+    plt.close()'''
 
 def deltaR(eta1, phi1, eta2, phi2):
     """ calculate deltaR """
@@ -134,12 +134,13 @@ def train_dataGenerator(args):
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
         print('len_of_trainGenerator', len(trainGenerator))
         
+        '''
         first_index = np.random.randint(0,high=2638,size=50)
         third_index = np.random.randint(0,high=256,size=50)
         
         MakeEdgeHist(dR, nbins=100, density=False, xname='dR', yname="# of edges", outputname=f'{path_out}dR.png')
         MakeEdgeHist(kT, nbins=100, density=False, xname='kT', yname="# of edges", outputname=f'{path_out}kT_hist.png')
-        MakeEdgeHist(z, nbins=100, density=False, xname='z', yname="# of edges", outputname=f'{path_out}z.png')
+        MakeEdgeHist(z, nbins=100, density=False, xname='z', yname="# of edges", outputname=f'{path_out}z.png')'''
         
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
