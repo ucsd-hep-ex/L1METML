@@ -264,7 +264,7 @@ def graph_embedding(compute_ef, n_features=6,
     N = number_of_pupcandis
     Nr = N*(N-1)
     if compute_ef == 1:
-        num_of_edge_feat = 1
+        num_of_edge_feat = 3
         edge_feat = Input(shape=(Nr, num_of_edge_feat), name='edge_feat')
         inputs.append(edge_feat)
         
