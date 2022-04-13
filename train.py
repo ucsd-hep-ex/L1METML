@@ -44,8 +44,8 @@ def MakeEdgeHist(edge_feat, xname, outputname, nbins=1000, density=False, yname=
     
 def MakeEdgeHist_nozeros(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
     plt.style.use(hep.style.CMS)
-    plt.figure(figsize=(10, 8))
-    plt.hist(edge_feat, bins=nbins, range=(1e-12,999999), density=density, histtype='step', facecolor='k', label='Truth')
+    plt.figure(figsize=(20, 16))
+    plt.hist(edge_feat, bins=nbins, range=(1e-12,100), density=density, histtype='step', facecolor='k', label='Truth')
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.savefig(outputname)
