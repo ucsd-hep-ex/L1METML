@@ -135,8 +135,8 @@ def train_dataGenerator(args):
         print('len_of_trainGenerator', len(trainGenerator))
         
         
-        first_index = np.random.randint(0,high=2638,size=50)
-        fourth_index = np.random.randint(0,high=256,size=50)
+        first_index = np.random.randint(0,high=2637,size=50)
+        fourth_index = np.random.randint(0,high=255,size=50)
         first_index1 = first_index[0]
         fourth_index1 = fourth_index[0]
         dR = trainGenerator[first_index1][0][4][fourth_index1,:,0]
