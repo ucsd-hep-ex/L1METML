@@ -140,7 +140,7 @@ def train_dataGenerator(args):
         first_index1 = first_index[0]
         fourth_index1 = fourth_index[0]
         dR = trainGenerator[first_index1][0][4][fourth_index1,:,0]
-        print(np.shape(trainGenerator[first_index1][0][4]))
+        kT = trainGenerator[first_index1][0][4][fourth_index1,:,1]
         z = trainGenerator[first_index1][0][4][fourth_index1,:,2]
         for index1 in first_index[1:]:
             for index4 in fourth_index[1:]:
