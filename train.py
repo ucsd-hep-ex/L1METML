@@ -146,7 +146,7 @@ def train_dataGenerator(args):
             for index4 in fourth_index[1:]:
                 new_dR = trainGenerator[index1][0][4][index4,:,0]
                 new_kT = trainGenerator[index1][0][4][index4,:,1]
-                z = trainGenerator[index1][0][4][index4,:,2]
+                new_z = trainGenerator[index1][0][4][index4,:,2]
                 dR = np.concatenate((dR, new_dR), axis=0)
                 kT = np.concatenate((kT, new_kT), axis=0)
                 z = np.concatenate((z, new_z), axis=0)
