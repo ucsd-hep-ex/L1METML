@@ -35,7 +35,7 @@ def MakeEdgeHist(edge_feat, xname, outputname, nbins=100, density=False, yname="
     import mplhep as hep
     plt.style.use(hep.style.CMS)
     plt.figure(figsize=(10, 8))
-    plt.hist(truth, bins=nbins, density=density, histtype='step', facecolor='k', label='Truth')
+    plt.hist(edge_feat, bins=nbins, density=density, histtype='step', facecolor='k', label='Truth')
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.savefig(outputname)
