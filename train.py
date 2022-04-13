@@ -30,12 +30,22 @@ from utils import *
 from loss import custom_loss
 from DataGenerator import DataGenerator
 
+import matplotlib.pyplot as plt
+import mplhep as hep
+
 def MakeEdgeHist(edge_feat, xname, outputname, nbins=100, density=False, yname="# of edges"):
-    import matplotlib.pyplot as plt
-    import mplhep as hep
     plt.style.use(hep.style.CMS)
     plt.figure(figsize=(10, 8))
     plt.hist(edge_feat, bins=nbins, density=density, histtype='step', facecolor='k', label='Truth')
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.savefig(outputname)
+    plt.close()
+    
+def MakeEdgeHist_nozeros(edge_feat, xname, outputname, nbins=100, density=False, yname="# of edges")
+    plt.style.use(hep.style.CMS)
+    plt.figure(figsize=(10, 8))
+    plt.hist(edge_feat, bins=nbins, range(1e-12,999999), density=density, histtype='step', facecolor='k', label='Truth')
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.savefig(outputname)
@@ -151,8 +161,14 @@ def train_dataGenerator(args):
                 kT = np.concatenate((kT, new_kT), axis=0)
                 z = np.concatenate((z, new_z), axis=0)'''
         MakeEdgeHist(dR, xname='dR', outputname=f'{path_out}dR.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT_hist.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist_nozeros(dR, xname='dR', outputname=f'{path_out}dR_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist_nozeros(kT, xname='kT', outputname=f'{path_out}kT_nozeros.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(z, xname='z', outputname=f'{path_out}z.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist_nozeros(z, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
+        
+        # no zeros
+        
         
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
