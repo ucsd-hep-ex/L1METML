@@ -30,7 +30,7 @@ from utils import *
 from loss import custom_loss
 from DataGenerator import DataGenerator
 
-def Make1DHists(edge_feat, nbins=100, density=False, xname, outputname, yname="# of edges"):
+def Make1DHists(edge_feat, xname, outputname, nbins=100, density=False, yname="# of edges"):
     import matplotlib.pyplot as plt
     import mplhep as hep
     plt.style.use(hep.style.CMS)
@@ -150,9 +150,9 @@ def train_dataGenerator(args):
                 dR = np.concatenate((dR, new_dR), axis=0)
                 kT = np.concatenate((kT, new_kT), axis=0)
                 z = np.concatenate((z, new_z), axis=0)
-        MakeEdgeHist(dR, nbins=100, density=False, xname='dR', yname="# of edges", outputname=f'{path_out}dR.png')
-        MakeEdgeHist(kT, nbins=100, density=False, xname='kT', yname="# of edges", outputname=f'{path_out}kT_hist.png')
-        MakeEdgeHist(z, nbins=100, density=False, xname='z', yname="# of edges", outputname=f'{path_out}z.png')'''
+        MakeEdgeHist(dR, xname='dR', outputname=f'{path_out}dR.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT_hist.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(z, xname='z', outputname=f'{path_out}z.png', nbins=100, density=False, yname="# of edges")
         
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
