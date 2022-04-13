@@ -30,7 +30,7 @@ from utils import *
 from loss import custom_loss
 from DataGenerator import DataGenerator
 
-def Make1DHists(edge_feat, xname, outputname, nbins=100, density=False, yname="# of edges"):
+def MakeEdgeHist(edge_feat, xname, outputname, nbins=100, density=False, yname="# of edges"):
     import matplotlib.pyplot as plt
     import mplhep as hep
     plt.style.use(hep.style.CMS)
