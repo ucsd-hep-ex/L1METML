@@ -135,21 +135,21 @@ def train_dataGenerator(args):
         print('len_of_trainGenerator', len(trainGenerator))
         
         
-        first_index = np.random.randint(0,high=2637,size=50)
-        fourth_index = np.random.randint(0,high=255,size=50)
+        first_index = np.random.randint(0,high=2637)
+        fourth_index = np.random.randint(0,high=255)
         first_index1 = first_index[0]
         fourth_index1 = fourth_index[0]
         dR = trainGenerator[first_index1][0][4][fourth_index1,:,0]
         kT = trainGenerator[first_index1][0][4][fourth_index1,:,1]
         z = trainGenerator[first_index1][0][4][fourth_index1,:,2]
-        for index1 in first_index[1:]:
+        '''for index1 in first_index[1:]:
             for index4 in fourth_index[1:]:
                 new_dR = trainGenerator[index1][0][4][index4,:,0]
                 new_kT = trainGenerator[index1][0][4][index4,:,1]
                 new_z = trainGenerator[index1][0][4][index4,:,2]
                 dR = np.concatenate((dR, new_dR), axis=0)
                 kT = np.concatenate((kT, new_kT), axis=0)
-                z = np.concatenate((z, new_z), axis=0)
+                z = np.concatenate((z, new_z), axis=0)'''
         MakeEdgeHist(dR, xname='dR', outputname=f'{path_out}dR.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT_hist.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(z, xname='z', outputname=f'{path_out}z.png', nbins=100, density=False, yname="# of edges")
