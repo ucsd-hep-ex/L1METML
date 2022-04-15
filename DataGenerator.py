@@ -166,7 +166,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             p_vector = np.concatenate((px,py,pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, 3])
+            ef = np.zeros([set_size, Nr, 4])
             for count, edge in enumerate(receiver_sender_list):
                 receiver = edge[0]
                 sender = edge[1]
