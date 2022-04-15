@@ -160,7 +160,7 @@ def train_dataGenerator(args):
         dR_nozeros = nozeros[:,0]
         kT_nozeros = nozeros[:,1]
         z_nozeros = nozeros[:,2]
-        m2_nozers = nozeros[:,3]
+        m2_nozeros = nozeros[:,3]
         
         '''for index1 in first_index[1:]:
             for index4 in fourth_index[1:]:
