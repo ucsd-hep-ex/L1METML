@@ -150,12 +150,15 @@ def train_dataGenerator(args):
         first_index1 = first_index
         fourth_index1 = fourth_index
         dR = trainGenerator[first_index1][0][4][fourth_index1,:,0]
-        print(np.shape(dR))
-        dR_nozeros = dR[~np.all(dR == 0., axis=1)]
         kT = trainGenerator[first_index1][0][4][fourth_index1,:,1]
-        kT_nozeros = kT[~np.all(kT == 0., axis=1)]
         z = trainGenerator[first_index1][0][4][fourth_index1,:,2]
-        z_nozeros = z[~np.all(z == 0., axis=1)]
+        
+        # zeros array
+        withzeros = trainGenerator[first_index1][0][4][fourth_index1,:,:]
+        nozeros = withzeros[~np.all(withzeros == 0., axis=1)]
+        dR_nozeros = nozeros[:,0]
+        kt_nozeros = nozeros[:,1]
+        z_nozeros = nozeros[:,2]
         
         '''for index1 in first_index[1:]:
             for index4 in fourth_index[1:]:
