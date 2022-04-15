@@ -157,7 +157,7 @@ def train_dataGenerator(args):
         withzeros = trainGenerator[first_index1][0][4][fourth_index1,:,:]
         nozeros = withzeros[~np.all(withzeros == 0., axis=1)]
         dR_nozeros = nozeros[:,0]
-        kt_nozeros = nozeros[:,1]
+        kT_nozeros = nozeros[:,1]
         z_nozeros = nozeros[:,2]
         
         '''for index1 in first_index[1:]:
