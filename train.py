@@ -42,14 +42,14 @@ def MakeEdgeHist(edge_feat, xname, outputname, nbins=1000, density=False, yname=
     plt.savefig(outputname)
     plt.close()
     
-def MakeEdgeHist_nozeros(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
+''def MakeEdgeHist_nozeros(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
     plt.style.use(hep.style.CMS)
     plt.figure(figsize=(20, 16))
     plt.hist(edge_feat, bins=nbins, range=(1e-12,100), density=density, histtype='step', facecolor='k', label='Truth')
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.savefig(outputname)
-    plt.close()
+    plt.close()''
 
 def deltaR(eta1, phi1, eta2, phi2):
     """ calculate deltaR """
@@ -150,8 +150,12 @@ def train_dataGenerator(args):
         first_index1 = first_index
         fourth_index1 = fourth_index
         dR = trainGenerator[first_index1][0][4][fourth_index1,:,0]
+        dR_nozeros = dR[~np.all(dR == 0., axis=1)]
         kT = trainGenerator[first_index1][0][4][fourth_index1,:,1]
+        kT_nozeros = kT[~np.all(kT == 0., axis=1)]
         z = trainGenerator[first_index1][0][4][fourth_index1,:,2]
+        z_nozeros = z[~np.all(z == 0., axis=1)]
+        
         '''for index1 in first_index[1:]:
             for index4 in fourth_index[1:]:
                 new_dR = trainGenerator[index1][0][4][index4,:,0]
@@ -161,13 +165,11 @@ def train_dataGenerator(args):
                 kT = np.concatenate((kT, new_kT), axis=0)
                 z = np.concatenate((z, new_z), axis=0)'''
         MakeEdgeHist(dR, xname='dR', outputname=f'{path_out}dR.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist_nozeros(dR, xname='dR', outputname=f'{path_out}dR_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(dR_nozeros, xname='dR', outputname=f'{path_out}dR_nozeros.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist_nozeros(kT, xname='kT', outputname=f'{path_out}kT_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(kT_nozeros, xname='kT', outputname=f'{path_out}kT_nozeros.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(z, xname='z', outputname=f'{path_out}z.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist_nozeros(z, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
-        
-        # no zeros
+        MakeEdgeHist(z_nozeros, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
         
         
     else:
