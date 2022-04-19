@@ -274,7 +274,7 @@ def train_dataGenerator(args):
 
     # create a Keras function to get i-th layer
     #concatenate_edge = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[16].output)
-    #model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
+    model_inputs_cont = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[4].output)
     #model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[42].output)
     #scalars_init = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[13].output)
     #scalars = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[15].output)
@@ -282,7 +282,7 @@ def train_dataGenerator(args):
     
     # extract output
     #concatenate_edge_output = concatenate_edge(trainGenerator[156][0])
-    #layer_input_cont = model_inputs_cont(trainGenerator[156][0])
+    layer_input_cont = model_inputs_cont(trainGenerator[156][0])
     #layer_input_pxpy = model_inputs_pxpy(trainGenerator[156][0])
     #scalars_init_output = scalars_init(trainGenerator[156][0])
     #scalars_output = scalars(trainGenerator[156][0])
@@ -307,9 +307,9 @@ def train_dataGenerator(args):
     #j_idx = np.where(layer_input == output_ptj)
     
     #print(concatenate_edge_output[189,820,:])
-    #print('--------')
+    print('--------')
     print('layer_input_cont')
-    #print(layer_input_cont[189,:])
+    print(layer_input_cont[189,:])
     #print('--------')
     #print('layer_input_pxpy')
     #print(layer_input_pxpy[189,:])
