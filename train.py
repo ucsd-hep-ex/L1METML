@@ -150,17 +150,27 @@ def train_dataGenerator(args):
         first_index1 = first_index
         fourth_index1 = fourth_index
         dR = trainGenerator[first_index1][0][4][fourth_index1,:,0]
-        #kT = trainGenerator[first_index1][0][4][fourth_index1,:,1]
-        #z = trainGenerator[first_index1][0][4][fourth_index1,:,2]
-        #m2 = trainGenerator[first_index1][0][4][fourth_index1,:,3]
+        kT = trainGenerator[first_index1][0][4][fourth_index1,:,1]
+        z = trainGenerator[first_index1][0][4][fourth_index1,:,2]
+        m2 = trainGenerator[first_index1][0][4][fourth_index1,:,3]
         
-        # zeros array
+        # No non-particle w/ non-particle interaction
         withzeros = trainGenerator[first_index1][0][4][fourth_index1,:,:]
         nozeros = withzeros[~np.all(withzeros == 0., axis=1)]
         dR_nozeros = nozeros[:,0]
-        #kT_nozeros = nozeros[:,1]
-        #z_nozeros = nozeros[:,2]
-        #m2_nozeros = nozeros[:,3]
+        kT_nozeros = nozeros[:,1]
+        z_nozeros = nozeros[:,2]
+        m2_nozeros = nozeros[:,3]
+        
+        # No particle w/ non-particle interaction
+        data = trainGenerator[first_index1][0][4][fourth_index1,:,:]
+        data_bool = np.array(data, dtype=bool)
+        b = [True, False, False, True]
+        delete = data[~np.all(data_bool==b,axis=1)]
+        dr_none = delete[:,0]
+        kt_none = delete[:,1]
+        z_none = delete[:,2]
+        m2_none = delete[:,3]
         
         '''for index1 in first_index[1:]:
             for index4 in fourth_index[1:]:
@@ -170,14 +180,22 @@ def train_dataGenerator(args):
                 dR = np.concatenate((dR, new_dR), axis=0)
                 kT = np.concatenate((kT, new_kT), axis=0)
                 z = np.concatenate((z, new_z), axis=0)'''
+        
         MakeEdgeHist(dR, xname='dR', outputname=f'{path_out}dR.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(dR_nozeros, xname='dR', outputname=f'{path_out}dR_nozeros.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(kT_nozeros, xname='kT', outputname=f'{path_out}kT_nozeros.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(z, xname='z', outputname=f'{path_out}z.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(z_nozeros, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(m2, xname='m2', outputname=f'{path_out}m2.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(m2_nozeros, xname='m2', outputname=f'{path_out}m2_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(dR_none, xname='dR', outputname=f'{path_out}dR_none.png', nbins=100, density=False, yname="# of edges")
+        
+        MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(kT_nozeros, xname='kT', outputname=f'{path_out}kT_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(kT_none, xname='kT', outputname=f'{path_out}kT_none.png', nbins=100, density=False, yname="# of edges")        
+        
+        MakeEdgeHist(z, xname='z', outputname=f'{path_out}z.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(z_nozeros, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(z_none, xname='kT', outputname=f'{path_out}z_none.png', nbins=100, density=False, yname="# of edges")                
+        
+        MakeEdgeHist(m2, xname='m2', outputname=f'{path_out}m2.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(m2_nozeros, xname='m2', outputname=f'{path_out}m2_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(m2_none, xname='m2', outputname=f'{path_out}m2_none.png', nbins=100, density=False, yname="# of edges")        
         
         
     else:
