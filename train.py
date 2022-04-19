@@ -167,8 +167,8 @@ def train_dataGenerator(args):
         data_bool = np.array(data, dtype=bool)
         b = [True, False, False, True]
         delete = data[~np.all(data_bool==b,axis=1)]
-        dr_none = delete[:,0]
-        kt_none = delete[:,1]
+        dR_none = delete[:,0]
+        kT_none = delete[:,1]
         z_none = delete[:,2]
         m2_none = delete[:,3]
         
