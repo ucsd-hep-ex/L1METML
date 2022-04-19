@@ -309,7 +309,7 @@ def train_dataGenerator(args):
     #print(concatenate_edge_output[189,820,:])
     print('--------')
     print('layer_input_cont')
-    print(layer_input_cont[189,:])
+    print(layer_input_cont[0,:])
     #print('--------')
     #print('layer_input_pxpy')
     #print(layer_input_pxpy[189,:])
