@@ -160,6 +160,13 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             eta = Xi[:,:,1:2]
             phi = Xi[:,:,2:3]
             pt = Xi[:,:,0:1]
+            
+            pt_ordered = np.sort(pt,axis=0)[::-1]
+            if pt == pt_ordered:
+                print("Sorted by pt")
+            elife pt =! pt_ordered
+                print("Not sorted by pt")
+            
             px = Xp[:,:,0:1]
             py = Xp[:,:,1:2]
             pz = pt*np.sinh(eta)
