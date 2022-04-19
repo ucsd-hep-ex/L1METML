@@ -164,7 +164,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             pt_ordered = np.sort(pt,axis=0)[::-1]
             if np.array_equal(pt,pt_ordered) == True:
                 print("Sorted by pt")
-            elif np.array_equal(pt,pt_ordered) != pt_ordered:
+            elif np.array_equal(pt,pt_ordered) == False:
                 print("Not sorted by pt")
             
             px = Xp[:,:,0:1]
