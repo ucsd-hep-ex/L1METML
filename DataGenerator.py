@@ -240,8 +240,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         X = h5_file['X'][entry_start:entry_stop+1]
         y = h5_file['Y'][entry_start:entry_stop+1]
-        print(X: shape)
-        print(Y: shape)
         
         if self.maxNPF < 100:
             order = X[:,:,0].argsort(axis=1)[:,::-1]    # gets axis 1 index from greatest to least
