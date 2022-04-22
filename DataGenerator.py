@@ -161,9 +161,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             phi = Xi[:,:,2:3]
             pt = Xi[:,:,0:1]
             
-            pt_ordered = np.sort(pt,axis=0)[::-1]
+            pt_ordered = np.sort(pt,axis=1)[::-1]
             print("pt:  ", pt)
-            print("pt_ordere:  ", pt_ordered)
+            print("pt_ordered:  ", pt_ordered)
             if np.array_equal(pt,pt_ordered) == True:
                 print("Sorted by pt")
             elif np.array_equal(pt,pt_ordered) == False:
