@@ -244,7 +244,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         if self.maxNPF < 100:
             order = X[:,:,0].argsort(axis=1)[:,::-1]    # gets axis 1 index from greatest to least
             order = order[:,:,np.newaxis]
-            order = np.repeat(order, repeats=self.4, axis=2)
+            order = np.repeat(order, repeats=8, axis=2)  # repeats=8 for 8 input values
             X = np.take_along_axis(X, order, axis=1)     # sorts data from greatest to least using indexes
             X = h5_file['X'][entry_start:entry_stop+1, 0:self.maxNPF]
 
