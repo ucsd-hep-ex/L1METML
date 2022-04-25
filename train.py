@@ -165,7 +165,7 @@ def train_dataGenerator(args):
         # No particle w/ non-particle interaction
         data = nozeros
         data_bool = np.array(data, dtype=bool)
-        b = [True, False, False, True]
+        b = [True, False, False]
         delete = data[~np.all(data_bool==b,axis=1)]
         dR_none = delete[:,0]
         kT_none = delete[:,1]
