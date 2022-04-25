@@ -64,7 +64,7 @@ def deltaR(eta1, phi1, eta2, phi2):
 
 def get_callbacks(path_out, sample_size, batch_size):
     # early stopping callback
-    early_stopping = EarlyStopping(monitor='val_loss', patience=20, verbose=1, restore_best_weights=False)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=40, verbose=1, restore_best_weights=False)
 
     csv_logger = CSVLogger(f'{path_out}loss_history.log')
 
