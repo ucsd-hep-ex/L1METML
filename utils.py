@@ -42,7 +42,7 @@ def preProcessing(A, normFac, EVT=None):
     pt_ordered = np.sort(pt,axis=1)[:,::-1]
 
     if np.array_equal(pt,pt_ordered) == True:
-        raise ValueError('error is working')
+        pass
     elif np.array_equal(pt,pt_ordered) == False:
         wrong = np.where(pt!=pt_ordered)
         print(np.where(pt!=pt_ordered))
