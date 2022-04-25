@@ -163,7 +163,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             
             pt_ordered = np.sort(pt,axis=1)[:,::-1]
             if np.array_equal(pt,pt_ordered) == True:
-                continue
+                pass
             elif np.array_equal(pt,pt_ordered) == False:
                 raise ValueError('Not ordered correctly')
             
