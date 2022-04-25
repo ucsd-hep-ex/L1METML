@@ -152,7 +152,7 @@ def train_dataGenerator(args):
         dR = trainGenerator[first_index1][0][4][fourth_index1,:,0]
         kT = trainGenerator[first_index1][0][4][fourth_index1,:,1]
         z = trainGenerator[first_index1][0][4][fourth_index1,:,2]
-        m2 = trainGenerator[first_index1][0][4][fourth_index1,:,3]
+        #m2 = trainGenerator[first_index1][0][4][fourth_index1,:,3]
         
         # No non-particle w/ non-particle interaction
         withzeros = trainGenerator[first_index1][0][4][fourth_index1,:,:]
@@ -160,7 +160,7 @@ def train_dataGenerator(args):
         dR_nozeros = nozeros[:,0]
         kT_nozeros = nozeros[:,1]
         z_nozeros = nozeros[:,2]
-        m2_nozeros = nozeros[:,3]
+        #m2_nozeros = nozeros[:,3]
         
         # No particle w/ non-particle interaction
         data = nozeros
@@ -170,7 +170,7 @@ def train_dataGenerator(args):
         dR_none = delete[:,0]
         kT_none = delete[:,1]
         z_none = delete[:,2]
-        m2_none = delete[:,3]
+        #m2_none = delete[:,3]
         
         '''for index1 in first_index[1:]:
             for index4 in fourth_index[1:]:
@@ -193,9 +193,9 @@ def train_dataGenerator(args):
         MakeEdgeHist(z_nozeros, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(z_none, xname='kT', outputname=f'{path_out}z_none.png', nbins=100, density=False, yname="# of edges")                
         
-        MakeEdgeHist(m2, xname='m2', outputname=f'{path_out}m2.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(m2_nozeros, xname='m2', outputname=f'{path_out}m2_nozeros.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(m2_none, xname='m2', outputname=f'{path_out}m2_none.png', nbins=100, density=False, yname="# of edges")        
+        #MakeEdgeHist(m2, xname='m2', outputname=f'{path_out}m2.png', nbins=100, density=False, yname="# of edges")
+        #MakeEdgeHist(m2_nozeros, xname='m2', outputname=f'{path_out}m2_nozeros.png', nbins=100, density=False, yname="# of edges")
+        #MakeEdgeHist(m2_none, xname='m2', outputname=f'{path_out}m2_none.png', nbins=100, density=False, yname="# of edges")        
         
         
     else:
