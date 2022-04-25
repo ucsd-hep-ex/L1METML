@@ -172,7 +172,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 print("------")
                 print("pt:  ", pt)
                 print("------")
-                print("pt_ordered:  ", pt_orderedO
+                print("pt_ordered:  ", pt_ordered)
                 raise ValueError('Not ordered correctly')
             
             #px = Xp[:,:,0:1]
