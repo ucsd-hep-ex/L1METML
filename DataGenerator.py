@@ -162,9 +162,13 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             pt = Xi[:,:,0:1]
             
             pt_ordered = np.sort(pt,axis=1)[:,::-1]
+            batch_num = 0
+            print(batch_num)
             if np.array_equal(pt,pt_ordered) == True:
+                batch_num += 1
                 pass
             elif np.array_equal(pt,pt_ordered) == False:
+                batch_num += 1
                 raise ValueError('Not ordered correctly')
             
             #px = Xp[:,:,0:1]
