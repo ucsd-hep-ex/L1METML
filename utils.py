@@ -39,6 +39,19 @@ def preProcessing(A, normFac, EVT=None):
     phi = A[:, :, 4:5]
     puppi = A[:, :, 5:6]
 
+    pt_ordered = np.sort(pt,axis=1)[:,::-1]
+
+    if np.array_equal(pt,pt_ordered) == True:
+        pass
+    elif np.array_equal(pt,pt_ordered) == False:
+        wrong = np.where(pt!=pt_ordered)
+        print(np.where(pt!=pt_ordered))
+        print("-----")
+        print("pt:  ", pt[wrong[0],:,:])
+        print("------")
+        print("pt_ordered:  ", pt_ordered[wrong[0],:,:])
+        raise ValueError('Not ordered correctly')
+    
     # remove outliers
     pt[np.where(np.abs(pt > 500))] = 0.
     px[np.where(np.abs(px > 500))] = 0.
