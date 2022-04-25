@@ -161,13 +161,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             phi = Xi[:,:,2:3]
             pt = Xi[:,:,0:1]
             
-            pt_ordered = np.sort(pt,axis=1)[::-1]
-            print("pt:  ", pt)
-            print("pt_ordered:  ", pt_ordered)
+            pt_ordered = np.sort(pt,axis=1)[:,::-1]
             if np.array_equal(pt,pt_ordered) == True:
-                print("Sorted by pt")
+                continue
             elif np.array_equal(pt,pt_ordered) == False:
-                print("Not sorted by pt")
+                raise ValueError('Not ordered correctly')
             
             px = Xp[:,:,0:1]
             py = Xp[:,:,1:2]
@@ -246,7 +244,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             order = order[:,:,np.newaxis]
             order = np.repeat(order, repeats=8, axis=2)  # repeats=8 for 8 input values
             X = np.take_along_axis(X, order, axis=1)     # sorts data from greatest to least using indexes
-            X = h5_file['X'][entry_start:entry_stop+1, 0:self.maxNPF]
+            X = X[:,0:self.maxNPF,:]
 
             
         return X, y
