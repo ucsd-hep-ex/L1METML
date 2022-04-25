@@ -167,13 +167,13 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             elif np.array_equal(pt,pt_ordered) == False:
                 raise ValueError('Not ordered correctly')
             
-            px = Xp[:,:,0:1]
-            py = Xp[:,:,1:2]
-            pz = pt*np.sinh(eta)
-            p_vector = np.concatenate((px,py,pz), axis=-1)
+            #px = Xp[:,:,0:1]
+            #py = Xp[:,:,1:2]
+            #pz = pt*np.sinh(eta)
+            #p_vector = np.concatenate((px,py,pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, 4])
+            ef = np.zeros([set_size, Nr, 3])
             for count, edge in enumerate(receiver_sender_list):
                 receiver = edge[0]
                 sender = edge[1]
@@ -183,14 +183,14 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 phi2 = phi[:, sender, :]
                 pt1 = pt[:, receiver, :]
                 pt2 = pt[:, sender, :]
-                p1 = p_vector[:, receiver, :]
-                p2 = p_vector[:, sender, :]
+                #p1 = p_vector[:, receiver, :]
+                #p2 = p_vector[:, sender, :]
                 dR = self.deltaR(eta1, phi1, eta2, phi2)
-                m2 = self.m2(p1,p2)
+                #m2 = self.m2(p1,p2)
                 kT = self.kT(pt1,pt2,dR)
                 z = self.z(pt1,pt2)
                 ef[:,count,0:1] = dR
-                ef[:,count,3:4] = m2
+                #ef[:,count,3:4] = m2
                 ef[:,count,1:2] = kT
                 ef[:,count,2:3] = z
                 
