@@ -166,7 +166,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             if np.array_equal(pt,pt_ordered) == True:
                 pass
             elif np.array_equal(pt,pt_ordered) == False:
+                wrong = np.where(pt!=pt_ordered)
                 print(np.where(pt!=pt_ordered))
+                print("-----")
+                print("pt:  ", pt[wrong[0],:,:])
+                print("------")
+                print("pt_ordered:  ", pt_ordered[wrong[0],:,:])
                 raise ValueError('Not ordered correctly')
             
             #px = Xp[:,:,0:1]
