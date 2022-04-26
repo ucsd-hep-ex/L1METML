@@ -163,14 +163,13 @@ def train_dataGenerator(args):
         #m2_nozeros = nozeros[:,3]
         
         # No particle w/ non-particle interaction
-        data = nozeros
-        data_bool = np.array(data, dtype=bool)
+        data_bool = np.array(nozeros, dtype=bool)
         b = [True, False, False]
-        delete = data[~np.all(data_bool==b,axis=1)]
-        dR_none = delete[:,0]
-        kT_none = delete[:,1]
-        z_none = delete[:,2]
-        #m2_none = delete[:,3]
+        delete = nozeros[~np.all(data_bool==b,axis=1)]
+        dR_none = nozeros[:,0]
+        kT_none = nozeros[:,1]
+        z_none = nozeros[:,2]
+        #m2_none = nozeros[:,3]
         
         '''for index1 in first_index[1:]:
             for index4 in fourth_index[1:]:
