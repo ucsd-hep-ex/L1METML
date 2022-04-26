@@ -41,7 +41,7 @@ def preProcessing(A, normFac, EVT=None):
 
     pt_ordered = np.sort(pt,axis=1)[:,::-1]
 
-    if np.array_equal(pt,pt_ordered) == True:
+    '''if np.array_equal(pt,pt_ordered) == True:
         pass
     elif np.array_equal(pt,pt_ordered) == False:
         wrong = np.where(pt!=pt_ordered)
@@ -50,7 +50,7 @@ def preProcessing(A, normFac, EVT=None):
         print("pt:  ", pt[wrong[0],:,:])
         print("------")
         print("pt_ordered:  ", pt_ordered[wrong[0],:,:])
-        raise ValueError('Not ordered correctly')
+        raise ValueError('Not ordered correctly')'''
     
     # remove outliers
     pt[np.where(np.abs(pt > 500))] = 0.
