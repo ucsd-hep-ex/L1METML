@@ -81,7 +81,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
 
-    def deltaR(self, eta1, phi1, eta2, phi2):
+    def deltaR_calc(eta1, phi1, eta2, phi2):
         """ calculate deltaR """
         dphi = (phi1-phi2)
         gt_pi_idx = (dphi > np.pi)
@@ -91,14 +91,14 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         deta = eta1-eta2
         return np.hypot(deta, dphi)
     
-    def kT(self,pti,ptj,dR):
+    def kT_calc(pti,ptj,dR):
         min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
         kT = min_pt * dR
         #kT = np.log10(kT)
         #kT[np.isneginf(kT)] = 0
         return kT
 
-    def z(self, pti, ptj):
+    def z_calc(pti, ptj):
         epsilon = 1.0e-12
         min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
         z = min_pt/(pti + ptj + epsilon)
@@ -108,8 +108,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         #z = np.log(z) / 5
         return z
     
-    def m2(self, pi, pj):
-        m2 = np.linalg.norm((pi+pj),axis=-1,keepdims=True) ** 2
+    def mass2_calc(pi, pj):
+        pij = pi + pj
+        m2 = pij[:,0]**2 - pij[:,1]**2 - pij[:,2]**2 - pij[:,3]**2
         return m2
     
     def __data_generation(self, unique_files, starts, stops):
@@ -160,10 +161,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             eta = Xi[:,:,1:2]
             phi = Xi[:,:,2:3]
             pt = Xi[:,:,0:1]
-            #px = Xp[:,:,0:1]
-            #py = Xp[:,:,1:2]
-            #pz = pt*np.sinh(eta)
-            #p_vector = np.concatenate((px,py,pz), axis=-1)
+            px = Xp[:,:,0:1]
+            py = Xp[:,:,1:2]
+            pz = pt*np.sinh(eta)
+            energy = np.sqrt(px**2 + py**2 + pz**2)
+            p4 = np.concatenate((energy, px,py,pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
             ef = np.zeros([set_size, Nr, 3])
@@ -176,14 +178,14 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 phi2 = phi[:, sender, :]
                 pt1 = pt[:, receiver, :]
                 pt2 = pt[:, sender, :]
-                #p1 = p_vector[:, receiver, :]
-                #p2 = p_vector[:, sender, :]
-                dR = self.deltaR(eta1, phi1, eta2, phi2)
-                #m2 = self.m2(p1,p2)
-                kT = self.kT(pt1,pt2,dR)
-                z = self.z(pt1,pt2)
+                p1 = p4[:, receiver, :]
+                p2 = p4[:, sender, :]
+                dR = deltaR_calc(eta1, phi1, eta2, phi2)
+                m2 = mass2_calc(p1,p2)
+                kT = kT_calc(pt1,pt2,dR)
+                z = z_calc(pt1,pt2)
                 ef[:,count,0:1] = dR
-                #ef[:,count,3:4] = m2
+                ef[:,count,3:4] = m2
                 ef[:,count,1:2] = kT
                 ef[:,count,2:3] = z
                 
