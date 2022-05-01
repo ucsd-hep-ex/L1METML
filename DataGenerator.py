@@ -94,18 +94,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     def kT_calc(pti,ptj,dR):
         min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
         kT = min_pt * dR
-        #kT = np.log10(kT)
-        #kT[np.isneginf(kT)] = 0
         return kT
 
     def z_calc(pti, ptj):
         epsilon = 1.0e-12
         min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
         z = min_pt/(pti + ptj + epsilon)
-        #z[np.isnan(z)] = 0
-        #z[np.isinf(z)] = 0
-        #z[z==0] = 1
-        #z = np.log(z) / 5
         return z
     
     def mass2_calc(pi, pj):
@@ -170,7 +164,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             set_size = Xi.shape[0]
             ef = np.zeros([set_size, Nr, 4])     # edge features: dimensions of [# of events, # of edges, # of edges]
             for count, edge in enumerate(receiver_sender_list):       # for loop creates edge features
-                receiver = edge[0]              #  "receiver_sender_list" generates edge and receiving index     
+                receiver = edge[0]              #  "receiver_sender_list" generates edge and receiving indices    
                 sender = edge[1]
                 eta1 = eta[:, receiver, :]
                 phi1 = phi[:, receiver, :]
