@@ -298,6 +298,7 @@ def graph_embedding(compute_ef, n_features=6,
     n_edge_dense_layers = len(edge_units)
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
+        # output is [batch, edges, node features + edge features]
         #h = Multiply()([h,scl]) # multiply scalars with features
     for i_dense in range(n_edge_dense_layers):
         h = Dense(edge_units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
