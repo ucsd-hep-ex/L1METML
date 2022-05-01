@@ -145,7 +145,7 @@ def train_dataGenerator(args):
         print('len_of_trainGenerator', len(trainGenerator))
         
         
-        # The next 50 odd lines (up until the else loop) generates histograms of inputs
+        # The next 50 or so lines (up until the else) generates histograms of inputs
         first_index = np.random.randint(0,high=2637)
         fourth_index = np.random.randint(0,high=255)
         first_index1 = first_index
@@ -155,7 +155,7 @@ def train_dataGenerator(args):
         z = trainGenerator[first_index1][0][4][fourth_index1,:,2]
         #m2 = trainGenerator[first_index1][0][4][fourth_index1,:,3]
         
-        # No non-particle w/ non-particle interaction
+        # No zero-padded w/ zero-padded interaction
         withzeros = trainGenerator[first_index1][0][4][fourth_index1,:,:]
         nozeros = withzeros[~np.all(withzeros == 0., axis=1)]
         dR_nozeros = nozeros[:,0]
@@ -163,7 +163,7 @@ def train_dataGenerator(args):
         z_nozeros = nozeros[:,2]
         #m2_nozeros = nozeros[:,3]
         
-        # No particle w/ non-particle interaction
+        # No particle w/ zero-padded interaction
         data_bool = np.array(nozeros, dtype=bool)
         b = [True, False, False]
         delete = nozeros[~np.all(data_bool==b,axis=1)]
@@ -270,6 +270,9 @@ def train_dataGenerator(args):
     # Run training
     print(keras_model.summary())
 
+    
+    # For debugging purposes. Prints outputs for some layers from the model
+    
     from tensorflow.keras import backend as K
 
     # create a Keras function to get i-th layer
@@ -319,6 +322,8 @@ def train_dataGenerator(args):
     #print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
     #      '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_kT', output_kT, '  output_z', output_z)
     #print('--------')
+    
+    # end of debugging lines
     
     start_time = time.time()  # check start time
     history = keras_model.fit(trainGenerator,
