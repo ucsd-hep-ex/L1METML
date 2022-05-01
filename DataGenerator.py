@@ -168,9 +168,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             p4 = np.concatenate((energy, px,py,pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, 3])
-            for count, edge in enumerate(receiver_sender_list):
-                receiver = edge[0]
+            ef = np.zeros([set_size, Nr, 4])     # edge features: dimensions of [# of events, # of edges, # of edges]
+            for count, edge in enumerate(receiver_sender_list):       # for loop creates edge features
+                receiver = edge[0]              #  "receiver_sender_list" generates edge and receiving index     
                 sender = edge[1]
                 eta1 = eta[:, receiver, :]
                 phi1 = phi[:, receiver, :]
@@ -237,8 +237,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         if self.maxNPF < 100:
             order = X[:,:,0].argsort(axis=1)[:,::-1]    # gets axis 1 index from greatest to least
             order = order[:,:,np.newaxis]
-            order = np.repeat(order, repeats=8, axis=2)  # repeats=8 for 8 input values
-            X = np.take_along_axis(X, order, axis=1)     # sorts data from greatest to least using indexes
+            order = np.repeat(order, repeats=8, axis=2)  # repeats=8 for the 8 node features. Creates index to sort array
+            X = np.take_along_axis(X, order, axis=1)     # sorts data from greatest to least using 'order' variable as index
             X = X[:,0:self.maxNPF,:]
 
             
