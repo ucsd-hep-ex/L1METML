@@ -283,25 +283,22 @@ def graph_embedding(compute_ef, n_features=6,
     x = Permute((2, 1), input_shape=x.shape[1:])(x)
 
     # Marshaling function
-    ORr = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_1'.format(name))(x)
-    ORs = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_2'.format(name))(x)
+    ORr = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_1'.format(name))(x)  # Receiving adjacency matrix
+    ORs = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_2'.format(name))(x)  # Sending adjacency matrix
     node_feat = Concatenate(axis=1)([ORr, ORs])  # Concatenates Or and Os  ( no relations features Ra matrix )
     # Outputis new array = [batch, 2x features, edges]
     
     # Edges MLP
     h = Permute((2, 1), input_shape=node_feat.shape[1:])(node_feat)
-    #init_scl = 1 / (16 + num_of_edge_feat)
+    # feature selection scalars are generated from bias vectors from 'scalars' dense layer
     #init_scl_array = np.ones([16 + num_of_edge_feat])
-    #init_scl_input = Dense(16, trainable=False, use_bias=False, name='scalars_init')(h)
+    #init_scl_input = Dense(16, trainable=False, use_bias=False, name='scalars_init')(h)  # This line is is to set next layer's weights to zero so we get just the bias
     #scl = Dense(16+num_of_edge_feat, trainable=True, activation='softmax', bias_initializer=initializers.Ones(), name='scalars')(init_scl_input)
-    #scl = K.print_tensor(scl, message='scalars:  ')
     edge_units = [ 64, 32, 16 ]
     n_edge_dense_layers = len(edge_units)
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
-        #h = K.print_tensor(h, message='concatenate_layer:  ')
-        #h = Multiply()([h,scl])
-        #h = K.print_tensor(h, message='scalar_multiply:  ')
+        #h = Multiply()([h,scl]) # multiply scalars with features
     for i_dense in range(n_edge_dense_layers):
         h = Dense(edge_units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(h)
         h = BatchNormalization(momentum=0.95)(h)
