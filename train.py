@@ -145,6 +145,7 @@ def train_dataGenerator(args):
         print('len_of_trainGenerator', len(trainGenerator))
         
         
+        # The next 50 odd lines (up until the else loop) generates histograms of inputs
         first_index = np.random.randint(0,high=2637)
         fourth_index = np.random.randint(0,high=255)
         first_index1 = first_index
