@@ -230,7 +230,8 @@ def graph_embedding(compute_ef, n_features=6,
                     number_of_pupcandis=100,
                     embedding_input_dim={0: 13, 1: 3},
                     emb_out_dim=8,
-                    units=[64, 32, 16]):
+                    units=[64, 32, 16],
+                    edge_list=[]):
     n_dense_layers = len(units)
     name = 'met'
 
@@ -254,7 +255,7 @@ def graph_embedding(compute_ef, n_features=6,
     N = number_of_pupcandis
     Nr = N*(N-1)
     if compute_ef == 1:
-        num_of_edge_feat = 4
+        num_of_edge_feat = len(edge_list)
         edge_feat = Input(shape=(Nr, num_of_edge_feat), name='edge_feat')
         inputs.append(edge_feat)
 
