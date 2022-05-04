@@ -14,7 +14,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
 
     def __init__(self, list_files, batch_size=1024, n_dim=100, maxNPF=100, compute_ef=0,
-                 max_entry=100000000):
+                 max_entry=100000000, edge_list=[]):
         'Initialization'
         self.n_features_pf = 6
         self.n_features_pf_cat = 2
@@ -29,6 +29,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         self.open_files = [None]*len(list_files)
         self.maxNPF = maxNPF
         self.compute_ef = compute_ef
+        self.edge_list = edge_list
         running_total = 0
 
         self.h5files = []
@@ -156,33 +157,39 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             eta = Xi[:, :, 1:2]
             phi = Xi[:, :, 2:3]
             pt = Xi[:, :, 0:1]
-            px = Xp[:, :, 0:1]
-            py = Xp[:, :, 1:2]
-            pz = pt*np.sinh(eta)
-            energy = np.sqrt(px**2 + py**2 + pz**2)
-            p4 = np.concatenate((energy, px, py, pz), axis=-1)
+            if ('m2' in self.edge_list):
+                px = Xp[:, :, 0:1]
+                py = Xp[:, :, 1:2]
+                pz = pt*np.sinh(eta)
+                energy = np.sqrt(px**2 + py**2 + pz**2)
+                p4 = np.concatenate((energy, px, py, pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, 4])     # edge features: dimensions of [# of events, # of edges, # of edges]
+            ef = np.zeros([set_size, Nr, len(self.edge_list)])     # edge features: dimensions of [# of events, # of edges, # of edges]
             for count, edge in enumerate(receiver_sender_list):       # for loop creates edge features
                 receiver = edge[0]  # "receiver_sender_list" generates edge and receiving indices
                 sender = edge[1]
-                eta1 = eta[:, receiver, :]
-                phi1 = phi[:, receiver, :]
-                eta2 = eta[:, sender, :]
-                phi2 = phi[:, sender, :]
-                pt1 = pt[:, receiver, :]
-                pt2 = pt[:, sender, :]
-                p1 = p4[:, receiver, :]
-                p2 = p4[:, sender, :]
-                dR = self.deltaR_calc(eta1, phi1, eta2, phi2)
-                m2 = self.mass2_calc(p1, p2)
-                kT = self.kT_calc(pt1, pt2, dR)
-                z = self.z_calc(pt1, pt2)
-                ef[:, count, 0:1] = dR
-                ef[:, count, 3:4] = m2
-                ef[:, count, 1:2] = kT
-                ef[:, count, 2:3] = z
+                if ('dR' in self.edge_list) or ('kT' in self.edge_list):
+                    eta1 = eta[:, receiver, :]
+                    phi1 = phi[:, receiver, :]
+                    eta2 = eta[:, sender, :]
+                    phi2 = phi[:, sender, :]
+                    dR = self.deltaR_calc(eta1, phi1, eta2, phi2)
+                    ef[:, count, 0:1] = dR
+                if ('kT' in self.edge_list) or ('z' in self.edge_list):
+                    pt1 = pt[:, receiver, :]
+                    pt2 = pt[:, sender, :]
+                    if ('kT' in self.edge_list):
+                        kT = self.kT_calc(pt1, pt2, dR)
+                        ef[:, count, 1:2] = kT
+                    if ('z' in self.edge_list):
+                        z = self.z_calc(pt1, pt2)
+                        ef[:, count, 2:3] = z
+                if ('m2' in self.edge_list):
+                    p1 = p4[:, receiver, :]
+                    p2 = p4[:, sender, :]
+                    m2 = self.mass2_calc(p1, p2)
+                    ef[:, count, 3:4] = m2
 
                 '''print('dR shape')
                 print(dR.shape)
