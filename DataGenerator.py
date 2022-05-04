@@ -9,6 +9,7 @@ import h5py
 import os
 import itertools
 
+
 class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
 
@@ -81,7 +82,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
 
-    def deltaR_calc(eta1, phi1, eta2, phi2):
+    def deltaR_calc(self, eta1, phi1, eta2, phi2):
         """ calculate deltaR """
         dphi = (phi1-phi2)
         gt_pi_idx = (dphi > np.pi)
@@ -90,23 +91,23 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         dphi[lt_pi_idx] += 2*np.pi
         deta = eta1-eta2
         return np.hypot(deta, dphi)
-    
-    def kT_calc(pti,ptj,dR):
-        min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
+
+    def kT_calc(self, pti, ptj, dR):
+        min_pt = np.minimum(pti[:, 0:1], ptj[:, 0:1])
         kT = min_pt * dR
         return kT
 
-    def z_calc(pti, ptj):
+    def z_calc(self, pti, ptj):
         epsilon = 1.0e-12
-        min_pt = np.minimum(pti[:,0:1],ptj[:,0:1])
+        min_pt = np.minimum(pti[:, 0:1], ptj[:, 0:1])
         z = min_pt/(pti + ptj + epsilon)
         return z
-    
-    def mass2_calc(pi, pj):
+
+    def mass2_calc(self, pi, pj):
         pij = pi + pj
-        m2 = pij[:,0]**2 - pij[:,1]**2 - pij[:,2]**2 - pij[:,3]**2
+        m2 = pij[:, 0:1]**2 - pij[:, 1:2]**2 - pij[:, 2:3]**2 - pij[:, 3:4]**2
         return m2
-    
+
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
         # X : (n_samples, n_dim, n_channels)
@@ -117,7 +118,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # Generate data
         for ifile, start, stop in zip(unique_files, starts, stops):
             self.X, self.y = self.__get_features_labels(ifile, start, stop)
-            
+
             '''print(np.shape(self.X))
             count80 = 0
             count85 = 0
@@ -135,7 +136,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             print('count80:  ', count80)
             print('count85:  ', count85)
             print('count90:  ', count90)'''
-            
+
             Xs.append(self.X)
             ys.append(self.y)
 
@@ -147,24 +148,24 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # process inputs
         Y = self.y / (-self.normFac)
         Xi, Xp, Xc1, Xc2 = preProcessing(self.X, self.normFac)
-        
+
         N = self.maxNPF
         Nr = N*(N-1)
 
         if self.compute_ef == 1:
-            eta = Xi[:,:,1:2]
-            phi = Xi[:,:,2:3]
-            pt = Xi[:,:,0:1]
-            px = Xp[:,:,0:1]
-            py = Xp[:,:,1:2]
+            eta = Xi[:, :, 1:2]
+            phi = Xi[:, :, 2:3]
+            pt = Xi[:, :, 0:1]
+            px = Xp[:, :, 0:1]
+            py = Xp[:, :, 1:2]
             pz = pt*np.sinh(eta)
             energy = np.sqrt(px**2 + py**2 + pz**2)
-            p4 = np.concatenate((energy, px,py,pz), axis=-1)
+            p4 = np.concatenate((energy, px, py, pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             set_size = Xi.shape[0]
             ef = np.zeros([set_size, Nr, 4])     # edge features: dimensions of [# of events, # of edges, # of edges]
             for count, edge in enumerate(receiver_sender_list):       # for loop creates edge features
-                receiver = edge[0]              #  "receiver_sender_list" generates edge and receiving indices    
+                receiver = edge[0]  # "receiver_sender_list" generates edge and receiving indices
                 sender = edge[1]
                 eta1 = eta[:, receiver, :]
                 phi1 = phi[:, receiver, :]
@@ -174,15 +175,15 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 pt2 = pt[:, sender, :]
                 p1 = p4[:, receiver, :]
                 p2 = p4[:, sender, :]
-                dR = deltaR_calc(eta1, phi1, eta2, phi2)
-                m2 = mass2_calc(p1,p2)
-                kT = kT_calc(pt1,pt2,dR)
-                z = z_calc(pt1,pt2)
-                ef[:,count,0:1] = dR
-                ef[:,count,3:4] = m2
-                ef[:,count,1:2] = kT
-                ef[:,count,2:3] = z
-                
+                dR = self.deltaR_calc(eta1, phi1, eta2, phi2)
+                m2 = self.mass2_calc(p1, p2)
+                kT = self.kT_calc(pt1, pt2, dR)
+                z = self.z_calc(pt1, pt2)
+                ef[:, count, 0:1] = dR
+                ef[:, count, 3:4] = m2
+                ef[:, count, 1:2] = kT
+                ef[:, count, 2:3] = z
+
                 '''print('dR shape')
                 print(dR.shape)
                 print('-----')
@@ -205,7 +206,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             Yr = Y
             Xr = [Xi, Xp] + Xc + [ef]
             return Xr, Yr
-        
+
         else:
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
@@ -227,13 +228,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         X = h5_file['X'][entry_start:entry_stop+1]
         y = h5_file['Y'][entry_start:entry_stop+1]
-        
+
         if self.maxNPF < 100:
-            order = X[:,:,0].argsort(axis=1)[:,::-1]    # gets axis 1 index from greatest to least
-            order = order[:,:,np.newaxis]
+            order = X[:, :, 0].argsort(axis=1)[:, ::-1]    # gets axis 1 index from greatest to least
+            order = order[:, :, np.newaxis]
             order = np.repeat(order, repeats=8, axis=2)  # repeats=8 for the 8 node features. Creates index to sort array
             X = np.take_along_axis(X, order, axis=1)     # sorts data from greatest to least using 'order' variable as index
-            X = X[:,0:self.maxNPF,:]
+            X = X[:, 0:self.maxNPF, :]
 
-            
         return X, y
