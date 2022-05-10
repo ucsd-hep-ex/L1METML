@@ -167,12 +167,12 @@ def train_dataGenerator(args):
             dR = trainGenerator[0][0][4][fourth_ind, :, 0]
             kT = trainGenerator[0][0][4][fourth_ind, :, 1]
             z = trainGenerator[0][0][4][fourth_ind, :, 2]
-            m2 = trainGenerator[0][0][4][fourth_ind, :, 3]
+            #m2 = trainGenerator[0][0][4][fourth_ind, :, 3]
 
             dR_val = validGenerator[0][0][4][fourth_ind, :, 0]
             kT_val = validGenerator[0][0][4][fourth_ind, :, 1]
             z_val = validGenerator[0][0][4][fourth_ind, :, 2]
-            m2_val = validGenerator[0][0][4][fourth_ind, :, 3]
+            #m2_val = validGenerator[0][0][4][fourth_ind, :, 3]
 
             # No zero-padded w/ zero-padded interaction
             withzeros = trainGenerator[0][0][4][fourth_ind, :, :]
@@ -180,14 +180,14 @@ def train_dataGenerator(args):
             dR_nozeros = nozeros[:, 0]
             kT_nozeros = nozeros[:, 1]
             z_nozeros = nozeros[:, 2]
-            m2_nozeros = nozeros[:, 3]
+            #m2_nozeros = nozeros[:, 3]
 
             withzeros_val = validGenerator[0][0][4][fourth_ind, :, :]
             nozeros_val = withzeros_val[~np.all(withzeros_val == 0., axis=1)]
             dR_nozeros_val = nozeros_val[:, 0]
             kT_nozeros_val = nozeros_val[:, 1]
             z_nozeros_val = nozeros_val[:, 2]
-            m2_nozeros_val = nozeros_val[:, 3]
+            #m2_nozeros_val = nozeros_val[:, 3]
 
             # No particle w/ zero-padded interaction
             data_bool = np.array(nozeros, dtype=bool)
@@ -196,24 +196,24 @@ def train_dataGenerator(args):
             dR_none = delete[:, 0]
             kT_none = delete[:, 1]
             z_none = delete[:, 2]
-            m2_none = delete[:, 3]
+            #m2_none = delete[:, 3]
 
             data_bool_val = np.array(nozeros_val, dtype=bool)
             delete_val = nozeros_val[~np.all(data_bool_val == b, axis=1)]
             dR_none_val = delete_val[:, 0]
             kT_none_val = delete_val[:, 1]
             z_none_val = delete_val[:, 2]
-            m2_none_val = delete_val[:, 3]
+            #m2_none_val = delete_val[:, 3]
 
             dR_none_conc = np.concatenate((dR_none_conc, dR_none))
             kT_none_conc = np.concatenate((kT_none_conc, kT_none))
             z_none_conc = np.concatenate((z_none_conc, z_none))
-            m2_none_conc = np.concatenate((m2_none_conc, m2_none))
+            #m2_none_conc = np.concatenate((m2_none_conc, m2_none))
 
             dR_none_val_conc = np.concatenate((dR_none_val_conc, dR_none_val))
             kT_none_val_conc = np.concatenate((kT_none_val_conc, kT_none_val))
             z_none_val_conc = np.concatenate((z_none_val_conc, z_none_val))
-            m2_none_val_conc = np.concatenate((m2_none_val_conc, m2_none_val))
+            #m2_none_val_conc = np.concatenate((m2_none_val_conc, m2_none_val))
 
             '''for index1 in first_index[1:]:
                 for index4 in fourth_index[1:]:
@@ -236,14 +236,14 @@ def train_dataGenerator(args):
         MakeEdgeHist(z_nozeros, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(z_none_conc, xname='z', outputname=f'{path_out}z_none.png', nbins=100, density=False, yname="# of edges")
 
-        MakeEdgeHist(m2, xname='m2', outputname=f'{path_out}m2.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(m2_nozeros, xname='m2', outputname=f'{path_out}m2_nozeros.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(m2_none_conc, xname='m2', outputname=f'{path_out}m2_none.png', nbins=100, density=False, yname="# of edges")
+        #MakeEdgeHist(m2, xname='m2', outputname=f'{path_out}m2.png', nbins=100, density=False, yname="# of edges")
+        #MakeEdgeHist(m2_nozeros, xname='m2', outputname=f'{path_out}m2_nozeros.png', nbins=100, density=False, yname="# of edges")
+        #MakeEdgeHist(m2_none_conc, xname='m2', outputname=f'{path_out}m2_none.png', nbins=100, density=False, yname="# of edges")
 
         MakeEdgeHist(dR_none_val_conc, xname='dR', outputname=f'{path_out}dR_none_val.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(kT_none_val_conc, xname='kT', outputname=f'{path_out}kT_none_val.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(z_none_val_conc, xname='z', outputname=f'{path_out}z_none_val.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(m2_none_val_conc, xname='m2', outputname=f'{path_out}m2_none_val.png', nbins=100, density=False, yname="# of edges")
+        #MakeEdgeHist(m2_none_val_conc, xname='m2', outputname=f'{path_out}m2_none_val.png', nbins=100, density=False, yname="# of edges")
 
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
