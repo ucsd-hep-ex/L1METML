@@ -163,7 +163,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             edge_idx = np.array(receiver_sender_list)
             set_size = Xi.shape[0]
-            ef2 = np.zeros([set_size, Nr, len(self.edge_list)])
+            ef = np.zeros([set_size, Nr, len(self.edge_list)])
             if ('dR' in self.edge_list) or ('kT' in self.edge_list):
                 eta1 = eta[:, edge_idx[:,0]]
                 phi1 = phi[:, edge_idx[:,0]]
