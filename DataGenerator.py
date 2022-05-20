@@ -131,7 +131,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     def mass2_calc(self, pi, pj):
         pij = pi + pj
         m2 = pij[:, 0:1]**2 - pij[:, 1:2]**2 - pij[:, 2:3]**2 - pij[:, 3:4]**2
-        return m2'''
+        return m2
+'''
 
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
