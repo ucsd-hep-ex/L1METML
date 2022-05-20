@@ -105,34 +105,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         pij = pi + pj
         m2 = pij[:,:,0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
         return m2
-        
-'''        
-    def deltaR_calc(self, eta1, phi1, eta2, phi2):
-        """ calculate deltaR """
-        dphi = (phi1-phi2)
-        gt_pi_idx = (dphi > np.pi)
-        lt_pi_idx = (dphi < -np.pi)
-        dphi[gt_pi_idx] -= 2*np.pi
-        dphi[lt_pi_idx] += 2*np.pi
-        deta = eta1-eta2
-        return np.hypot(deta, dphi)
-
-    def kT_calc(self, pti, ptj, dR):
-        min_pt = np.minimum(pti[:, 0:1], ptj[:, 0:1])
-        kT = min_pt * dR
-        return kT
-
-    def z_calc(self, pti, ptj):
-        epsilon = 1.0e-12
-        min_pt = np.minimum(pti[:, 0:1], ptj[:, 0:1])
-        z = min_pt/(pti + ptj + epsilon)
-        return z
-
-    def mass2_calc(self, pi, pj):
-        pij = pi + pj
-        m2 = pij[:, 0:1]**2 - pij[:, 1:2]**2 - pij[:, 2:3]**2 - pij[:, 3:4]**2
-        return m2
-'''
 
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
@@ -306,3 +278,32 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             X = X[:, 0:self.maxNPF, :]
 
         return X, y
+    
+    '''        
+    def deltaR_calc(self, eta1, phi1, eta2, phi2):
+        """ calculate deltaR """
+        dphi = (phi1-phi2)
+        gt_pi_idx = (dphi > np.pi)
+        lt_pi_idx = (dphi < -np.pi)
+        dphi[gt_pi_idx] -= 2*np.pi
+        dphi[lt_pi_idx] += 2*np.pi
+        deta = eta1-eta2
+        return np.hypot(deta, dphi)
+
+    def kT_calc(self, pti, ptj, dR):
+        min_pt = np.minimum(pti[:, 0:1], ptj[:, 0:1])
+        kT = min_pt * dR
+        return kT
+
+    def z_calc(self, pti, ptj):
+        epsilon = 1.0e-12
+        min_pt = np.minimum(pti[:, 0:1], ptj[:, 0:1])
+        z = min_pt/(pti + ptj + epsilon)
+        return z
+
+    def mass2_calc(self, pi, pj):
+        pij = pi + pj
+        m2 = pij[:, 0:1]**2 - pij[:, 1:2]**2 - pij[:, 2:3]**2 - pij[:, 3:4]**2
+        return m2
+    '''
+
