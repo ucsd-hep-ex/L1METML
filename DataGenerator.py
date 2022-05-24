@@ -162,29 +162,29 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 p4 = np.stack((energy, px, py, pz), axis=-1)
             receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
             edge_idx = np.array(receiver_sender_list)
-            set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, len(self.edge_list)])
+            edge_stack = []
             if ('dR' in self.edge_list) or ('kT' in self.edge_list):
                 eta1 = eta[:, edge_idx[:,0]]
                 phi1 = phi[:, edge_idx[:,0]]
                 eta2 = eta[:, edge_idx[:,1]]
                 phi2 = phi[:, edge_idx[:,1]]
                 dR = self.deltaR_calc(eta1, phi1, eta2, phi2)
-                ef[:, :, 0] = dR
+                edge_stack.append(dR)
             if ('kT' in self.edge_list) or ('z' in self.edge_list):
                 pt1 = pt[:, edge_idx[:,0]]
                 pt2 = pt[:, edge_idx[:,1]]
                 if ('kT' in self.edge_list):
                     kT = self.kT_calc(pt1, pt2, dR)
-                    ef[:, :, 1] = kT
+                    edge_stack.append(kT)
                 if ('z' in self.edge_list):
                     z = self.z_calc(pt1, pt2)
-                    ef[:, :, 2] = z
+                    edge_stack.append(z)
             if ('m2' in self.edge_list):
                 p1 = p4[:, edge_idx[:,0], :]
                 p2 = p4[:, edge_idx[:,1], :]
                 m2 = self.mass2_calc(p1, p2)
-                ef[:, :, 3] = m2
+                edge_stack.append(m2)
+            ef = np.stack(edge_stack, axis=-1)
             
             
             '''
@@ -270,11 +270,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         X = h5_file['X'][entry_start:entry_stop+1]
         y = h5_file['Y'][entry_start:entry_stop+1]
 
-        if self.maxNPF < 100:
-            order = X[:, :, 0].argsort(axis=1)[:, ::-1]    # gets axis 1 index from greatest to least
-            order = order[:, :, np.newaxis]
-            order = np.repeat(order, repeats=8, axis=2)  # repeats=8 for the 8 node features. Creates index to sort array
-            X = np.take_along_axis(X, order, axis=1)     # sorts data from greatest to least using 'order' variable as index
+        if self.maxNPF < 100:            
+            order = X[:,:,0].argsort(axis=1)[:,::-1]
+            shape = np.shape(X)
+            for x in range(shape[0]):
+                X[x,:,:] = X[x,order[x],:]
             X = X[:, 0:self.maxNPF, :]
 
         return X, y
