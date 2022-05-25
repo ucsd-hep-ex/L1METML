@@ -148,6 +148,7 @@ def train_dataGenerator(args):
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
         print('len_of_trainGenerator', len(trainGenerator))
 
+        ''''
         dR_none_conc = np.array([0])
         kT_none_conc = np.array([0])
         z_none_conc = np.array([0])
@@ -244,6 +245,7 @@ def train_dataGenerator(args):
         MakeEdgeHist(kT_none_val_conc, xname='kT', outputname=f'{path_out}kT_none_val.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(z_none_val_conc, xname='z', outputname=f'{path_out}z_none_val.png', nbins=100, density=False, yname="# of edges")
         #MakeEdgeHist(m2_none_val_conc, xname='m2', outputname=f'{path_out}m2_none_val.png', nbins=100, density=False, yname="# of edges")
+        '''
 
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
