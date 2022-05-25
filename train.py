@@ -216,14 +216,14 @@ def train_dataGenerator(args):
             z_none_val_conc = np.concatenate((z_none_val_conc, z_none_val))
             #m2_none_val_conc = np.concatenate((m2_none_val_conc, m2_none_val))
 
-            '''for index1 in first_index[1:]:
+            for index1 in first_index[1:]:
                 for index4 in fourth_index[1:]:
                     new_dR = trainGenerator[index1][0][4][index4,:,0]
                     new_kT = trainGenerator[index1][0][4][index4,:,1]
                     new_z = trainGenerator[index1][0][4][index4,:,2]
                     dR = np.concatenate((dR, new_dR), axis=0)
                     kT = np.concatenate((kT, new_kT), axis=0)
-                    z = np.concatenate((z, new_z), axis=0)'''
+                    z = np.concatenate((z, new_z), axis=0)
 
         MakeEdgeHist(dR, xname='dR', outputname=f'{path_out}dR.png', nbins=100, density=False, yname="# of edges")
         MakeEdgeHist(dR_nozeros, xname='dR', outputname=f'{path_out}dR_nozeros.png', nbins=100, density=False, yname="# of edges")
