@@ -234,7 +234,7 @@ def graph_embedding(compute_ef, n_features=6,
                     edge_list=[]):
     n_dense_layers = len(units)
     name = 'met'
-
+    number_of_pupcandis = int(number_of_pupcandis/4)    # go from 100 puppi candidates for the whole region to 25 cands in one region 
     inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input_cont')
     pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
 
@@ -264,9 +264,7 @@ def graph_embedding(compute_ef, n_features=6,
     emb_concat = Concatenate()(embeddings)
     x = Concatenate()([inputs_cont, emb_concat])
 
-    N = number_of_pupcandis
     P = n_features+n_features_cat
-    Nr = N*(N-1)  # number of relations (edges)
 
     x = BatchNormalization()(x)
 
