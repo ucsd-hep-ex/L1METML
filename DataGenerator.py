@@ -92,18 +92,21 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         dphi[lt_pi_idx] += 2*np.pi
         deta = eta1-eta2
         return np.hypot(deta, dphi)
+
     def kT_calc(self, pti, ptj, dR):
         min_pt = np.minimum(pti, ptj)
         kT = min_pt * dR
         return kT
+
     def z_calc(self, pti, ptj):
         epsilon = 1.0e-12
         min_pt = np.minimum(pti, ptj)
         z = min_pt/(pti + ptj + epsilon)
         return z
+
     def mass2_calc(self, pi, pj):
         pij = pi + pj
-        m2 = pij[:,:,0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
+        m2 = pij[:, :, 0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
         return m2
 
     def __data_generation(self, unique_files, starts, stops):
@@ -116,25 +119,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # Generate data
         for ifile, start, stop in zip(unique_files, starts, stops):
             self.X, self.y = self.__get_features_labels(ifile, start, stop)
-
-            '''print(np.shape(self.X))
-            count80 = 0
-            count85 = 0
-            count90 = 0
-            for batch_idx in range(self.batch_size):
-                if (np.all(self.X[batch_idx,80,:] == np.zeros(8))):
-                    count80 += 1
-                    count85 += 1
-                    count90 += 1
-                elif (np.all(self.X[batch_idx,85,:] == np.zeros(8))):
-                    count85 += 1
-                    count90 += 1
-                elif (np.all(self.X[batch_idx,90,:] == np.zeros(8))):
-                    count90 += 1
-            print('count80:  ', count80)
-            print('count85:  ', count85)
-            print('count90:  ', count90)'''
-
             Xs.append(self.X)
             ys.append(self.y)
 
@@ -164,15 +148,15 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             edge_idx = np.array(receiver_sender_list)
             edge_stack = []
             if ('dR' in self.edge_list) or ('kT' in self.edge_list):
-                eta1 = eta[:, edge_idx[:,0]]
-                phi1 = phi[:, edge_idx[:,0]]
-                eta2 = eta[:, edge_idx[:,1]]
-                phi2 = phi[:, edge_idx[:,1]]
+                eta1 = eta[:, edge_idx[:, 0]]
+                phi1 = phi[:, edge_idx[:, 0]]
+                eta2 = eta[:, edge_idx[:, 1]]
+                phi2 = phi[:, edge_idx[:, 1]]
                 dR = self.deltaR_calc(eta1, phi1, eta2, phi2)
                 edge_stack.append(dR)
             if ('kT' in self.edge_list) or ('z' in self.edge_list):
-                pt1 = pt[:, edge_idx[:,0]]
-                pt2 = pt[:, edge_idx[:,1]]
+                pt1 = pt[:, edge_idx[:, 0]]
+                pt2 = pt[:, edge_idx[:, 1]]
                 if ('kT' in self.edge_list):
                     kT = self.kT_calc(pt1, pt2, dR)
                     edge_stack.append(kT)
@@ -180,68 +164,15 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                     z = self.z_calc(pt1, pt2)
                     edge_stack.append(z)
             if ('m2' in self.edge_list):
-                p1 = p4[:, edge_idx[:,0], :]
-                p2 = p4[:, edge_idx[:,1], :]
+                p1 = p4[:, edge_idx[:, 0], :]
+                p2 = p4[:, edge_idx[:, 1], :]
                 m2 = self.mass2_calc(p1, p2)
                 edge_stack.append(m2)
             ef = np.stack(edge_stack, axis=-1)
-            
-            
-            '''
-            eta = Xi[:, :, 1:2]
-            phi = Xi[:, :, 2:3]
-            pt = Xi[:, :, 0:1]
-            if ('m2' in self.edge_list):
-                px = Xp[:, :, 0:1]
-                py = Xp[:, :, 1:2]
-                pz = pt*np.sinh(eta)
-                energy = np.sqrt(px**2 + py**2 + pz**2)
-                p4 = np.concatenate((energy, px, py, pz), axis=-1)
-            receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
-            set_size = Xi.shape[0]
-            ef = np.zeros([set_size, Nr, len(self.edge_list)])     # edge features: dimensions of [# of events, # of edges, # of edges]
-            for count, edge in enumerate(receiver_sender_list):       # for loop creates edge features
-                receiver = edge[0]  # "receiver_sender_list" generates edge and receiving indices
-                sender = edge[1]
-                if ('dR' in self.edge_list) or ('kT' in self.edge_list):
-                    eta1 = eta[:, receiver, :]
-                    phi1 = phi[:, receiver, :]
-                    eta2 = eta[:, sender, :]
-                    phi2 = phi[:, sender, :]
-                    dR = self.deltaR_calc(eta1, phi1, eta2, phi2)
-                    ef[:, count, 0:1] = dR
-                if ('kT' in self.edge_list) or ('z' in self.edge_list):
-                    pt1 = pt[:, receiver, :]
-                    pt2 = pt[:, sender, :]
-                    if ('kT' in self.edge_list):
-                        kT = self.kT_calc(pt1, pt2, dR)
-                        ef[:, count, 1:2] = kT
-                    if ('z' in self.edge_list):
-                        z = self.z_calc(pt1, pt2)
-                        ef[:, count, 2:3] = z
-                if ('m2' in self.edge_list):
-                    p1 = p4[:, receiver, :]
-                    p2 = p4[:, sender, :]
-                    m2 = self.mass2_calc(p1, p2)
-                    ef[:, count, 3:4] = m2'''
-
-            '''print('dR shape')
-                print(dR.shape)
-                print('-----')
-                print('kT shape')
-                print(kT.shape)
-                print('-----')
-                print('ef shape')
-                print(ef.shape)
-                print('-----')
-                print('Xi shape')
-                print(Xi.shape)
-                ef[:,count,2:3] = z'''
 
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
-            #print('emb_input_dim:  ', self.emb_input_dim)
 
             # Prepare training/val data
             Yr = Y
@@ -270,40 +201,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         X = h5_file['X'][entry_start:entry_stop+1]
         y = h5_file['Y'][entry_start:entry_stop+1]
 
-        if self.maxNPF < 100:            
-            order = X[:,:,0].argsort(axis=1)[:,::-1]
+        if self.maxNPF < 100:
+            order = X[:, :, 0].argsort(axis=1)[:, ::-1]
             shape = np.shape(X)
             for x in range(shape[0]):
-                X[x,:,:] = X[x,order[x],:]
+                X[x, :, :] = X[x, order[x], :]
             X = X[:, 0:self.maxNPF, :]
 
         return X, y
-    
-    '''        
-    def deltaR_calc(self, eta1, phi1, eta2, phi2):
-        """ calculate deltaR """
-        dphi = (phi1-phi2)
-        gt_pi_idx = (dphi > np.pi)
-        lt_pi_idx = (dphi < -np.pi)
-        dphi[gt_pi_idx] -= 2*np.pi
-        dphi[lt_pi_idx] += 2*np.pi
-        deta = eta1-eta2
-        return np.hypot(deta, dphi)
-
-    def kT_calc(self, pti, ptj, dR):
-        min_pt = np.minimum(pti[:, 0:1], ptj[:, 0:1])
-        kT = min_pt * dR
-        return kT
-
-    def z_calc(self, pti, ptj):
-        epsilon = 1.0e-12
-        min_pt = np.minimum(pti[:, 0:1], ptj[:, 0:1])
-        z = min_pt/(pti + ptj + epsilon)
-        return z
-
-    def mass2_calc(self, pi, pj):
-        pij = pi + pj
-        m2 = pij[:, 0:1]**2 - pij[:, 1:2]**2 - pij[:, 2:3]**2 - pij[:, 3:4]**2
-        return m2
-    '''
-
