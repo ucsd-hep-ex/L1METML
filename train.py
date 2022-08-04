@@ -19,6 +19,7 @@ import datetime
 import tqdm
 import h5py
 from glob import glob
+import itertools
 
 # Import custom modules
 
@@ -29,10 +30,53 @@ from utils import *
 from loss import custom_loss
 from DataGenerator import DataGenerator
 
+import matplotlib.pyplot as plt
+import mplhep as hep
+
+
+def MakeEdgeHist(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
+    plt.style.use(hep.style.CMS)
+    plt.figure(figsize=(10, 8))
+    plt.hist(edge_feat, bins=nbins, density=density, histtype='step', facecolor='k', label='Truth')
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.savefig(outputname)
+    plt.close()
+
+
+def deltaR_calc(eta1, phi1, eta2, phi2):
+    """ calculate deltaR """
+    dphi = (phi1-phi2)
+    gt_pi_idx = (dphi > np.pi)
+    lt_pi_idx = (dphi < -np.pi)
+    dphi[gt_pi_idx] -= 2*np.pi
+    dphi[lt_pi_idx] += 2*np.pi
+    deta = eta1-eta2
+    return np.hypot(deta, dphi)
+
+
+def kT_calc(pti, ptj, dR):
+    min_pt = np.minimum(pti, ptj)
+    kT = min_pt * dR
+    return kT
+
+
+def z_calc(pti, ptj):
+    epsilon = 1.0e-12
+    min_pt = np.minimum(pti, ptj)
+    z = min_pt/(pti + ptj + epsilon)
+    return z
+
+
+def mass2_calc(pi, pj):
+    pij = pi + pj
+    m2 = pij[:, :, 0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
+    return m2
+
 
 def get_callbacks(path_out, sample_size, batch_size):
     # early stopping callback
-    early_stopping = EarlyStopping(monitor='val_loss', patience=20, verbose=1, restore_best_weights=False)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=40, verbose=1, restore_best_weights=False)
 
     csv_logger = CSVLogger(f'{path_out}loss_history.log')
 
@@ -75,18 +119,21 @@ def test(Yr_test, predict_test, PUPPI_pt, path_out):
 
 def train_dataGenerator(args):
     # general setup
-    maxNPF = 100
+    maxNPF = args.maxNPF
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
     epochs = args.epochs
-    batch_size = 1024
+    batch_size = args.batch_size
     preprocessed = True
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
     quantized = args.quantized
+    model = args.model
     units = list(map(int, args.units))
+    compute_ef = args.compute_edge_feat
+    edge_list = args.edge_features
 
     # separate files into training, validation, and testing
     filesList = glob(os.path.join(inputPath, '*.root'))
@@ -101,23 +148,41 @@ def train_dataGenerator(args):
     valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
     test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
 
-    # set up data generators; they perform h5 conversion if necessary and load in data batch by batch
-    trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
-    validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
-    testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
-    Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
+    if compute_ef == 1:
+
+        # set up data generators; they perform h5 conversion if necessary and load in data batch by batch
+        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
+        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
+        Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
+
+    else:
+        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
+        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
+        Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
 
     # Load training model
     if quantized is None:
-        keras_model = dense_embedding(n_features=n_features_pf,
-                                      emb_out_dim=2,
-                                      n_features_cat=n_features_pf_cat,
-                                      activation='tanh',
-                                      embedding_input_dim=trainGenerator.emb_input_dim,
-                                      number_of_pupcandis=maxNPF,
-                                      t_mode=t_mode,
-                                      with_bias=False,
-                                      units=units)
+        if model == 'dense_embedding':
+            keras_model = dense_embedding(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=trainGenerator.emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          t_mode=t_mode,
+                                          with_bias=False,
+                                          units=units)
+        elif model == 'graph_embedding':
+            keras_model = graph_embedding(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=trainGenerator.emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          units=units, compute_ef=compute_ef, edge_list=edge_list)
+
     else:
         logit_total_bits = int(quantized[0])
         logit_int_bits = int(quantized[1])
@@ -185,18 +250,21 @@ def train_dataGenerator(args):
 
 def train_loadAllData(args):
     # general setup
-    maxNPF = 100
+    maxNPF = args.maxNPF
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
     epochs = args.epochs
-    batch_size = 1024
+    batch_size = args.batch_size
     preprocessed = True
     t_mode = args.mode
     inputPath = args.input
     path_out = args.output
     quantized = args.quantized
     units = list(map(int, args.units))
+    compute_ef = args.compute_edge_feat
+    model = args.model
+    edge_list = args.edge_features
 
     # Read inputs
     # convert root files to h5 and store in same location
@@ -211,18 +279,74 @@ def train_loadAllData(args):
     # For now I keep train.py used: selection from a list of indicies
 
     Xorg, Y = read_input(h5files)
+    if maxNPF < 100:
+        order = Xorg[:, :, 0].argsort(axis=1)[:, ::-1]
+        shape = np.shape(Xorg)
+        for x in range(shape[0]):
+            Xorg[x, :, :] = Xorg[x, order[x], :]
+        Xorg = Xorg[:, 0:maxNPF, :]
     Y = Y / -normFac
 
+    N = maxNPF
+    Nr = N*(N-1)
+
+    receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
     Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
-    Xc = [Xc1, Xc2]
 
-    emb_input_dim = {
-        i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
-    }
+    if compute_ef == 1:
+        eta = Xi[:, :, 1]
+        phi = Xi[:, :, 2]
+        pt = Xi[:, :, 0]
+        if ('m2' in edge_list):
+            px = Xp[:, :, 0]
+            py = Xp[:, :, 1]
+            pz = pt*np.sinh(eta)
+            energy = np.sqrt(px**2 + py**2 + pz**2)
+            p4 = np.stack((energy, px, py, pz), axis=-1)
+        receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
+        edge_idx = np.array(receiver_sender_list)
+        edge_stack = []
+        if ('dR' in edge_list) or ('kT' in edge_list):
+            eta1 = eta[:, edge_idx[:, 0]]
+            phi1 = phi[:, edge_idx[:, 0]]
+            eta2 = eta[:, edge_idx[:, 1]]
+            phi2 = phi[:, edge_idx[:, 1]]
+            dR = deltaR_calc(eta1, phi1, eta2, phi2)
+            edge_stack.append(dR)
+        if ('kT' in edge_list) or ('z' in edge_list):
+            pt1 = pt[:, edge_idx[:, 0]]
+            pt2 = pt[:, edge_idx[:, 1]]
+            if ('kT' in edge_list):
+                kT = kT_calc(pt1, pt2, dR)
+                edge_stack.append(kT)
+            if ('z' in edge_list):
+                z = z_calc(pt1, pt2)
+                edge_stack.append(z)
+        if ('m2' in edge_list):
+            p1 = p4[:, edge_idx[:, 0], :]
+            p2 = p4[:, edge_idx[:, 1], :]
+            m2 = mass2_calc(p1, p2)
+            edge_stack.append(m2)
+        ef = np.stack(edge_stack, axis=-1)
+        Xc = [Xc1, Xc2]
+        # dimension parameter for keras model
+        emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)}
+        # Prepare training/val data
+        Xc = [Xc1, Xc2]
+        Yr = Y
+        Xr = [Xi, Xp] + Xc + [ef]
 
-    # Prepare training/val data
-    Yr = Y
-    Xr = [Xi, Xp] + Xc
+    else:
+        Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
+        Xc = [Xc1, Xc2]
+
+        emb_input_dim = {
+            i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
+        }
+
+        # Prepare training/val data
+        Yr = Y
+        Xr = [Xi, Xp] + Xc
 
     indices = np.array([i for i in range(len(Yr))])
     indices_train, indices_test = train_test_split(indices, test_size=1./7., random_state=7)
@@ -238,15 +362,28 @@ def train_loadAllData(args):
 
     # Load training model
     if quantized is None:
-        keras_model = dense_embedding(n_features=n_features_pf,
-                                      emb_out_dim=2,
-                                      n_features_cat=n_features_pf_cat,
-                                      activation='tanh',
-                                      embedding_input_dim=emb_input_dim,
-                                      number_of_pupcandis=maxNPF,
-                                      t_mode=t_mode,
-                                      with_bias=False,
-                                      units=units)
+        if model == 'dense_embedding':
+            keras_model = dense_embedding(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          t_mode=t_mode,
+                                          with_bias=False,
+                                          units=units)
+
+        elif model == 'graph_embedding':
+            keras_model = graph_embedding(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          units=units,
+                                          compute_ef=compute_ef,
+                                          edge_list=edge_list)
+
     else:
         logit_total_bits = int(quantized[0])
         logit_int_bits = int(quantized[1])
@@ -325,9 +462,14 @@ def main():
     parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path')
     parser.add_argument('--output', action='store', type=str, required=True, help='designate output file path')
     parser.add_argument('--mode', action='store', type=int, required=True, choices=[0, 1], help='0 for L1MET, 1 for DeepMET')
-    parser.add_argument('--epochs', action='store', type=int, required=False, default=100)
+    parser.add_argument('--epochs', action='store', type=int, required=False, default=100, help='number of epochs to train for')
+    parser.add_argument('--batch-size', action='store', type=int, required=False, default=1024, help='batch size')
     parser.add_argument('--quantized', action='store', required=False, nargs='+', help='optional argument: flag for quantized model and specify [total bits] [int bits]; empty for normal model')
     parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
+    parser.add_argument('--model', action='store', required=False, choices=['dense_embedding', 'graph_embedding', 'node_select'], default='dense_embedding', help='optional argument: model')
+    parser.add_argument('--compute-edge-feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
+    parser.add_argument('--maxNPF', action='store', type=int, required=False, default=100, help='maximum number of PUPPI candidates')
+    parser.add_argument('--edge-features', action='store', required=False, nargs='+', help='which edge features to use (i.e. dR, kT, z, m2)')
 
     args = parser.parse_args()
     workflowType = args.workflowType
