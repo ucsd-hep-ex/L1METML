@@ -272,7 +272,7 @@ def graph_embedding(compute_ef, n_features=6,
 
     # Edges MLP
     h = Permute((2, 1), input_shape=node_feat.shape[1:])(node_feat)
-    edge_units = [64, 64, 64]
+    edge_units = [64, 32, 16]
     n_edge_dense_layers = len(edge_units)
     if compute_ef == 1:
         h = Concatenate(axis=2, name='concatenate_edge')([h, edge_feat])
