@@ -151,6 +151,64 @@ def assign_matrices(N, Nr):
         Rs[s, i] = 1
     return Rs, Rr
 
+class attention1(Layer):
+   def __init__(self, N, Nr, Fprime):
+       super(attention1, self).__init__()
+       self.Rs, self.Rr = assign_matrices(N, Nr)
+       self.Fprime = Fprime
+   def build(self, input_shape):
+       self.w = self.add_weight(
+                               shape=(self.Fprime, input_shape[-2]),   # F' x F
+                               initializer="random_normal",
+                               trainable=True, name='w'
+                               )
+       self.a = self.add_weight(    # 1 x 2F'
+                               shape=(1, 2*self.Fprime),   # F' x F
+                               initializer="random_normal",
+                               trainable=True, name='a'
+                               )
+   def call(self, inputs):
+       wh = tf.tensordot(inputs, self.w, axes=[1,1])  # F' x F  x  (B x F x N)  --> F' x N
+       whi = tf.tensordot(wh,self.Rr, axes=[1,0])   # (F' x N) x (N X Nr) ---> (F' x Nr)
+       whj = tf.tensordot(wh, self.Rs,axes=[1,0])
+       whi_whj = tf.concat([whi, whj], 1)   # ---> (2F' X Nr)
+       a_whi_whj = tf.tensordot(whi_whj, self.a, axes=[1,1])    #  (B x 2F' x Nr) x (1 x 2F') ---> (B x Nr x 1)
+       return a_whi_whj
+   def get_config(self):
+       config = super(attention1, self).get_config()
+       config.update({
+           'Rs': self.Rs,
+           'Rr': self.Rr,
+           'Fprime': self.Fprime})
+       return config
+
+class attention2(Layer):
+    def __init__(self, N, Nr):
+        super(attention2, self).__init__()
+        self.Rs2, self.Rr2 = assign_matrices(N, Nr)
+    def call(self, inputs):
+        exp = tf.math.exp(inputs)    # B x Nr x 1
+        exp_sum = tf.tensordot(exp, self.Rr2, axes = [1,1])   # (B x Nr x 1) x (N x Nr)  ---> (B x 1 x N)
+        exp_sum = tf.tensordot(exp_sum, self.Rr2, axes=1)    # (B x 1 x N) x (N x Nr)   ----> (B x 1 x Nr)
+        inputs_exp = tf.transpose(inputs,[0,2,1])
+        output = tf.math.divide(inputs_exp, exp_sum)
+        return output
+    def get_config(self):
+        config = super(attention2, self).get_config()
+        config.update({
+            'Rs2': self.Rs2,
+            'Rr2': self.Rr2})
+        return config
+
+class attn_mult(Layer):
+    def __init__(self):
+        super(attn_mult, self).__init__()
+    def call(self,inputs):
+        tensor = inputs[0]
+        attn = inputs[1]
+        outputs = tf.multiply(tensor, attn)
+        return outputs 
+ 
 
 def graph_embedding(compute_ef, n_features=6,
                     n_features_cat=2,
@@ -200,7 +258,12 @@ def graph_embedding(compute_ef, n_features=6,
 
     # Swap axes of input data (batch,nodes,features) -> (batch,features,nodes)
     x = Permute((2, 1), input_shape=x.shape[1:])(x)
-
+    attn1 = attention1(N, Nr, 8)(x)
+    attn1 = LeakyReLU()(attn1)
+    attn1 = attention2(N, Nr)(attn1)
+    attn2 = attention1(N, Nr, 8)(x)
+    attn2 = LeakyReLU()(attn2)
+    attn2 = attention2(N, Nr)(attn2)
     # Marshaling function
     ORr = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_1'.format(name))(x)  # Receiving adjacency matrix
     ORs = Dense(Nr, use_bias=False, trainable=False, name='tmul_{}_2'.format(name))(x)  # Sending adjacency matrix
@@ -221,7 +284,10 @@ def graph_embedding(compute_ef, n_features=6,
 
     # Transpose output and permutes columns 1&2
     out_e = Permute((2, 1))(out_e)
-
+    mult1 = attn_mult()([out_e, attn1])
+    mult2 = attn_mult()([out_e, attn2])
+    out_e = Concatenate(axis=1)([mult1, mult2])
+    
     # Multiply edges MLP output by receiver nodes matrix Rr
     out_e = Dense(N, use_bias=False, trainable=False, name='tmul_{}_3'.format(name))(out_e)
 
