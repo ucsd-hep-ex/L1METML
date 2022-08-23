@@ -119,6 +119,15 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             Rs[s, i] = 1
         return Rs, Rr
 
+    def MakeEdgeHist(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
+        plt.style.use(hep.style.CMS)
+        plt.figure(figsize=(10, 8))
+        plt.hist(edge_feat, bins=nbins, density=density, histtype='step', facecolor='k', label='Truth')
+        plt.xlabel(xname)
+        plt.ylabel(yname)
+        plt.savefig(outputname)
+        plt.close()
+
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
         # X : (n_samples, n_dim, n_channels)
@@ -130,25 +139,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         # Generate data
         for ifile, start, stop in zip(unique_files, starts, stops):
             self.X, self.y, self.y_gencands = self.__get_features_labels(ifile, start, stop)
-
-
-            '''print(np.shape(self.X))
-            count80 = 0
-            count85 = 0
-            count90 = 0
-            for batch_idx in range(self.batch_size):
-                if (np.all(self.X[batch_idx,80,:] == np.zeros(8))):
-                    count80 += 1
-                    count85 += 1
-                    count90 += 1
-                elif (np.all(self.X[batch_idx,85,:] == np.zeros(8))):
-                    count85 += 1
-                    count90 += 1
-                elif (np.all(self.X[batch_idx,90,:] == np.zeros(8))):
-                    count90 += 1
-            print('count80:  ', count80)
-            print('count85:  ', count85)
-            print('count90:  ', count90)'''
 
             Xs.append(self.X)
             ys.append(self.y)
@@ -162,14 +152,15 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         quad = True
         if quad==True:
-            bins = [np.pi/2, np.pi, 3*np.pi/2, 2*np.pi]
+            bins = [0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi]
             phi_mod = np.mod(self.X[:,:,4:5], 2*np.pi)    # ensures all phi values are within 0-2pi
             idx = np.digitize(phi_mod,bins)     # Bins phi column into 4 quadrants
-            X_quad2 = np.where(idx==1,self.X,0)     # uses 'idx' as index to bin input data
-            X_quad1 = np.where(idx==0,self.X,0)     # binned data preserves shape, self.X = [256, 100, 8] -> X_quad = [256, 100, 8], padded with zeros
-            X_quad3 = np.where(idx==2,self.X,0)
-            X_quad4 = np.where(idx==3,self.X,0)
+            X_quad2 = np.where(idx==2,self.X,0)     # uses 'idx' as index to bin input data
+            X_quad1 = np.where(idx==1,self.X,0)     # binned data preserves shape, self.X = [256, 100, 8] -> X_quad = [256, 100, 8], padded with zeros
+            X_quad3 = np.where(idx==3,self.X,0)
+            X_quad4 = np.where(idx==4,self.X,0)
             self.X = np.concatenate((X_quad1,X_quad2,X_quad3,X_quad4),axis=0)    # concatenates all quadrants together sefl.X=[1024,100,8]
+
 
             order = self.X[:, :, 0].argsort(axis=1)[:, ::-1]    # Order self.X by pt so when we truncate, we take most important particles
             order = order[:, :, np.newaxis]
@@ -177,23 +168,24 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             self.X = np.take_along_axis(self.X, order, axis=1)    # sorts self.X from greatest to least using 'order' variable as index
             self.X = self.X[:, 0:25, :]    # truncates events to only keep 25 particles per event per quadrant
 
+
         # process inputs
         Y = self.y / (-self.normFac)
         Xi, Xp, Xc1, Xc2 = preProcessing(self.X, self.normFac)
-        Y_gencand = self.y_gencands / (-self.normFac)
+        Y_gencand = self.y_gencands / (self.normFac)
 
         N = int(self.maxNPF/4)
         Nr = N*(N-1)
 
         if quad==True:
-            bins = [np.pi/2, np.pi, 3*np.pi/2, 2*np.pi]    # for truth tensor, we bin using same process as self.X
+            bins = [0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi]    # for truth tensor, we bin using same process as self.X
             pt_phi = Y_gencand[:, :, [0,2]]
             y_phi_mod = np.mod(pt_phi[:,:,1:2], 2*np.pi)
             idx = np.digitize(y_phi_mod,bins)
-            Y_quad1 = np.where(idx==0,pt_phi,0)
-            Y_quad2 = np.where(idx==1,pt_phi,0)
-            Y_quad3 = np.where(idx==2,pt_phi,0)
-            Y_quad4 = np.where(idx==3,pt_phi,0)
+            Y_quad1 = np.where(idx==1,pt_phi,0)
+            Y_quad2 = np.where(idx==2,pt_phi,0)
+            Y_quad3 = np.where(idx==3,pt_phi,0)
+            Y_quad4 = np.where(idx==4,pt_phi,0)
 
             Y_1px = Y_quad1[:,:,0] * np.cos(Y_quad1[:,:,1])    # px = pt * cos(phi)
             Y_1py = Y_quad1[:,:,0] * np.sin(Y_quad1[:,:,1])    # py = pt * cos(phi)
@@ -214,11 +206,16 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             Y_4py = Y_quad4[:,:,0] * np.sin(Y_quad4[:,:,1])
             Y_4px = np.sum(Y_4px, axis=1)
             Y_4py = np.sum(Y_4py, axis=1)
+
+            #sum px distribution in quadrant 1 for gencand
+            # compare to reco px
+            # do they look like each other? if not are we matching them up wrong
+
+            # add sorting for default (311, utils.py)
+            
             Yx = np.concatenate((Y_1px,Y_2px,Y_3px,Y_4px))    # concatenate px of all quadrants together
             Yy = np.concatenate((Y_1py,Y_2py,Y_3py,Y_4py))    # concatenate py of all quadrants together
             Y = np.stack((Yx,Yy),axis=1)    # stack px, and py to get truth tensor with shape (1024, 2)
-            assert not np.any(np.isnan(Y))
-            assert not np.any(np.isnan(self.X))
 
 
 
@@ -285,6 +282,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             # Prepare training/val data
             Yr = Y
             Xr = [Xi, Xp] + Xc + [ef]
+            print(np.shape(Xi))
+            print(np.shape(Xp))
+            print(np.shape(Xc1))
+            print(np.shape(Xc2))
+            print(np.shape(ef))
+            print(np.shape(Yr))
             return Xr, Yr
 
 
