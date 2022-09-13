@@ -1,6 +1,6 @@
 import tensorflow
 import tensorflow.keras.backend as K
-from tensorflow.keras import optimizers, initializers
+from tensorflow.keras import optimizers, initializers, losses
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Model
@@ -212,7 +212,7 @@ def train_dataGenerator(args):
         verbose = 1
     elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=custom_loss, optimizer=optimizer,
+        keras_model.compile(loss=losses.LogCosh(), optimizer=optimizer,
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
 
