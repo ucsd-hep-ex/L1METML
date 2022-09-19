@@ -135,6 +135,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         Nr = N*(N-1)
 
         if self.compute_ef == 1:
+            print("---- Distillation ----")
             eta = Xi[:, :, 1]
             phi = Xi[:, :, 2]
             pt = Xi[:, :, 0]
@@ -180,6 +181,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             return Xr, Yr
 
         else:
+            print("---- Distillation ----")
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
