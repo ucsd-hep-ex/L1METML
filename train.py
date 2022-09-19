@@ -1,6 +1,6 @@
 import tensorflow
 import tensorflow.keras.backend as K
-from tensorflow.keras import optimizers, initializers, losses
+from tensorflow.keras import optimizers, initializers
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Model
@@ -44,7 +44,17 @@ def MakeEdgeHist(edge_feat, xname, outputname, nbins=1000, density=False, yname=
     plt.close()
 
 
-def deltaR_calc(eta1, phi1, eta2, phi2):
+'''def MakeEdgeHist_nozeros(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
+    plt.style.use(hep.style.CMS)
+    plt.figure(figsize=(20, 16))
+    plt.hist(edge_feat, bins=nbins, range=(1e-12,100), density=density, histtype='step', facecolor='k', label='Truth')
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.savefig(outputname)
+    plt.close()'''
+
+
+def deltaR(eta1, phi1, eta2, phi2):
     """ calculate deltaR """
     dphi = (phi1-phi2)
     gt_pi_idx = (dphi > np.pi)
@@ -53,25 +63,6 @@ def deltaR_calc(eta1, phi1, eta2, phi2):
     dphi[lt_pi_idx] += 2*np.pi
     deta = eta1-eta2
     return np.hypot(deta, dphi)
-
-
-def kT_calc(pti, ptj, dR):
-    min_pt = np.minimum(pti, ptj)
-    kT = min_pt * dR
-    return kT
-
-
-def z_calc(pti, ptj):
-    epsilon = 1.0e-12
-    min_pt = np.minimum(pti, ptj)
-    z = min_pt/(pti + ptj + epsilon)
-    return z
-
-
-def mass2_calc(pi, pj):
-    pij = pi + pj
-    m2 = pij[:, :, 0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
-    return m2
 
 
 def get_callbacks(path_out, sample_size, batch_size):
@@ -155,6 +146,106 @@ def train_dataGenerator(args):
         validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
         testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
+        print('len_of_trainGenerator', len(trainGenerator))
+
+        ''''
+        dR_none_conc = np.array([0])
+        kT_none_conc = np.array([0])
+        z_none_conc = np.array([0])
+        m2_none_conc = np.array([0])
+
+        dR_none_val_conc = np.array([0])
+        kT_none_val_conc = np.array([0])
+        z_none_val_conc = np.array([0])
+        m2_none_val_conc = np.array([0])
+
+        for fourth_ind in range(30):
+
+            # The next 50 or so lines (up until the else) generates histograms of inputs
+            #first_index = np.random.randint(0,high=2637)
+            #fourth_index = np.random.randint(0,high=epochs)
+
+            dR = trainGenerator[0][0][4][fourth_ind, :, 0]
+            kT = trainGenerator[0][0][4][fourth_ind, :, 1]
+            z = trainGenerator[0][0][4][fourth_ind, :, 2]
+            #m2 = trainGenerator[0][0][4][fourth_ind, :, 3]
+
+            dR_val = validGenerator[0][0][4][fourth_ind, :, 0]
+            kT_val = validGenerator[0][0][4][fourth_ind, :, 1]
+            z_val = validGenerator[0][0][4][fourth_ind, :, 2]
+            #m2_val = validGenerator[0][0][4][fourth_ind, :, 3]
+
+            # No zero-padded w/ zero-padded interaction
+            withzeros = trainGenerator[0][0][4][fourth_ind, :, :]
+            nozeros = withzeros[~np.all(withzeros == 0., axis=1)]
+            dR_nozeros = nozeros[:, 0]
+            kT_nozeros = nozeros[:, 1]
+            z_nozeros = nozeros[:, 2]
+            #m2_nozeros = nozeros[:, 3]
+
+            withzeros_val = validGenerator[0][0][4][fourth_ind, :, :]
+            nozeros_val = withzeros_val[~np.all(withzeros_val == 0., axis=1)]
+            dR_nozeros_val = nozeros_val[:, 0]
+            kT_nozeros_val = nozeros_val[:, 1]
+            z_nozeros_val = nozeros_val[:, 2]
+            #m2_nozeros_val = nozeros_val[:, 3]
+
+            # No particle w/ zero-padded interaction
+            data_bool = np.array(nozeros, dtype=bool)
+            b = [True, False, False]
+            delete = nozeros[~np.all(data_bool == b, axis=1)]
+            dR_none = delete[:, 0]
+            kT_none = delete[:, 1]
+            z_none = delete[:, 2]
+            #m2_none = delete[:, 3]
+
+            data_bool_val = np.array(nozeros_val, dtype=bool)
+            delete_val = nozeros_val[~np.all(data_bool_val == b, axis=1)]
+            dR_none_val = delete_val[:, 0]
+            kT_none_val = delete_val[:, 1]
+            z_none_val = delete_val[:, 2]
+            #m2_none_val = delete_val[:, 3]
+
+            dR_none_conc = np.concatenate((dR_none_conc, dR_none))
+            kT_none_conc = np.concatenate((kT_none_conc, kT_none))
+            z_none_conc = np.concatenate((z_none_conc, z_none))
+            #m2_none_conc = np.concatenate((m2_none_conc, m2_none))
+
+            dR_none_val_conc = np.concatenate((dR_none_val_conc, dR_none_val))
+            kT_none_val_conc = np.concatenate((kT_none_val_conc, kT_none_val))
+            z_none_val_conc = np.concatenate((z_none_val_conc, z_none_val))
+            #m2_none_val_conc = np.concatenate((m2_none_val_conc, m2_none_val))
+
+            for index1 in first_index[1:]:
+                for index4 in fourth_index[1:]:
+                    new_dR = trainGenerator[index1][0][4][index4,:,0]
+                    new_kT = trainGenerator[index1][0][4][index4,:,1]
+                    new_z = trainGenerator[index1][0][4][index4,:,2]
+                    dR = np.concatenate((dR, new_dR), axis=0)
+                    kT = np.concatenate((kT, new_kT), axis=0)
+                    z = np.concatenate((z, new_z), axis=0)
+
+        MakeEdgeHist(dR, xname='dR', outputname=f'{path_out}dR.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(dR_nozeros, xname='dR', outputname=f'{path_out}dR_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(dR_none_conc, xname='dR', outputname=f'{path_out}dR_none.png', nbins=100, density=False, yname="# of edges")
+
+        MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(kT_nozeros, xname='kT', outputname=f'{path_out}kT_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(kT_none_conc, xname='kT', outputname=f'{path_out}kT_none.png', nbins=100, density=False, yname="# of edges")
+
+        MakeEdgeHist(z, xname='z', outputname=f'{path_out}z.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(z_nozeros, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(z_none_conc, xname='z', outputname=f'{path_out}z_none.png', nbins=100, density=False, yname="# of edges")
+
+        #MakeEdgeHist(m2, xname='m2', outputname=f'{path_out}m2.png', nbins=100, density=False, yname="# of edges")
+        #MakeEdgeHist(m2_nozeros, xname='m2', outputname=f'{path_out}m2_nozeros.png', nbins=100, density=False, yname="# of edges")
+        #MakeEdgeHist(m2_none_conc, xname='m2', outputname=f'{path_out}m2_none.png', nbins=100, density=False, yname="# of edges")
+
+        MakeEdgeHist(dR_none_val_conc, xname='dR', outputname=f'{path_out}dR_none_val.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(kT_none_val_conc, xname='kT', outputname=f'{path_out}kT_none_val.png', nbins=100, density=False, yname="# of edges")
+        MakeEdgeHist(z_none_val_conc, xname='z', outputname=f'{path_out}z_none_val.png', nbins=100, density=False, yname="# of edges")
+        #MakeEdgeHist(m2_none_val_conc, xname='m2', outputname=f'{path_out}m2_none_val.png', nbins=100, density=False, yname="# of edges")
+        '''
 
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
@@ -175,13 +266,32 @@ def train_dataGenerator(args):
                                           with_bias=False,
                                           units=units)
         elif model == 'graph_embedding':
-            keras_model = graph_embedding(n_features=n_features_pf,
+            teacher = graph_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
                                           embedding_input_dim=trainGenerator.emb_input_dim,
                                           number_of_pupcandis=maxNPF,
                                           units=units, compute_ef=compute_ef, edge_list=edge_list)
+            student = dense_embedding(n_features=n_features_pf,
+                                          emb_out_dim=2,
+                                          n_features_cat=n_features_pf_cat,
+                                          activation='tanh',
+                                          embedding_input_dim=trainGenerator.emb_input_dim,
+                                          number_of_pupcandis=maxNPF,
+                                          t_mode=t_mode,
+                                          with_bias=False,
+                                          units=units)
+
+        elif model == 'node_select':
+            keras_model = node_select(n_features=n_features_pf,
+                                      emb_out_dim=2,
+                                      n_features_cat=n_features_pf_cat,
+                                      activation='tanh',
+                                      embedding_input_dim=trainGenerator.emb_input_dim,
+                                      number_of_pupcandis=maxNPF,
+                                      units=units, compute_ef=compute_ef)
+                                      
 
     else:
         logit_total_bits = int(quantized[0])
@@ -208,26 +318,39 @@ def train_dataGenerator(args):
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
-        keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
+        teacher.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
     elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=losses.LogCosh(), optimizer=optimizer,
+        teacher.compile(loss=custom_loss, optimizer=optimizer,
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
 
     # Run training
-    print(keras_model.summary())
+    print(teacher.summary())
+
 
     start_time = time.time()  # check start time
-    history = keras_model.fit(trainGenerator,
+    history = teacher.fit(trainGenerator,
                               epochs=epochs,
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=validGenerator,
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
     end_time = time.time()  # check end time
 
-    predict_test = keras_model.predict(testGenerator) * normFac
+    distiller = Distiller(student=student, teacher=teacher)
+    distiller.compile(optimizer=optimizer,
+                    metrics=keras.metrics.MeanSquaredError(),
+                    student_loss_fn=keras.losses.MeanSquaredError(),
+                    distillation_loss_fn=keras.losses.MeanSquaredError(),
+                    alpha=0.1,
+                    temperature=10)
+    distiller.fit(trainGenerator, epochs=2)
+
+    predict_test = distiller.predict(testGenerator) * normFac
+    all_PUPPI_pt = []
+    Yr_test = []
+
     all_PUPPI_pt = []
     Yr_test = []
     for (Xr, Yr) in tqdm.tqdm(testGenerator):
@@ -250,7 +373,7 @@ def train_dataGenerator(args):
 
 def train_loadAllData(args):
     # general setup
-    maxNPF = args.maxNPF
+    maxNPF = maxNPF
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
@@ -264,7 +387,8 @@ def train_loadAllData(args):
     units = list(map(int, args.units))
     compute_ef = args.compute_edge_feat
     model = args.model
-    edge_list = args.edge_features
+
+    print('starting')
 
     # Read inputs
     # convert root files to h5 and store in same location
@@ -278,65 +402,46 @@ def train_loadAllData(args):
     # It may be desireable to set specific files as the train, test, valid data sets
     # For now I keep train.py used: selection from a list of indicies
 
+    print('right before Xorg')
+
     Xorg, Y = read_input(h5files)
-    if maxNPF < 100:
-        order = Xorg[:, :, 0].argsort(axis=1)[:, ::-1]
-        shape = np.shape(Xorg)
-        for x in range(shape[0]):
-            Xorg[x, :, :] = Xorg[x, order[x], :]
-        Xorg = Xorg[:, 0:maxNPF, :]
     Y = Y / -normFac
 
     N = maxNPF
     Nr = N*(N-1)
 
     receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
-    Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
 
     if compute_ef == 1:
-        eta = Xi[:, :, 1]
-        phi = Xi[:, :, 2]
-        pt = Xi[:, :, 0]
-        if ('m2' in edge_list):
-            px = Xp[:, :, 0]
-            py = Xp[:, :, 1]
-            pz = pt*np.sinh(eta)
-            energy = np.sqrt(px**2 + py**2 + pz**2)
-            p4 = np.stack((energy, px, py, pz), axis=-1)
-        receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
-        edge_idx = np.array(receiver_sender_list)
-        edge_stack = []
-        if ('dR' in edge_list) or ('kT' in edge_list):
-            eta1 = eta[:, edge_idx[:, 0]]
-            phi1 = phi[:, edge_idx[:, 0]]
-            eta2 = eta[:, edge_idx[:, 1]]
-            phi2 = phi[:, edge_idx[:, 1]]
-            dR = deltaR_calc(eta1, phi1, eta2, phi2)
-            edge_stack.append(dR)
-        if ('kT' in edge_list) or ('z' in edge_list):
-            pt1 = pt[:, edge_idx[:, 0]]
-            pt2 = pt[:, edge_idx[:, 1]]
-            if ('kT' in edge_list):
-                kT = kT_calc(pt1, pt2, dR)
-                edge_stack.append(kT)
-            if ('z' in edge_list):
-                z = z_calc(pt1, pt2)
-                edge_stack.append(z)
-        if ('m2' in edge_list):
-            p1 = p4[:, edge_idx[:, 0], :]
-            p2 = p4[:, edge_idx[:, 1], :]
-            m2 = mass2_calc(p1, p2)
-            edge_stack.append(m2)
-        ef = np.stack(edge_stack, axis=-1)
+        print("Computing edge features")
+        set_size = Xorg.shape[0]
+        ef = np.zeros([set_size, Nr, 1])
+        for count, edge in enumerate(receiver_sender_list):
+            eta = Xorg[:, :, 3:4]
+            phi = Xorg[:, :, 4:5]
+            receiver = edge[0]
+            sender = edge[1]
+            eta1 = eta[:, receiver, :]
+            phi1 = phi[:, receiver, :]
+            eta2 = eta[:, sender, :]
+            phi2 = phi[:, sender, :]
+            dR = deltaR(eta1, phi1, eta2, phi2)
+            ef[:, count, :] = dR
+        print("edge features computed")
+
+        Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
         Xc = [Xc1, Xc2]
-        # dimension parameter for keras model
-        emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)}
+
+        emb_input_dim = {
+            i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
+        }
+
         # Prepare training/val data
-        Xc = [Xc1, Xc2]
         Yr = Y
         Xr = [Xi, Xp] + Xc + [ef]
 
     else:
+        print("else path")
         Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
         Xc = [Xc1, Xc2]
 
@@ -378,11 +483,9 @@ def train_loadAllData(args):
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
-                                          embedding_input_dim=emb_input_dim,
+                                          embedding_input_dim=trainGenerator.emb_input_dim,
                                           number_of_pupcandis=maxNPF,
-                                          units=units,
-                                          compute_ef=compute_ef,
-                                          edge_list=edge_list)
+                                          units=units)
 
     else:
         logit_total_bits = int(quantized[0])
@@ -484,3 +587,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
