@@ -317,6 +317,7 @@ def train_dataGenerator(args):
                                                 units=units)
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
+    print("---- Distillation ----")
     if t_mode == 0:
         teacher.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
