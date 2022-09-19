@@ -148,105 +148,6 @@ def train_dataGenerator(args):
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
         print('len_of_trainGenerator', len(trainGenerator))
 
-        ''''
-        dR_none_conc = np.array([0])
-        kT_none_conc = np.array([0])
-        z_none_conc = np.array([0])
-        m2_none_conc = np.array([0])
-
-        dR_none_val_conc = np.array([0])
-        kT_none_val_conc = np.array([0])
-        z_none_val_conc = np.array([0])
-        m2_none_val_conc = np.array([0])
-
-        for fourth_ind in range(30):
-
-            # The next 50 or so lines (up until the else) generates histograms of inputs
-            #first_index = np.random.randint(0,high=2637)
-            #fourth_index = np.random.randint(0,high=epochs)
-
-            dR = trainGenerator[0][0][4][fourth_ind, :, 0]
-            kT = trainGenerator[0][0][4][fourth_ind, :, 1]
-            z = trainGenerator[0][0][4][fourth_ind, :, 2]
-            #m2 = trainGenerator[0][0][4][fourth_ind, :, 3]
-
-            dR_val = validGenerator[0][0][4][fourth_ind, :, 0]
-            kT_val = validGenerator[0][0][4][fourth_ind, :, 1]
-            z_val = validGenerator[0][0][4][fourth_ind, :, 2]
-            #m2_val = validGenerator[0][0][4][fourth_ind, :, 3]
-
-            # No zero-padded w/ zero-padded interaction
-            withzeros = trainGenerator[0][0][4][fourth_ind, :, :]
-            nozeros = withzeros[~np.all(withzeros == 0., axis=1)]
-            dR_nozeros = nozeros[:, 0]
-            kT_nozeros = nozeros[:, 1]
-            z_nozeros = nozeros[:, 2]
-            #m2_nozeros = nozeros[:, 3]
-
-            withzeros_val = validGenerator[0][0][4][fourth_ind, :, :]
-            nozeros_val = withzeros_val[~np.all(withzeros_val == 0., axis=1)]
-            dR_nozeros_val = nozeros_val[:, 0]
-            kT_nozeros_val = nozeros_val[:, 1]
-            z_nozeros_val = nozeros_val[:, 2]
-            #m2_nozeros_val = nozeros_val[:, 3]
-
-            # No particle w/ zero-padded interaction
-            data_bool = np.array(nozeros, dtype=bool)
-            b = [True, False, False]
-            delete = nozeros[~np.all(data_bool == b, axis=1)]
-            dR_none = delete[:, 0]
-            kT_none = delete[:, 1]
-            z_none = delete[:, 2]
-            #m2_none = delete[:, 3]
-
-            data_bool_val = np.array(nozeros_val, dtype=bool)
-            delete_val = nozeros_val[~np.all(data_bool_val == b, axis=1)]
-            dR_none_val = delete_val[:, 0]
-            kT_none_val = delete_val[:, 1]
-            z_none_val = delete_val[:, 2]
-            #m2_none_val = delete_val[:, 3]
-
-            dR_none_conc = np.concatenate((dR_none_conc, dR_none))
-            kT_none_conc = np.concatenate((kT_none_conc, kT_none))
-            z_none_conc = np.concatenate((z_none_conc, z_none))
-            #m2_none_conc = np.concatenate((m2_none_conc, m2_none))
-
-            dR_none_val_conc = np.concatenate((dR_none_val_conc, dR_none_val))
-            kT_none_val_conc = np.concatenate((kT_none_val_conc, kT_none_val))
-            z_none_val_conc = np.concatenate((z_none_val_conc, z_none_val))
-            #m2_none_val_conc = np.concatenate((m2_none_val_conc, m2_none_val))
-
-            for index1 in first_index[1:]:
-                for index4 in fourth_index[1:]:
-                    new_dR = trainGenerator[index1][0][4][index4,:,0]
-                    new_kT = trainGenerator[index1][0][4][index4,:,1]
-                    new_z = trainGenerator[index1][0][4][index4,:,2]
-                    dR = np.concatenate((dR, new_dR), axis=0)
-                    kT = np.concatenate((kT, new_kT), axis=0)
-                    z = np.concatenate((z, new_z), axis=0)
-
-        MakeEdgeHist(dR, xname='dR', outputname=f'{path_out}dR.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(dR_nozeros, xname='dR', outputname=f'{path_out}dR_nozeros.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(dR_none_conc, xname='dR', outputname=f'{path_out}dR_none.png', nbins=100, density=False, yname="# of edges")
-
-        MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(kT_nozeros, xname='kT', outputname=f'{path_out}kT_nozeros.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(kT_none_conc, xname='kT', outputname=f'{path_out}kT_none.png', nbins=100, density=False, yname="# of edges")
-
-        MakeEdgeHist(z, xname='z', outputname=f'{path_out}z.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(z_nozeros, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(z_none_conc, xname='z', outputname=f'{path_out}z_none.png', nbins=100, density=False, yname="# of edges")
-
-        #MakeEdgeHist(m2, xname='m2', outputname=f'{path_out}m2.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(m2_nozeros, xname='m2', outputname=f'{path_out}m2_nozeros.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(m2_none_conc, xname='m2', outputname=f'{path_out}m2_none.png', nbins=100, density=False, yname="# of edges")
-
-        MakeEdgeHist(dR_none_val_conc, xname='dR', outputname=f'{path_out}dR_none_val.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(kT_none_val_conc, xname='kT', outputname=f'{path_out}kT_none_val.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(z_none_val_conc, xname='z', outputname=f'{path_out}z_none_val.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(m2_none_val_conc, xname='m2', outputname=f'{path_out}m2_none_val.png', nbins=100, density=False, yname="# of edges")
-        '''
-
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
         validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
@@ -317,7 +218,6 @@ def train_dataGenerator(args):
                                                 units=units)
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
-    print("---- Distillation ----")
     if t_mode == 0:
         teacher.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
@@ -328,6 +228,7 @@ def train_dataGenerator(args):
         verbose = 1
 
     # Run training
+    print("---- Distillation ----")
     print(teacher.summary())
 
 
