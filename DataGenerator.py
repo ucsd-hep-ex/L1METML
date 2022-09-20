@@ -257,19 +257,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                     m2 = self.mass2_calc(p1, p2)
                     ef[:, count, 3:4] = m2
 
-                '''print('dR shape')
-                print(dR.shape)
-                print('-----')
-                print('kT shape')
-                print(kT.shape)
-                print('-----')
-                print('ef shape')
-                print(ef.shape)
-                print('-----')
-                print('Xi shape')
-                print(Xi.shape)
-                ef[:,count,2:3] = z'''
-
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
