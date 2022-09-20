@@ -34,27 +34,17 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 
 
-def MakeEdgeHist(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
+def MakeEdgeHist(binned_data, bins, xname, outputname, yname="# of edges"):
     plt.style.use(hep.style.CMS)
     plt.figure(figsize=(10, 8))
-    plt.hist(edge_feat, bins=nbins, density=density, histtype='step', facecolor='k', label='Truth')
+    plt.stairs(binned_data, edges=bins)
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.savefig(outputname)
     plt.close()
 
 
-'''def MakeEdgeHist_nozeros(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
-    plt.style.use(hep.style.CMS)
-    plt.figure(figsize=(20, 16))
-    plt.hist(edge_feat, bins=nbins, range=(1e-12,100), density=density, histtype='step', facecolor='k', label='Truth')
-    plt.xlabel(xname)
-    plt.ylabel(yname)
-    plt.savefig(outputname)
-    plt.close()'''
-
-
-def deltaR(eta1, phi1, eta2, phi2):
+def deltaR_calc(eta1, phi1, eta2, phi2):
     """ calculate deltaR """
     dphi = (phi1-phi2)
     gt_pi_idx = (dphi > np.pi)
@@ -63,6 +53,25 @@ def deltaR(eta1, phi1, eta2, phi2):
     dphi[lt_pi_idx] += 2*np.pi
     deta = eta1-eta2
     return np.hypot(deta, dphi)
+
+
+def kT_calc(pti, ptj, dR):
+    min_pt = np.minimum(pti, ptj)
+    kT = min_pt * dR
+    return kT
+
+
+def z_calc(pti, ptj):
+    epsilon = 1.0e-12
+    min_pt = np.minimum(pti, ptj)
+    z = min_pt/(pti + ptj + epsilon)
+    return z
+
+
+def mass2_calc(pi, pj):
+    pij = pi + pj
+    m2 = pij[:, :, 0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
+    return m2
 
 
 def get_callbacks(path_out, sample_size, batch_size):
@@ -146,106 +155,6 @@ def train_dataGenerator(args):
         validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
         testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
-        print('len_of_trainGenerator', len(trainGenerator))
-
-        ''''
-        dR_none_conc = np.array([0])
-        kT_none_conc = np.array([0])
-        z_none_conc = np.array([0])
-        m2_none_conc = np.array([0])
-
-        dR_none_val_conc = np.array([0])
-        kT_none_val_conc = np.array([0])
-        z_none_val_conc = np.array([0])
-        m2_none_val_conc = np.array([0])
-
-        for fourth_ind in range(30):
-
-            # The next 50 or so lines (up until the else) generates histograms of inputs
-            #first_index = np.random.randint(0,high=2637)
-            #fourth_index = np.random.randint(0,high=epochs)
-
-            dR = trainGenerator[0][0][4][fourth_ind, :, 0]
-            kT = trainGenerator[0][0][4][fourth_ind, :, 1]
-            z = trainGenerator[0][0][4][fourth_ind, :, 2]
-            #m2 = trainGenerator[0][0][4][fourth_ind, :, 3]
-
-            dR_val = validGenerator[0][0][4][fourth_ind, :, 0]
-            kT_val = validGenerator[0][0][4][fourth_ind, :, 1]
-            z_val = validGenerator[0][0][4][fourth_ind, :, 2]
-            #m2_val = validGenerator[0][0][4][fourth_ind, :, 3]
-
-            # No zero-padded w/ zero-padded interaction
-            withzeros = trainGenerator[0][0][4][fourth_ind, :, :]
-            nozeros = withzeros[~np.all(withzeros == 0., axis=1)]
-            dR_nozeros = nozeros[:, 0]
-            kT_nozeros = nozeros[:, 1]
-            z_nozeros = nozeros[:, 2]
-            #m2_nozeros = nozeros[:, 3]
-
-            withzeros_val = validGenerator[0][0][4][fourth_ind, :, :]
-            nozeros_val = withzeros_val[~np.all(withzeros_val == 0., axis=1)]
-            dR_nozeros_val = nozeros_val[:, 0]
-            kT_nozeros_val = nozeros_val[:, 1]
-            z_nozeros_val = nozeros_val[:, 2]
-            #m2_nozeros_val = nozeros_val[:, 3]
-
-            # No particle w/ zero-padded interaction
-            data_bool = np.array(nozeros, dtype=bool)
-            b = [True, False, False]
-            delete = nozeros[~np.all(data_bool == b, axis=1)]
-            dR_none = delete[:, 0]
-            kT_none = delete[:, 1]
-            z_none = delete[:, 2]
-            #m2_none = delete[:, 3]
-
-            data_bool_val = np.array(nozeros_val, dtype=bool)
-            delete_val = nozeros_val[~np.all(data_bool_val == b, axis=1)]
-            dR_none_val = delete_val[:, 0]
-            kT_none_val = delete_val[:, 1]
-            z_none_val = delete_val[:, 2]
-            #m2_none_val = delete_val[:, 3]
-
-            dR_none_conc = np.concatenate((dR_none_conc, dR_none))
-            kT_none_conc = np.concatenate((kT_none_conc, kT_none))
-            z_none_conc = np.concatenate((z_none_conc, z_none))
-            #m2_none_conc = np.concatenate((m2_none_conc, m2_none))
-
-            dR_none_val_conc = np.concatenate((dR_none_val_conc, dR_none_val))
-            kT_none_val_conc = np.concatenate((kT_none_val_conc, kT_none_val))
-            z_none_val_conc = np.concatenate((z_none_val_conc, z_none_val))
-            #m2_none_val_conc = np.concatenate((m2_none_val_conc, m2_none_val))
-
-            for index1 in first_index[1:]:
-                for index4 in fourth_index[1:]:
-                    new_dR = trainGenerator[index1][0][4][index4,:,0]
-                    new_kT = trainGenerator[index1][0][4][index4,:,1]
-                    new_z = trainGenerator[index1][0][4][index4,:,2]
-                    dR = np.concatenate((dR, new_dR), axis=0)
-                    kT = np.concatenate((kT, new_kT), axis=0)
-                    z = np.concatenate((z, new_z), axis=0)
-
-        MakeEdgeHist(dR, xname='dR', outputname=f'{path_out}dR.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(dR_nozeros, xname='dR', outputname=f'{path_out}dR_nozeros.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(dR_none_conc, xname='dR', outputname=f'{path_out}dR_none.png', nbins=100, density=False, yname="# of edges")
-
-        MakeEdgeHist(kT, xname='kT', outputname=f'{path_out}kT.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(kT_nozeros, xname='kT', outputname=f'{path_out}kT_nozeros.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(kT_none_conc, xname='kT', outputname=f'{path_out}kT_none.png', nbins=100, density=False, yname="# of edges")
-
-        MakeEdgeHist(z, xname='z', outputname=f'{path_out}z.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(z_nozeros, xname='z', outputname=f'{path_out}z_nozeros.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(z_none_conc, xname='z', outputname=f'{path_out}z_none.png', nbins=100, density=False, yname="# of edges")
-
-        #MakeEdgeHist(m2, xname='m2', outputname=f'{path_out}m2.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(m2_nozeros, xname='m2', outputname=f'{path_out}m2_nozeros.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(m2_none_conc, xname='m2', outputname=f'{path_out}m2_none.png', nbins=100, density=False, yname="# of edges")
-
-        MakeEdgeHist(dR_none_val_conc, xname='dR', outputname=f'{path_out}dR_none_val.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(kT_none_val_conc, xname='kT', outputname=f'{path_out}kT_none_val.png', nbins=100, density=False, yname="# of edges")
-        MakeEdgeHist(z_none_val_conc, xname='z', outputname=f'{path_out}z_none_val.png', nbins=100, density=False, yname="# of edges")
-        #MakeEdgeHist(m2_none_val_conc, xname='m2', outputname=f'{path_out}m2_none_val.png', nbins=100, density=False, yname="# of edges")
-        '''
 
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
@@ -273,15 +182,6 @@ def train_dataGenerator(args):
                                           embedding_input_dim=trainGenerator.emb_input_dim,
                                           number_of_pupcandis=maxNPF,
                                           units=units, compute_ef=compute_ef, edge_list=edge_list)
-
-        elif model == 'node_select':
-            keras_model = node_select(n_features=n_features_pf,
-                                      emb_out_dim=2,
-                                      n_features_cat=n_features_pf_cat,
-                                      activation='tanh',
-                                      embedding_input_dim=trainGenerator.emb_input_dim,
-                                      number_of_pupcandis=maxNPF,
-                                      units=units, compute_ef=compute_ef)
 
     else:
         logit_total_bits = int(quantized[0])
@@ -319,59 +219,6 @@ def train_dataGenerator(args):
     # Run training
     print(keras_model.summary())
 
-    # For debugging purposes. Prints outputs for some layers from the model
-
-    #from tensorflow.keras import backend as K
-
-    # create a Keras function to get i-th layer
-    #concatenate_edge = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[16].output)
-    #model_inputs_cont = K.function(inputs=keras_model.inputs, outputs=keras_model.layers[4].output)
-    #model_inputs_pxpy = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[42].output)
-    #scalars_init = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[13].output)
-    #scalars = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[15].output)
-    #scalars_multiply = K.function(inputs = keras_model.inputs, outputs = keras_model.layers[18].output)
-
-    # extract output
-    #concatenate_edge_output = concatenate_edge(trainGenerator[156][0])
-    #layer_input_cont = model_inputs_cont(trainGenerator[156][0])
-    #layer_input_pxpy = model_inputs_pxpy(trainGenerator[156][0])
-    #scalars_init_output = scalars_init(trainGenerator[156][0])
-    #scalars_output = scalars(trainGenerator[156][0])
-    #scalars_multiply_output = scalars_multiply(trainGenerator[156][0])
-
-    #print('scalars_init:  ', scalars_init_output[0,:,:])
-    #print('scalars:  ', scalars_output[0,35,:])
-    #print('scalars_multiply:  ', scalars_multiply_output[0,35,:])
-    #print('concatenate_edge:  ', concatenate_edge_output[0,35,:])
-
-    #output_pti = concatenate_edge_output[189,811,0]
-    #output_ptj = concatenate_edge_output[189,811,8]
-    #output_etai = concatenate_edge_output[189,811,1]
-    #output_etaj = concatenate_edge_output[189,811,9]
-    #output_phii = concatenate_edge_output[189,811,2]
-    #output_phij = concatenate_edge_output[189,811,10]
-    #output_dR = concatenate_edge_output[189,811,16]
-    #output_kT = concatenate_edge_output[189,811,17]
-    #output_z = concatenate_edge_output[189,811,18]
-    #i_idx = np.where(layer_input == output_pti)
-    #j_idx = np.where(layer_input == output_ptj)
-
-    # print(concatenate_edge_output[189,820,:])
-    #print('--------')
-    #print('layer_input_cont')
-    #print(layer_input_cont[0, :])
-    # print('--------')
-    # print('layer_input_pxpy')
-    # print(layer_input_pxpy[189,:])
-    # print('--------')
-    # print(concatenate_edge_output.shape)
-    # print('--------')
-    # print('output_pti', output_pti, '  output_ptj', output_ptj, '   output_etai', output_etai, '  output_etaj', output_etaj,
-    #      '  output_phii', output_phii, '  output_phij', output_phij, '  output_dR', output_dR, '  output_kT', output_kT, '  output_z', output_z)
-    # print('--------')
-
-    # end of debugging lines
-
     start_time = time.time()  # check start time
     history = keras_model.fit(trainGenerator,
                               epochs=epochs,
@@ -388,6 +235,45 @@ def train_dataGenerator(args):
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
 
+    px_truth_conc = []
+    py_truth_conc = []
+    for i in range(39):
+        px_truth = testGenerator[i][0][1][:,:,0]
+        px_truth = np.sum(px_truth, axis=1)
+        px_truth_conc.append(px_truth)
+        py_truth = testGenerator[i][0][1][:,:,1]
+        py_truth = np.sum(py_truth, axis=1)
+        py_truth_conc.append(py_truth)
+    
+    px_truth = np.concatenate(px_truth_conc)
+    py_truth = np.concatenate(py_truth_conc)
+    pt_truth = np.sqrt(px_truth*px_truth + py_truth*py_truth)
+
+    predict_test = convertXY2PtPhi(predict_test)
+    pt_pred = predict_test[:,0]
+    #pt_pred = pt_pred.flatten()
+    bins = np.histogram_bin_edges(pt_truth, bins=40)
+    print(bins)
+    bin_idx = np.digitize(pt_truth, bins)
+    print(bin_idx)
+    hist_inp = np.zeros(40)
+    for bin in range(40):
+        pt_pred_binned = pt_pred[bin_idx == bin]
+        pt_pred_sum = np.sum(pt_pred_binned)
+        pt_truth_binned = pt_truth[bin_idx == bin]
+        pt_truth_sum = np.sum(pt_truth_binned)
+        print("-----")
+        print(pt_truth_sum)
+        print("-----")
+        if pt_truth_sum == 0:
+            response = 0
+        else:
+            response = pt_pred_sum / pt_truth_sum
+        hist_inp[bin] = response
+
+    MakeEdgeHist(hist_inp, bins, xname='pt', outputname=f'{path_out}response.png', yname="response")
+    
+
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
 
@@ -403,7 +289,7 @@ def train_dataGenerator(args):
 
 def train_loadAllData(args):
     # general setup
-    maxNPF = maxNPF
+    maxNPF = args.maxNPF
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
@@ -417,8 +303,7 @@ def train_loadAllData(args):
     units = list(map(int, args.units))
     compute_ef = args.compute_edge_feat
     model = args.model
-
-    print('starting')
+    edge_list = args.edge_features
 
     # Read inputs
     # convert root files to h5 and store in same location
@@ -432,46 +317,65 @@ def train_loadAllData(args):
     # It may be desireable to set specific files as the train, test, valid data sets
     # For now I keep train.py used: selection from a list of indicies
 
-    print('right before Xorg')
-
     Xorg, Y = read_input(h5files)
+    if maxNPF < 100:
+        order = Xorg[:, :, 0].argsort(axis=1)[:, ::-1]
+        shape = np.shape(Xorg)
+        for x in range(shape[0]):
+            Xorg[x, :, :] = Xorg[x, order[x], :]
+        Xorg = Xorg[:, 0:maxNPF, :]
     Y = Y / -normFac
 
     N = maxNPF
     Nr = N*(N-1)
 
     receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
+    Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
 
     if compute_ef == 1:
-        print("Computing edge features")
-        set_size = Xorg.shape[0]
-        ef = np.zeros([set_size, Nr, 1])
-        for count, edge in enumerate(receiver_sender_list):
-            eta = Xorg[:, :, 3:4]
-            phi = Xorg[:, :, 4:5]
-            receiver = edge[0]
-            sender = edge[1]
-            eta1 = eta[:, receiver, :]
-            phi1 = phi[:, receiver, :]
-            eta2 = eta[:, sender, :]
-            phi2 = phi[:, sender, :]
-            dR = deltaR(eta1, phi1, eta2, phi2)
-            ef[:, count, :] = dR
-        print("edge features computed")
-
-        Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
+        eta = Xi[:, :, 1]
+        phi = Xi[:, :, 2]
+        pt = Xi[:, :, 0]
+        if ('m2' in edge_list):
+            px = Xp[:, :, 0]
+            py = Xp[:, :, 1]
+            pz = pt*np.sinh(eta)
+            energy = np.sqrt(px**2 + py**2 + pz**2)
+            p4 = np.stack((energy, px, py, pz), axis=-1)
+        receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
+        edge_idx = np.array(receiver_sender_list)
+        edge_stack = []
+        if ('dR' in edge_list) or ('kT' in edge_list):
+            eta1 = eta[:, edge_idx[:, 0]]
+            phi1 = phi[:, edge_idx[:, 0]]
+            eta2 = eta[:, edge_idx[:, 1]]
+            phi2 = phi[:, edge_idx[:, 1]]
+            dR = deltaR_calc(eta1, phi1, eta2, phi2)
+            edge_stack.append(dR)
+        if ('kT' in edge_list) or ('z' in edge_list):
+            pt1 = pt[:, edge_idx[:, 0]]
+            pt2 = pt[:, edge_idx[:, 1]]
+            if ('kT' in edge_list):
+                kT = kT_calc(pt1, pt2, dR)
+                edge_stack.append(kT)
+            if ('z' in edge_list):
+                z = z_calc(pt1, pt2)
+                edge_stack.append(z)
+        if ('m2' in edge_list):
+            p1 = p4[:, edge_idx[:, 0], :]
+            p2 = p4[:, edge_idx[:, 1], :]
+            m2 = mass2_calc(p1, p2)
+            edge_stack.append(m2)
+        ef = np.stack(edge_stack, axis=-1)
         Xc = [Xc1, Xc2]
-
-        emb_input_dim = {
-            i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
-        }
-
+        # dimension parameter for keras model
+        emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)}
         # Prepare training/val data
+        Xc = [Xc1, Xc2]
         Yr = Y
         Xr = [Xi, Xp] + Xc + [ef]
 
     else:
-        print("else path")
         Xi, Xp, Xc1, Xc2 = preProcessing(Xorg, normFac)
         Xc = [Xc1, Xc2]
 
@@ -513,9 +417,11 @@ def train_loadAllData(args):
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
-                                          embedding_input_dim=trainGenerator.emb_input_dim,
+                                          embedding_input_dim=emb_input_dim,
                                           number_of_pupcandis=maxNPF,
-                                          units=units)
+                                          units=units,
+                                          compute_ef=compute_ef,
+                                          edge_list=edge_list)
 
     else:
         logit_total_bits = int(quantized[0])
@@ -568,6 +474,11 @@ def train_loadAllData(args):
     predict_test = keras_model.predict(Xr_test) * normFac
     PUPPI_pt = normFac * np.sum(Xr_test[1], axis=1)
     Yr_test = normFac * Yr_test
+
+    for i in range(50):
+        px_truth = testGenerator[i][0][:,0].flatten()
+        py_truth = testGenerator[i][0][:,1].flatten()
+        pt_truth = np.sqrt(px_truth*px_truth + py_truth*py_truth)
 
     test(Yr_test, predict_test, PUPPI_pt, path_out)
 
