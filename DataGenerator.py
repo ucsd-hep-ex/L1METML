@@ -155,10 +155,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             bins = [0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi]
             phi_mod = np.mod(self.X[:,:,4:5], 2*np.pi)    # ensures all phi values are within 0-2pi
             idx = np.digitize(phi_mod,bins)     # Bins phi column into 4 quadrants
-            X_quad2 = np.where(idx==2,self.X,0)     # uses 'idx' as index to bin input data
+            #X_quad2 = np.where(idx==2,self.X,0)     # uses 'idx' as index to bin input data
             X_quad1 = np.where(idx==1,self.X,0)     # binned data preserves shape, self.X = [256, 100, 8] -> X_quad = [256, 100, 8], padded with zeros
-            X_quad3 = np.where(idx==3,self.X,0)
-            X_quad4 = np.where(idx==4,self.X,0)
+            #X_quad3 = np.where(idx==3,self.X,0)
+            #X_quad4 = np.where(idx==4,self.X,0)
             #self.X = np.concatenate((X_quad1,X_quad2,X_quad3,X_quad4),axis=0)    # concatenates all quadrants together sefl.X=[1024,100,8]
             self.X = X_quad1
 
@@ -193,20 +193,20 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             Y_1px = np.sum(Y_1px, axis=1)    # sum px of all particles to get total px
             Y_1py = np.sum(Y_1py, axis=1)    # sum py of all particles ot get total py
 
-            Y_2px = Y_quad2[:,:,0] * np.cos(Y_quad2[:,:,1])
-            Y_2py = Y_quad2[:,:,0] * np.sin(Y_quad2[:,:,1])
-            Y_2px = np.sum(Y_2px, axis=1)
-            Y_2py = np.sum(Y_2py, axis=1)
+            #Y_2px = Y_quad2[:,:,0] * np.cos(Y_quad2[:,:,1])
+            #Y_2py = Y_quad2[:,:,0] * np.sin(Y_quad2[:,:,1])
+            #Y_2px = np.sum(Y_2px, axis=1)
+            #Y_2py = np.sum(Y_2py, axis=1)
 
-            Y_3px = Y_quad3[:,:,0] * np.cos(Y_quad3[:,:,1])
-            Y_3py = Y_quad3[:,:,0] * np.sin(Y_quad3[:,:,1])
-            Y_3px = np.sum(Y_3px, axis=1)
-            Y_3py = np.sum(Y_3py, axis=1)
+            #Y_3px = Y_quad3[:,:,0] * np.cos(Y_quad3[:,:,1])
+            #Y_3py = Y_quad3[:,:,0] * np.sin(Y_quad3[:,:,1])
+            #Y_3px = np.sum(Y_3px, axis=1)
+            #Y_3py = np.sum(Y_3py, axis=1)
 
-            Y_4px = Y_quad4[:,:,0] * np.cos(Y_quad4[:,:,1])
-            Y_4py = Y_quad4[:,:,0] * np.sin(Y_quad4[:,:,1])
-            Y_4px = np.sum(Y_4px, axis=1)
-            Y_4py = np.sum(Y_4py, axis=1)
+            #Y_4px = Y_quad4[:,:,0] * np.cos(Y_quad4[:,:,1])
+            #Y_4py = Y_quad4[:,:,0] * np.sin(Y_quad4[:,:,1])
+            #Y_4px = np.sum(Y_4px, axis=1)
+            #Y_4py = np.sum(Y_4py, axis=1)
 
             #sum px distribution in quadrant 1 for gencand
             # compare to reco px
