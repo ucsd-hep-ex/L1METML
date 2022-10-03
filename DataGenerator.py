@@ -159,7 +159,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             X_quad1 = np.where(idx==1,self.X,0)     # binned data preserves shape, self.X = [256, 100, 8] -> X_quad = [256, 100, 8], padded with zeros
             X_quad3 = np.where(idx==3,self.X,0)
             X_quad4 = np.where(idx==4,self.X,0)
-            self.X = np.concatenate((X_quad1,X_quad2,X_quad3,X_quad4),axis=0)    # concatenates all quadrants together sefl.X=[1024,100,8]
+            #self.X = np.concatenate((X_quad1,X_quad2,X_quad3,X_quad4),axis=0)    # concatenates all quadrants together sefl.X=[1024,100,8]
+            self.X = X_quad1
 
 
             order = self.X[:, :, 0].argsort(axis=1)[:, ::-1]    # Order self.X by pt so when we truncate, we take most important particles
@@ -213,8 +214,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
             # add sorting for default (311, utils.py)
             
-            Yx = np.concatenate((Y_1px,Y_2px,Y_3px,Y_4px))    # concatenate px of all quadrants together
-            Yy = np.concatenate((Y_1py,Y_2py,Y_3py,Y_4py))    # concatenate py of all quadrants together
+            #Yx = np.concatenate((Y_1px,Y_2px,Y_3px,Y_4px))    # concatenate px of all quadrants together
+            #Yy = np.concatenate((Y_1py,Y_2py,Y_3py,Y_4py))    # concatenate py of all quadrants together
+            Yx = Y_1px
+            Yy = Y_1py
             Y = np.stack((Yx,Yy),axis=1)    # stack px, and py to get truth tensor with shape (1024, 2)
 
 
