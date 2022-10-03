@@ -162,7 +162,7 @@ def train_dataGenerator(args):
         validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
         testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
-        print("check shape", np.shape(Xr_train[0][0][0]))
+        print("check shape", np.shape(Xr_train[0][0]))
 
     # Load training model
     if quantized is None:
