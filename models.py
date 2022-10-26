@@ -9,6 +9,7 @@ import qkeras
 from qkeras.qlayers import QDense, QActivation
 import numpy as np
 import itertools
+import pdb
 
 
 def dense_embedding(n_features=6,
@@ -19,7 +20,8 @@ def dense_embedding(n_features=6,
                     emb_out_dim=8,
                     with_bias=True,
                     t_mode=0,
-                    units=[64, 32, 16]):
+                    units=[64, 32, 16]
+                    compute_ef=0):
     n_dense_layers = len(units)
 
     inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input_cont')
@@ -39,9 +41,10 @@ def dense_embedding(n_features=6,
             name='embedding{}'.format(i_emb))(input_cat)
         embeddings.append(embedding)
 
-    #edges=100*99
-    #edge_feat = Input(shape=(edges, 3), name='edge_feat')
-    #inputs.append(edge_feat)
+    if compute_ef = 1:
+        edges=100*99
+        edge_feat = Input(shape=(edges, 3), name='edge_feat')
+        inputs.append(edge_feat)
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
     emb_concat = Concatenate()(embeddings)
@@ -62,10 +65,8 @@ def dense_embedding(n_features=6,
             pxpy = Add()([pxpy, b])
         w = Dense(1, name='met_weight', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
-        x = Multiply()([w, pxpy])
 
-        x = GlobalAveragePooling1D(name='output')(x)
-    outputs = x
+    outputs = w
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
@@ -382,12 +383,10 @@ class Distiller(Model):
     def train_step(self, data):
         # Unpack data
         x, y = data
-        print(y)
-        print(np.shape(y))
         #print(x)
 
         # Forward pass of teacher
-        teacher_predictions = self.teacher(x, training=False)
+        teacher_predictions = self.teacher(inputs=x, outputs=self.teacher.get_layer(-3).output, training=False)
 
         with tf.GradientTape() as tape:
             # Forward pass of student
@@ -396,13 +395,6 @@ class Distiller(Model):
             # Compute losses
             #student_predictions = keras.layers.Reshape([256, 2])(y)
             #print(y)
-            print("------")
-            print("y")
-            print(y)
-            #student_predictions = keras.layers.Reshape([1,2])(student_predictions)
-            #y = keras.layers.Reshape([1, 2])(y)
-            print("y reshape")
-            print(y)
 
             student_loss = self.student_loss_fn(y, student_predictions)
 
