@@ -182,7 +182,8 @@ def train_dataGenerator(args):
                                           number_of_pupcandis=maxNPF,
                                           t_mode=t_mode,
                                           with_bias=False,
-                                          units=units)
+                                          units=units,
+                                          compute_ef=compute_ef)
 
         elif model == 'node_select':
             keras_model = node_select(n_features=n_features_pf,
