@@ -20,7 +20,7 @@ def dense_embedding(n_features=6,
                     emb_out_dim=8,
                     with_bias=True,
                     t_mode=0,
-                    units=[64, 32, 16]
+                    units=[64, 32, 16],
                     compute_ef=0):
     n_dense_layers = len(units)
 
@@ -41,10 +41,11 @@ def dense_embedding(n_features=6,
             name='embedding{}'.format(i_emb))(input_cat)
         embeddings.append(embedding)
 
-    if compute_ef = 1:
+    if compute_ef == 1:
         edges=100*99
         edge_feat = Input(shape=(edges, 3), name='edge_feat')
         inputs.append(edge_feat)
+
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
     emb_concat = Concatenate()(embeddings)
@@ -64,15 +65,18 @@ def dense_embedding(n_features=6,
             b = Dense(2, name='met_bias', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
             pxpy = Add()([pxpy, b])
         w = Dense(1, name='met_weight', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        keras_model_weights = Model(inputs=inputs, outputs=w)
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
+        x = Multiply()([w, pxpy])
 
-    outputs = w
+        x = GlobalAveragePooling1D(name='output')(x)
+    outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
     keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
 
-    return keras_model
+    return keras_model, keras_model_weights
 
 
 def dense_embedding_quantized(n_features=6,
@@ -320,11 +324,13 @@ def graph_embedding(compute_ef, n_features=6,
         h = BatchNormalization(momentum=0.95)(h)
         h = Activation(activation=activation)(h)
     w = Dense(1, name='met_weight', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(h)
-    w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
-    x = Multiply()([w, pxpy])
+    keras_model_weights = Model(inputs=inputs, outputs=w)
+    w_minus_one = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
+    x = Multiply()([w_minus_one, pxpy])
     outputs = GlobalAveragePooling1D(name='output')(x)
 
     keras_model = Model(inputs=inputs, outputs=outputs)
+
 
     keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
 
@@ -339,13 +345,14 @@ def graph_embedding(compute_ef, n_features=6,
     # keras_model.get_layer('scalars_init').set_weights([init_zeros])
     # keras_model.get_layer('scalars').set_weights([w_zeros,b_zeros])
 
-    return keras_model
+    return keras_model, keras_model_weights
 
 class Distiller(Model):
-    def __init__(self, student, teacher):
+    def __init__(self, student, teacher, student_weights):
         super(Distiller, self).__init__()
         self.teacher = teacher
         self.student = student
+        self.student_weights = student_weights
 
     def call(self, inputs):
         outputs = self.student(inputs)
@@ -386,11 +393,12 @@ class Distiller(Model):
         #print(x)
 
         # Forward pass of teacher
-        teacher_predictions = self.teacher(inputs=x, outputs=self.teacher.get_layer(-3).output, training=False)
+        teacher_predictions = self.teacher(inputs=x, training=False)
 
         with tf.GradientTape() as tape:
             # Forward pass of student
             student_predictions = self.student(x, training=True)
+            student_predict_weights = self.student_weights(x, training=True)
 
             # Compute losses
             #student_predictions = keras.layers.Reshape([256, 2])(y)
@@ -404,7 +412,7 @@ class Distiller(Model):
             distillation_loss = (
                 self.distillation_loss_fn(
                     tf.nn.softmax(teacher_predictions / self.temperature, axis=1),
-                    tf.nn.softmax(student_predictions / self.temperature, axis=1),
+                    tf.nn.softmax(student_predict_weights / self.temperature, axis=1),
                 )
                 * self.temperature**2
             )
