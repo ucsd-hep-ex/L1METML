@@ -167,14 +167,14 @@ def train_dataGenerator(args):
                                           with_bias=False,
                                           units=units)
         elif model == 'graph_embedding':
-            teacher = graph_embedding(n_features=n_features_pf,
+            teacher, teacher_weights = graph_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
                                           embedding_input_dim=trainGenerator.emb_input_dim,
                                           number_of_pupcandis=maxNPF,
                                           units=units, compute_ef=compute_ef, edge_list=edge_list)
-            student = dense_embedding(n_features=n_features_pf,
+            student, student_weights = dense_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
@@ -240,7 +240,7 @@ def train_dataGenerator(args):
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
     end_time = time.time()  # check end time
 
-    distiller = Distiller(student=student, teacher=teacher)
+    distiller = Distiller(student=student, teacher=teacher_weights, student_weights=student_weights)
     distiller.compile(optimizer=optimizer,
                     metrics=keras.metrics.MeanSquaredError(),
                     student_loss_fn=keras.losses.MeanSquaredError(),
