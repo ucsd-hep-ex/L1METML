@@ -34,10 +34,10 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 
 
-def MakeEdgeHist(binned_data, bins, xname, outputname, yname="# of edges"):
+def MakeEdgeHist(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
     plt.style.use(hep.style.CMS)
     plt.figure(figsize=(10, 8))
-    plt.stairs(binned_data, edges=bins)
+    plt.hist(edge_feat, bins=nbins, density=density, histtype='step', facecolor='k', label='Truth')
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.savefig(outputname)
@@ -155,14 +155,12 @@ def train_dataGenerator(args):
         validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
         testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
-        print("check shape", np.shape(Xr_train[0][0][0]))
 
     else:
         trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
         validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
         testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
-        print("check shape", np.shape(Xr_train[0][0]))
 
     # Load training model
     if quantized is None:
@@ -214,12 +212,11 @@ def train_dataGenerator(args):
         verbose = 1
     elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss='mse', optimizer=optimizer,
+        keras_model.compile(loss=custom_loss, optimizer=optimizer,
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
 
     # Run training
-    print("--- response ---")
     print(keras_model.summary())
 
     start_time = time.time()  # check start time
@@ -237,45 +234,6 @@ def train_dataGenerator(args):
         puppi_pt = np.sum(Xr[1], axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
-
-    px_truth_conc = []
-    py_truth_conc = []
-    for i in range(39):
-        px_truth = testGenerator[i][0][1][:,:,0]
-        px_truth = np.sum(px_truth, axis=1)
-        px_truth_conc.append(px_truth)
-        py_truth = testGenerator[i][0][1][:,:,1]
-        py_truth = np.sum(py_truth, axis=1)
-        py_truth_conc.append(py_truth)
-    
-    px_truth = np.concatenate(px_truth_conc)
-    py_truth = np.concatenate(py_truth_conc)
-    pt_truth = np.sqrt(px_truth*px_truth + py_truth*py_truth)
-
-    predict_test = convertXY2PtPhi(predict_test)
-    pt_pred = predict_test[:,0]
-    #pt_pred = pt_pred.flatten()
-    bins = np.histogram_bin_edges(pt_truth, bins=40)
-    print(bins)
-    bin_idx = np.digitize(pt_truth, bins)
-    print(bin_idx)
-    hist_inp = np.zeros(40)
-    for bin in range(40):
-        pt_pred_binned = pt_pred[bin_idx == bin]
-        pt_pred_sum = np.sum(pt_pred_binned)
-        pt_truth_binned = pt_truth[bin_idx == bin]
-        pt_truth_sum = np.sum(pt_truth_binned)
-        print("-----")
-        print(pt_truth_sum)
-        print("-----")
-        if pt_truth_sum == 0:
-            response = 0
-        else:
-            response = pt_pred_sum / pt_truth_sum
-        hist_inp[bin] = response
-
-    MakeEdgeHist(hist_inp, bins, xname='pt', outputname=f'{path_out}response.png', yname="response")
-    
 
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
@@ -477,11 +435,6 @@ def train_loadAllData(args):
     predict_test = keras_model.predict(Xr_test) * normFac
     PUPPI_pt = normFac * np.sum(Xr_test[1], axis=1)
     Yr_test = normFac * Yr_test
-
-    for i in range(50):
-        px_truth = testGenerator[i][0][:,0].flatten()
-        py_truth = testGenerator[i][0][:,1].flatten()
-        pt_truth = np.sqrt(px_truth*px_truth + py_truth*py_truth)
 
     test(Yr_test, predict_test, PUPPI_pt, path_out)
 
