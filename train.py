@@ -229,6 +229,7 @@ def train_dataGenerator(args):
         verbose = 1
 
     # Run training
+    print("----- distiller -----")
     print(teacher.summary())
 
 
