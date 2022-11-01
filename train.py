@@ -217,7 +217,7 @@ def train_dataGenerator(args):
         verbose = 1
 
     # Run training
-    print('---------4 quad---------")
+    print("---------4 quad---------")
     print(keras_model.summary())
 
     start_time = time.time()  # check start time
