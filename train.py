@@ -175,7 +175,7 @@ def train_dataGenerator(args):
                                           with_bias=False,
                                           units=units)
         elif model == 'graph_embedding':
-            keras_model, keras_model_weights = graph_embedding(n_features=n_features_pf,
+            keras_model = graph_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
@@ -234,25 +234,6 @@ def train_dataGenerator(args):
         puppi_pt = np.sum(Xr[1], axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
-    
-    predict_weights, pxpy = keras_model_weights.predict(testGenerator)
-    predict_weights = predict_weights * normFac
-    pxpy = pxpy * normFac
-    pt = np.sqrt(pxpy[:,:,0]**2, pxpy[:,:,1]**2)
-    print(np.shape(pt))
-    pt = pt.flatten()
-    predict_weights = predict_weights.flatten()
-
-    plt.style.use(hep.style.CMS)
-    plt.figure(figsize=(10, 8))
-    plt.plot(pt, predict_weights, '.')
-    plt.xlabel('pt')
-    plt.ylabel('weights')
-    plt.title('weights vs pt')
-    plt.savefig(f'{path_out}weights_pt.png')
-    plt.close()
-
-
 
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
