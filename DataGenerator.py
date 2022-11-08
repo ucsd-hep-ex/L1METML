@@ -83,32 +83,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
 
-    def deltaR_calc(self, eta1, phi1, eta2, phi2):
-        """ calculate deltaR """
-        dphi = (phi1-phi2)
-        gt_pi_idx = (dphi > np.pi)
-        lt_pi_idx = (dphi < -np.pi)
-        dphi[gt_pi_idx] -= 2*np.pi
-        dphi[lt_pi_idx] += 2*np.pi
-        deta = eta1-eta2
-        return np.hypot(deta, dphi)
-
-    def kT_calc(self, pti, ptj, dR):
-        min_pt = np.minimum(pti, ptj)
-        kT = min_pt * dR
-        return kT
-
-    def z_calc(self, pti, ptj):
-        epsilon = 1.0e-12
-        min_pt = np.minimum(pti, ptj)
-        z = min_pt/(pti + ptj + epsilon)
-        return z
-
-    def mass2_calc(self, pi, pj):
-        pij = pi + pj
-        m2 = pij[:, :, 0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
-        return m2
-
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
         # X : (n_samples, n_dim, n_channels)
