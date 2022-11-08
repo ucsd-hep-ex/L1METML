@@ -126,7 +126,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         else:
             for ifile, start, stop in zip(unique_files, starts, stops):
-                self.X, self.y, self.e = self.__get_features_labels(ifile, start, stop)
+                self.X, self.y = self.__get_features_labels(ifile, start, stop)
                 Xs.append(self.X)
                 ys.append(self.y)
 
