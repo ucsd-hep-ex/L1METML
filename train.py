@@ -248,7 +248,7 @@ def train_dataGenerator(args):
                     distillation_loss_fn=keras.losses.MeanSquaredError(),
                     alpha=0.1,
                     temperature=10)
-    distiller.fit(trainGenerator, epochs=2)
+    distiller.fit(trainGenerator, epochs=epochs)
 
     predict_test = distiller.predict(testGenerator) * normFac
     all_PUPPI_pt = []
