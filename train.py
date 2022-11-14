@@ -242,13 +242,26 @@ def train_dataGenerator(args):
     print(np.shape(pt))
     pt = pt.flatten()
     predict_weights = predict_weights.flatten()
+    
+    bins = np.linspace(1e-10,400,40)
+    pt_bin = np.digitize(pt, bins)
+    weights_binned_avg = []
+    for i in range(1,41):
+        bin_i = predict_weights[np.where(pt_bin==i)]
+        bin_i = np.absolute(np.average(bin_i))
+        weights_binned_avg.append(bin_i)
+
 
     plt.style.use(hep.style.CMS)
-    plt.figure(figsize=(10, 8))
-    plt.plot(pt, predict_weights, '.')
-    plt.xlabel('pt')
-    plt.ylabel('weights')
-    plt.title('weights vs pt')
+    plt.figure(figsize=(10, 16))
+    figure, axis = plt.subplots(1, 2)
+    axis[0].plot(pt, predict_weights, '.')
+    axis[0].set_title('weights vs pt (unprofiled)')
+    axis[0].set(xlabel='pt', ylabel='weights')
+    
+    axis[1].plot(bins, weights_binned_avg, '.')
+    axis[1].set_title('weights vs pt (profiled)')
+    axis[1].set(xlabel='pt', ylabel='weights')
     plt.savefig(f'{path_out}weights_pt.png')
     plt.close()
 
