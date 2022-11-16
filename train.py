@@ -34,6 +34,32 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 
 
+def deltaR_calc(self, eta1, phi1, eta2, phi2):
+    """ calculate deltaR """
+    dphi = (phi1-phi2)
+    gt_pi_idx = (dphi > np.pi)
+    lt_pi_idx = (dphi < -np.pi)
+    dphi[gt_pi_idx] -= 2*np.pi
+    dphi[lt_pi_idx] += 2*np.pi
+    deta = eta1-eta2
+    return np.hypot(deta, dphi)
+
+def kT_calc(self, pti, ptj, dR):
+    min_pt = np.minimum(pti, ptj)
+    kT = min_pt * dR
+    return kT
+
+def z_calc(self, pti, ptj):
+    epsilon = 1.0e-12
+    min_pt = np.minimum(pti, ptj)
+    z = min_pt/(pti + ptj + epsilon)
+    return z
+
+def mass2_calc(self, pi, pj):
+    pij = pi + pj
+    m2 = pij[:, :, 0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
+    return m2
+
 def MakeEdgeHist(edge_feat, xname, outputname, nbins=1000, density=False, yname="# of edges"):
     plt.style.use(hep.style.CMS)
     plt.figure(figsize=(10, 8))
@@ -42,6 +68,51 @@ def MakeEdgeHist(edge_feat, xname, outputname, nbins=1000, density=False, yname=
     plt.ylabel(yname)
     plt.savefig(outputname)
     plt.close()
+
+def build_ef(X, N):
+    #file_name = file_name.replace('.root', '.h5')
+    #with h5py.File(file_name, "r+") as h5_file:
+    #    try:
+    #        del h5_file["ef_100cand"]
+    #    except:
+    #        print("no ef_100cand")
+    # X = h5_file['X']
+    Xi, Xp, Xc1, Xc2 = preProcessing(X, 1)
+    eta = Xi[:, :, 1]
+    phi = Xi[:, :, 2]
+    pt = Xi[:, :, 0]
+    px = Xp[:, :, 0]
+    py = Xp[:, :, 1]
+    pz = pt*np.sinh(eta)
+    #print("before killed 1")
+    energy = np.sqrt(px**2 + py**2 + pz**2)
+    p4 = np.stack((energy, px, py, pz), axis=-1)
+    receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
+    edge_idx = np.array(receiver_sender_list)
+    edge_stack = []
+    eta1 = eta[:, edge_idx[:, 0]]
+    phi1 = phi[:, edge_idx[:, 0]]
+    eta2 = eta[:, edge_idx[:, 1]]
+    phi2 = phi[:, edge_idx[:, 1]]
+    dR = deltaR_calc(eta1, phi1, eta2, phi2)
+    edge_stack.append(dR)
+    #print("before killed 2")
+    pt1 = pt[:, edge_idx[:, 0]]
+    pt2 = pt[:, edge_idx[:, 1]]
+    kT = kT_calc(pt1, pt2, dR)
+    edge_stack.append(kT)
+    z = z_calc(pt1, pt2)
+    edge_stack.append(z)
+    p1 = p4[:, edge_idx[:, 0], :]
+    #print("before killed 3")
+    p2 = p4[:, edge_idx[:, 1], :]
+    #print("before killed 4")
+    m2 = mass2_calc(p1, p2)
+    edge_stack.append(m2)
+    ef = np.stack(edge_stack, axis=-1)
+    return ef
+    #h5_file.create_dataset('ef_'+str(N)+'cand', data=ef, compression='lzf')
+
 
 
 def deltaR_calc(eta1, phi1, eta2, phi2):
@@ -138,6 +209,29 @@ def train_dataGenerator(args):
     # separate files into training, validation, and testing
     filesList = glob(os.path.join(inputPath, '*.root'))
     filesList.sort(reverse=True)
+    N = 100
+    for files in filesList[2:]:
+        print(files)
+        file_name = files.replace('.root', '.h5')
+        with h5py.File(file_name, "r+") as h5_file:
+            try:
+                del h5_file["ef_100cand"]
+            except:
+                print("no ef_100cand")
+            X = h5_file['X']
+            X_split = np.array_split(X,100)
+        print(np.shape(X_split[2]))
+        ef = []
+        for i in range(50):
+            x_i = X_split[i]
+            ef_i = build_ef(x_i, N)
+            ef.append(ef_i)
+            print('done build_ef')
+        with h5py.File(file_name, "r+") as h5_file:
+            ef = np.concatenate(ef)
+            h5_file.create_dataset('ef_'+str(N)+'cand', data=ef, compression='lzf')
+
+        #build_ef(files, 100)
 
     assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
 
