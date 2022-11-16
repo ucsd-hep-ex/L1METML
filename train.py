@@ -210,7 +210,7 @@ def train_dataGenerator(args):
     filesList = glob(os.path.join(inputPath, '*.root'))
     filesList.sort(reverse=True)
     N = 100
-    for files in filesList[2:]:
+    for files in filesList:
         print(files)
         file_name = files.replace('.root', '.h5')
         with h5py.File(file_name, "r+") as h5_file:
@@ -219,16 +219,13 @@ def train_dataGenerator(args):
             except:
                 print("no ef_100cand")
             X = h5_file['X']
-            X_split = np.array_split(X,100)
-        print(np.shape(X_split[2]))
-        ef = []
-        for i in range(50):
-            x_i = X_split[i]
-            ef_i = build_ef(x_i, N)
+            ef = []
+            ef_i = build_ef(X, N)
             ef.append(ef_i)
             print('done build_ef')
         with h5py.File(file_name, "r+") as h5_file:
             ef = np.concatenate(ef)
+            print(np.shape(ef))
             h5_file.create_dataset('ef_'+str(N)+'cand', data=ef, compression='lzf')
 
         #build_ef(files, 100)
