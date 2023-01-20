@@ -175,7 +175,7 @@ def train_dataGenerator(args):
                                           with_bias=False,
                                           units=units)
         elif model == 'graph_embedding':
-            keras_model, keras_model_weights = graph_embedding(n_features=n_features_pf,
+            keras_model = graph_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
@@ -234,38 +234,6 @@ def train_dataGenerator(args):
         puppi_pt = np.sum(Xr[1], axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
-    
-    predict_weights, pxpy = keras_model_weights.predict(testGenerator)
-    predict_weights = predict_weights * normFac
-    pxpy = pxpy * normFac
-    pt = np.sqrt(pxpy[:,:,0]**2, pxpy[:,:,1]**2)
-    print(np.shape(pt))
-    pt = pt.flatten()
-    predict_weights = predict_weights.flatten()
-    
-    bins = np.linspace(1e-10,400,40)
-    pt_bin = np.digitize(pt, bins)
-    weights_binned_avg = []
-    for i in range(1,41):
-        bin_i = predict_weights[np.where(pt_bin==i)]
-        bin_i = np.absolute(np.average(bin_i))
-        weights_binned_avg.append(bin_i)
-
-
-    plt.style.use(hep.style.CMS)
-    plt.figure(figsize=(10, 16))
-    figure, axis = plt.subplots(1, 2)
-    axis[0].plot(pt, predict_weights, '.')
-    axis[0].set_title('weights vs pt (unprofiled)')
-    axis[0].set(xlabel='pt', ylabel='weights')
-    
-    axis[1].plot(bins, weights_binned_avg, '.')
-    axis[1].set_title('weights vs pt (profiled)')
-    axis[1].set(xlabel='pt', ylabel='weights')
-    plt.savefig(f'{path_out}weights_pt.png')
-    plt.close()
-
-
 
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
