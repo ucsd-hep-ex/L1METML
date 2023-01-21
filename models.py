@@ -379,7 +379,10 @@ def graph_embedding(compute_ef, n_features=6,
 
     embeddings = []
 
-    inputs = [inputs_cont, pxpy, input_cat_0, input_cat_1, edge_feat]
+    if compute_ef == 1:
+        inputs = [inputs_cont, pxpy, input_cat_0, input_cat_1, edge_feat]
+    if compute_ef == 0:
+        inputs = [inputs_cont, pxpy, input_cat_0, input_cat_1]
     #for i_emb in range(n_features_cat):
     #    #input_cat = Input(shape=(number_of_pupcandis, ), name='input_cat{}'.format(i_emb))
     #    inputs.append(input_cat)
