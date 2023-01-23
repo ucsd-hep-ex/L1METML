@@ -209,7 +209,8 @@ def train_dataGenerator(args):
     # separate files into training, validation, and testing
     filesList = glob(os.path.join(inputPath, '*.root'))
     filesList.sort(reverse=True)
-    N = 100
+    print(filesList)
+    N = maxNPF
     for files in filesList:
         print(files)
         file_name = files.replace('.root', '.h5')
