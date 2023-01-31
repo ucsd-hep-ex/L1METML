@@ -237,28 +237,32 @@ def train_dataGenerator(args):
     
     predict_weights, pxpy = keras_model_weights.predict(testGenerator)
     predict_weights = predict_weights * normFac
+    
     pxpy_puppi = pxpy
-    pxpy = pxpy * normFac * predict_weights
-    pt_puppi = np.sqrt(pxpy_puppi[:,:,0]**2 + pxpy_puppi[:,:,1]**2)
-    pt = np.sqrt(pxpy[:,:,0]**2 + pxpy[:,:,1]**2)
-    print(np.shape(pt))
-    pt = pt.flatten()
+    pt_part_puppi = np.sqrt(pxpy_puppi[:,:,0]**2 + pxpy_puppi[:,:,1]**2)
+    pt_event_puppi = np.sum(pt_part_puppi, axis=1)
+    pt_part_puppi = pt_part_puppi.flatten()
     predict_weights = predict_weights.flatten()
+    
+    pxpy_w_weights = pxpy * normFac * predict_weights
+    pt_part_ml = np.sqrt(pxpy_w_weights[:,:,0]**2 + pxpy_w_weights[:,:,1]**2)
+    pt_event_ml = np.sum(pt_part, axis=1)
+
     px_Y = testGenerator[0][1][:,0]
     py_Y = testGenerator[0][1][:,0]
     pt_Y = np.sqrt(px_Y**2 + py_Y**2)
 
-    print("pt puppi:  ", pt_puppi[5])
-    print("pt X:  ", pt[5])
+    print("pt puppi:  ", pt_event_puppi[5])
+    print("pt X:  ", pt_event_ml[5])
     print("pt Y:  ", pt_Y[5])
-    print("pt puppi:  ", pt_puppi[32])
-    print("pt X:  ", pt[32])
+    print("pt puppi:  ", pt_part_puppi[32])
+    print("pt X:  ", pt_event_ml[32])
     print("pt Y:  ", pt_Y[32])
-    print("pt puppi:  ", pt_puppi[19])
-    print("pt X:  ", pt[19])
+    print("pt puppi:  ", pt_event_puppi[19])
+    print("pt X:  ", pt_event_ml[19])
     print("pt Y:  ", pt_Y[19])
-    print("pt puppi:  ", pt_puppi[43])
-    print("pt X:  ", pt[43])
+    print("pt puppi:  ", pt_event_puppi[43])
+    print("pt X:  ", pt_event_ml[43])
     print("pt Y:  ", pt_Y[43])
 
 
