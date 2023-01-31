@@ -226,9 +226,7 @@ def train_dataGenerator(args):
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=validGenerator,
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
-    
-    if model_output==True:
-        keras_model.save(model_output)
+  
 
     end_time = time.time()  # check end time
 
@@ -294,7 +292,8 @@ def train_dataGenerator(args):
     plt.savefig(f'{path_out}weights_pt.png')
     plt.close()
 
-
+    if model_output==True:
+        keras_model.save(model_output)
 
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
