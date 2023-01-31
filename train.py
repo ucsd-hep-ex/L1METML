@@ -237,12 +237,31 @@ def train_dataGenerator(args):
     
     predict_weights, pxpy = keras_model_weights.predict(testGenerator)
     predict_weights = predict_weights * normFac
-    pxpy = pxpy * normFac
-    pt = np.sqrt(pxpy[:,:,0]**2, pxpy[:,:,1]**2)
+    pxpy_puppi = pxpy
+    pxpy = pxpy * normFac * predict_weights
+    pt_puppi = np.sqrt(pxpy_puppi[:,:,0]**2 + pxpy_puppi[:,:,1]**2)
+    pt = np.sqrt(pxpy[:,:,0]**2 + pxpy[:,:,1]**2)
     print(np.shape(pt))
     pt = pt.flatten()
     predict_weights = predict_weights.flatten()
-    
+    px_Y = testGenerator[0][1][:,0]
+    py_Y = testGenerator[0][1][:,0]
+    pt_Y = np.sqrt(px_Y**2 + py_Y**2)
+
+    print("pt puppi:  ", pt_puppi[5])
+    print("pt X:  ", pt[5])
+    print("pt Y:  ", pt_Y[5])
+    print("pt puppi:  ", pt_puppi[32])
+    print("pt X:  ", pt[32])
+    print("pt Y:  ", pt_Y[32])
+    print("pt puppi:  ", pt_puppi[19])
+    print("pt X:  ", pt[19])
+    print("pt Y:  ", pt_Y[19])
+    print("pt puppi:  ", pt_puppi[43])
+    print("pt X:  ", pt[43])
+    print("pt Y:  ", pt_Y[43])
+
+
     bins = np.linspace(1e-10,400,40)
     pt_bin = np.digitize(pt, bins)
     weights_binned_avg = []
