@@ -134,6 +134,7 @@ def train_dataGenerator(args):
     units = list(map(int, args.units))
     compute_ef = args.compute_edge_feat
     edge_list = args.edge_features
+    model_output = args.model_output
 
     # separate files into training, validation, and testing
     filesList = glob(os.path.join(inputPath, '*.root'))
@@ -225,6 +226,10 @@ def train_dataGenerator(args):
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=validGenerator,
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
+    
+    if model_output==True:
+        keras_model.save(model_output)
+
     end_time = time.time()  # check end time
 
     predict_test = keras_model.predict(testGenerator) * normFac
@@ -237,16 +242,15 @@ def train_dataGenerator(args):
     
     predict_weights, pxpy = keras_model_weights.predict(testGenerator)
     predict_weights = predict_weights * normFac
+    pxpy_part_puppi = pxpy
+    pt_part_puppi = np.sqrt(pxpy_part_puppi[:,:,0]**2 + pxpy_part_puppi[:,:,1]**2)
+    pxpy_event_puppi = np.sum(pxpy_part_puppi, axis=1)
+    pt_event_puppi = np.sqrt(pxpy_event_puppi[:,0]**2 + pxpy_event_puppi[:,1]**2)
     
-    pxpy_puppi = pxpy
-    pt_part_puppi = np.sqrt(pxpy_puppi[:,:,0]**2 + pxpy_puppi[:,:,1]**2)
-    pt_event_puppi = np.sum(pt_part_puppi, axis=1)
-    pt_part_puppi = pt_part_puppi.flatten()
-    predict_weights = predict_weights.flatten()
     
-    pxpy_w_weights = pxpy * normFac * predict_weights
-    pt_part_ml = np.sqrt(pxpy_w_weights[:,:,0]**2 + pxpy_w_weights[:,:,1]**2)
-    pt_event_ml = np.sum(pt_part, axis=1)
+    pxpy_w_weights = pxpy * predict_weights
+    pxpy_event_puppi = np.sum(pxpy_w_weights, axis=1)
+    pt_event_ml = np.sqrt(pxpy_event_puppi[:,0]**2 + pxpy_event_puppi[:,1]**2)
 
     px_Y = testGenerator[0][1][:,0]
     py_Y = testGenerator[0][1][:,0]
@@ -255,7 +259,7 @@ def train_dataGenerator(args):
     print("pt puppi:  ", pt_event_puppi[5])
     print("pt X:  ", pt_event_ml[5])
     print("pt Y:  ", pt_Y[5])
-    print("pt puppi:  ", pt_part_puppi[32])
+    print("pt puppi:  ", pt_event_puppi[32])
     print("pt X:  ", pt_event_ml[32])
     print("pt Y:  ", pt_Y[32])
     print("pt puppi:  ", pt_event_puppi[19])
@@ -265,9 +269,11 @@ def train_dataGenerator(args):
     print("pt X:  ", pt_event_ml[43])
     print("pt Y:  ", pt_Y[43])
 
+    pt_part_puppi = pt_part_puppi.flatten()
+    predict_weights = predict_weights.flatten()
 
     bins = np.linspace(1e-10,400,40)
-    pt_bin = np.digitize(pt, bins)
+    pt_bin = np.digitize(pt_part_puppi, bins)
     weights_binned_avg = []
     for i in range(1,41):
         bin_i = predict_weights[np.where(pt_bin==i)]
@@ -278,7 +284,7 @@ def train_dataGenerator(args):
     plt.style.use(hep.style.CMS)
     plt.figure(figsize=(10, 16))
     figure, axis = plt.subplots(1, 2)
-    axis[0].plot(pt, predict_weights, '.')
+    axis[0].plot(pt_part_puppi, predict_weights, '.')
     axis[0].set_title('weights vs pt (unprofiled)')
     axis[0].set(xlabel='pt', ylabel='weights')
     
@@ -302,6 +308,9 @@ def train_dataGenerator(args):
 
     fi.close()
 
+    #keras_model.predict(single_neutrino)
+    #threshold = 1/2000 # 1 per 2000 events
+    #single_neutrino[ > 10]
 
 def train_loadAllData(args):
     # general setup
@@ -525,6 +534,7 @@ def main():
     parser.add_argument('--compute-edge-feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
     parser.add_argument('--maxNPF', action='store', type=int, required=False, default=100, help='maximum number of PUPPI candidates')
     parser.add_argument('--edge-features', action='store', required=False, nargs='+', help='which edge features to use (i.e. dR, kT, z, m2)')
+    parser.add_argument('--model-output', action='store', type=str, required=True, help='output path to save keras model')
 
     args = parser.parse_args()
     workflowType = args.workflowType
