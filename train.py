@@ -3,7 +3,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras import optimizers, initializers
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
 from tensorflow.keras.utils import plot_model
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from sklearn.model_selection import train_test_split
 
 import numpy as np
@@ -227,6 +227,9 @@ def train_dataGenerator(args):
                               validation_data=validGenerator,
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
   
+    
+    if isinstance(model_output,str)==True:
+        keras_model.save(model_output)
 
     end_time = time.time()  # check end time
 
@@ -291,9 +294,8 @@ def train_dataGenerator(args):
     axis[1].set(xlabel='pt', ylabel='weights')
     plt.savefig(f'{path_out}weights_pt.png')
     plt.close()
-
-    if model_output==True:
-        keras_model.save(model_output)
+    plt.clf()
+    
 
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
@@ -307,10 +309,7 @@ def train_dataGenerator(args):
 
     fi.close()
 
-    #keras_model.predict(single_neutrino)
-    #threshold = 1/2000 # 1 per 2000 events
-    #single_neutrino[ > 10]
-
+        
 def train_loadAllData(args):
     # general setup
     maxNPF = args.maxNPF
@@ -533,7 +532,7 @@ def main():
     parser.add_argument('--compute-edge-feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
     parser.add_argument('--maxNPF', action='store', type=int, required=False, default=100, help='maximum number of PUPPI candidates')
     parser.add_argument('--edge-features', action='store', required=False, nargs='+', help='which edge features to use (i.e. dR, kT, z, m2)')
-    parser.add_argument('--model-output', action='store', type=str, required=True, help='output path to save keras model')
+    parser.add_argument('--model-output', action='store', type=str, required=False, help='output path to save keras model')
 
     args = parser.parse_args()
     workflowType = args.workflowType
