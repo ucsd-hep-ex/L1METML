@@ -244,8 +244,8 @@ def train_dataGenerator(args):
     distiller = Distiller(student=student, teacher=teacher_weights, student_weights=student_weights)
     distiller.compile(optimizer=optimizer,
                     metrics=keras.metrics.MeanSquaredError(),
-                    student_loss_fn=keras.losses.MeanSquaredError(),
-                    distillation_loss_fn=keras.losses.MeanSquaredError(),
+                    student_loss_fn=custom_loss,
+                    distillation_loss_fn=custom_loss,
                     alpha=0.1,
                     temperature=10)
     distiller.fit(trainGenerator, epochs=epochs)
