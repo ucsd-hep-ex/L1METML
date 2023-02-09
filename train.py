@@ -176,7 +176,7 @@ def train_dataGenerator(args):
                                           with_bias=False,
                                           units=units)
         elif model == 'graph_embedding':
-            keras_model, keras_model_weights = graph_embedding(n_features=n_features_pf,
+            keras_model = graph_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
@@ -227,9 +227,6 @@ def train_dataGenerator(args):
                               validation_data=validGenerator,
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
   
-    
-    if isinstance(model_output,str)==True:
-        keras_model.save(model_output)
 
     end_time = time.time()  # check end time
 
@@ -240,61 +237,6 @@ def train_dataGenerator(args):
         puppi_pt = np.sum(Xr[1], axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
-    
-    predict_weights, pxpy = keras_model_weights.predict(testGenerator)
-    predict_weights = predict_weights * normFac
-    pxpy_part_puppi = pxpy
-    pt_part_puppi = np.sqrt(pxpy_part_puppi[:,:,0]**2 + pxpy_part_puppi[:,:,1]**2)
-    pxpy_event_puppi = np.sum(pxpy_part_puppi, axis=1)
-    pt_event_puppi = np.sqrt(pxpy_event_puppi[:,0]**2 + pxpy_event_puppi[:,1]**2)
-    
-    
-    pxpy_w_weights = pxpy * predict_weights
-    pxpy_event_puppi = np.sum(pxpy_w_weights, axis=1)
-    pt_event_ml = np.sqrt(pxpy_event_puppi[:,0]**2 + pxpy_event_puppi[:,1]**2)
-
-    px_Y = testGenerator[0][1][:,0]
-    py_Y = testGenerator[0][1][:,0]
-    pt_Y = np.sqrt(px_Y**2 + py_Y**2)
-
-    print("pt puppi:  ", pt_event_puppi[5])
-    print("pt X:  ", pt_event_ml[5])
-    print("pt Y:  ", pt_Y[5])
-    print("pt puppi:  ", pt_event_puppi[32])
-    print("pt X:  ", pt_event_ml[32])
-    print("pt Y:  ", pt_Y[32])
-    print("pt puppi:  ", pt_event_puppi[19])
-    print("pt X:  ", pt_event_ml[19])
-    print("pt Y:  ", pt_Y[19])
-    print("pt puppi:  ", pt_event_puppi[43])
-    print("pt X:  ", pt_event_ml[43])
-    print("pt Y:  ", pt_Y[43])
-
-    pt_part_puppi = pt_part_puppi.flatten()
-    predict_weights = predict_weights.flatten()
-
-    bins = np.linspace(1e-10,400,40)
-    pt_bin = np.digitize(pt_part_puppi, bins)
-    weights_binned_avg = []
-    for i in range(1,41):
-        bin_i = predict_weights[np.where(pt_bin==i)]
-        bin_i = np.absolute(np.average(bin_i))
-        weights_binned_avg.append(bin_i)
-
-
-    plt.style.use(hep.style.CMS)
-    plt.figure(figsize=(10, 16))
-    figure, axis = plt.subplots(1, 2)
-    axis[0].plot(pt_part_puppi, predict_weights, '.')
-    axis[0].set_title('weights vs pt (unprofiled)')
-    axis[0].set(xlabel='pt', ylabel='weights')
-    
-    axis[1].plot(bins, weights_binned_avg, '.')
-    axis[1].set_title('weights vs pt (profiled)')
-    axis[1].set(xlabel='pt', ylabel='weights')
-    plt.savefig(f'{path_out}weights_pt.png')
-    plt.close()
-    plt.clf()
     
 
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
@@ -308,8 +250,60 @@ def train_dataGenerator(args):
     fi.write("Working Time (m) : {}".format((end_time - start_time)/60.))
 
     fi.close()
+    
+    if isinstance(model_output,str)==True:
+        keras_model.save(model_output)
 
-        
+    '''
+    load_keras_model = load_model('/l1metmlvol/saved_keras_models/def_model_100pf_300epochs', custom_objects={ 'custom_loss': custom_loss}, compile=True)
+
+    single_neutrino_filesList = ['/l1metmlvol/SingleNeutrino_PU200_110X_v2/perfNano_SingleNeutrino_PU200.110X_v2.h5']
+    single_neutrino_samp = DataGenerator(list_files=single_neutrino_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=0, edge_list=edge_list)
+
+    load_keras_model.predict(single_neutrino_samp)
+    threshold = 1/2000 # 1 per 2000 events
+
+    from sklearn.metrics import roc_curve
+    from sklearn.metrics import auc
+    
+    model_by_hand = Model(inputs=load_keras_model.input,
+                    outputs=(load_keras_model.get_layer('input_pxpy').output,
+                                load_keras_model.get_layer('met_weight_minus_one').output))
+    
+    x = model_by_hand[0] * model_by_hand[1]
+    from tensorflow.keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape, Multiply, Add, GlobalAveragePooling1D, Activation, Permute
+    inputs = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
+    outputs = GlobalAveragePooling1D()(inputs)
+    GlobalAveragePooling = Model(inputs=inputs,
+                                    outputs=outputs)
+    
+    pt_by_hand = np.sqrt(GlobalAveragePooling[:,0]**2 + GlobalAveragePooling[:,1]**2)
+    pt_true = np.sqrt(single_neutrino_samp[0][1][:,0]**2 + single_neutrino_samp[0][1][:,1]**2)
+    print(pt_by_hand[5])
+    print(pt_true[5])
+
+    # Create plot for ROC
+    plt.figure(1)
+    plt.plot([0, 1], [0, 1], "k--")
+    
+    # Creating ROC curves based on model predictions for each dataset
+    Ab_pred_keras = load_keras_model.predict(single_neutrino_samp)
+    pt_pred = np.sqrt(Ab_pred_keras[:,0]**2 + Ab_pred_keras[:,1]**2)
+    pt_true = np.sqrt(single_neutrino_samp[0][1][:,0]**2 + single_neutrino_samp[0][1][:,1]**2)
+    for i in range(1,len(single_neutrino_samp)):
+        pt_true_add = np.sqrt(single_neutrino_samp[i][1][:,0]**2 + single_neutrino_samp[i][1][:,1]**2)
+        np.concatenate([pt_true, pt_true_add],axis=0)
+    fpr_Ab, tpr_Ab, thresholds_Ab = roc_curve(pt_true, Ab_pred_keras)
+    auc_Ab = auc(fpr_Ab, tpr_Ab)
+    plt.plot(fpr_Ab, tpr_Ab, label="Pf, AUC={:.3f}".format(auc_Ab))
+    plt.plot()
+
+    plt.xlabel("False positive rate")
+    plt.ylabel("True positive rate")
+    plt.title("L1 Trigger ROC Curve", fontsize=16)
+    plt.legend(loc="best")
+    plt.savefig(f'{path_out}ROCCurves.png')'''
+
 def train_loadAllData(args):
     # general setup
     maxNPF = args.maxNPF
