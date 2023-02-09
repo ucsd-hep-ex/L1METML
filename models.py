@@ -242,7 +242,6 @@ def graph_embedding(compute_ef, n_features=6,
     outputs = GlobalAveragePooling1D(name='output')(x)
 
     keras_model = Model(inputs=inputs, outputs=outputs)
-    keras_model_weights = Model(inputs=inputs, outputs=[w, pxpy])
 
     keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
 
@@ -252,4 +251,4 @@ def graph_embedding(compute_ef, n_features=6,
     keras_model.get_layer('tmul_{}_2'.format(name)).set_weights([Rs])
     keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
 
-    return keras_model, keras_model_weights
+    return keras_model
