@@ -140,14 +140,27 @@ def train_dataGenerator(args):
     filesList = glob(os.path.join(inputPath, '*.root'))
     filesList.sort(reverse=True)
 
-    assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
+    
+    if 'singleneutrino' in inputPath.lower():
+        train_filesList = []
+        test_filesList = []
+        valid_filesList = []
+        for ifile in glob(os.path.join(f'{inputPath}', '*.root')):
+            train_filesList.append(ifile.replace('.root', '_train_set.h5'))
+            test_filesList.append(ifile.replace('.root', '_test_set.h5'))
+            valid_filesList.append(ifile.replace('.root', '_val_set.h5'))
 
-    valid_nfiles = max(1, int(.1*len(filesList)))
-    train_nfiles = len(filesList) - 2*valid_nfiles
-    test_nfiles = valid_nfiles
-    train_filesList = filesList[0:train_nfiles]
-    valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
-    test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
+
+    else:
+        assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
+
+        valid_nfiles = max(1, int(.1*len(filesList)))
+        train_nfiles = len(filesList) - 2*valid_nfiles
+        test_nfiles = valid_nfiles
+
+        train_filesList = filesList[0:train_nfiles]
+        valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
+        test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
 
     if compute_ef == 1:
 
@@ -326,9 +339,11 @@ def train_loadAllData(args):
     # convert root files to h5 and store in same location
     h5files = []
     for ifile in glob(os.path.join(f'{inputPath}', '*.root')):
-        h5file_path = ifile.replace('.root', '.h5')
+        h5file_path_train = ifile.replace('.root', '_train_set.h5')
+        h5file_path_test = ifile.replace('.root', '_test_set.h5')
+        h5file_path_val = ifile.replace('.root', '_val_set.h5')
         if not os.path.isfile(h5file_path):
-            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
+            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {[h5file_path_train, h5file_path_test, h5file_path_val]}')
         h5files.append(h5file_path)
 
     # It may be desireable to set specific files as the train, test, valid data sets
