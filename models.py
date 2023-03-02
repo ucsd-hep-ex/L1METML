@@ -287,11 +287,11 @@ def graph_embedding(compute_ef, n_features=6,
     attn2 = LeakyReLU()(attn2)
     attn2 = attention2(N, Nr)(attn2)
     attn3 = attention1(N, Nr, 8)(x)
-    attn3 = LeakyReLU()(attn1)
-    attn3 = attention2(N, Nr)(attn1)
+    attn3 = LeakyReLU()(attn3)
+    attn3 = attention2(N, Nr)(attn3)
     attn4 = attention1(N, Nr, 8)(x)
-    attn4 = LeakyReLU()(attn1)
-    attn4 = attention2(N, Nr)(attn1)
+    attn4 = LeakyReLU()(attn4)
+    attn4 = attention2(N, Nr)(attn4)
     
 
 
@@ -375,7 +375,10 @@ def graph_embedding(compute_ef, n_features=6,
     Rs, Rr = assign_matrices(N, Nr)
     keras_model.get_layer('tmul_{}_1'.format(name)).set_weights([Rr])
     keras_model.get_layer('tmul_{}_2'.format(name)).set_weights([Rs])
-    keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
+    keras_model.get_layer('tmul_{}_3_1'.format(name)).set_weights([np.transpose(Rr)])
+    keras_model.get_layer('tmul_{}_3_2'.format(name)).set_weights([np.transpose(Rr)])
+    keras_model.get_layer('tmul_{}_3_3'.format(name)).set_weights([np.transpose(Rr)])
+    keras_model.get_layer('tmul_{}_3_4'.format(name)).set_weights([np.transpose(Rr)])
     #keras_model.get_layer('receiving').set_weights([Rr])
     #keras_model.get_layer('receiving').set_weights([Rs])
     #w_zeros = np.zeros((16, 16+num_of_edge_feat))
