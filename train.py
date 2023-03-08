@@ -216,9 +216,9 @@ def train_dataGenerator(args):
         file_name = files.replace('.root', '.h5')
         with h5py.File(file_name, "r+") as h5_file:
             try:
-                del h5_file["ef_100cand"]
+                del h5_file['ef_'+str(N)+'cand']
             except:
-                print("no ef_100cand")
+                print('ef_'+str(N)+'cand')
             X = h5_file['X']
             X_split = np.array_split(X,100)
         print(np.shape(X_split[2]))
