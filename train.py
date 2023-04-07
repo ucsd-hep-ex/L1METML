@@ -206,32 +206,6 @@ def train_dataGenerator(args):
     compute_ef = args.compute_edge_feat
     edge_list = args.edge_features
 
-    # separate files into training, validation, and testing
-    filesList = glob(os.path.join(inputPath, '*.root'))
-    filesList.sort(reverse=True)
-    print(filesList)
-    N = maxNPF
-    for files in filesList:
-        print(files)
-        file_name = files.replace('.root', '.h5')
-        with h5py.File(file_name, "r+") as h5_file:
-            try:
-                del h5_file['ef_'+str(N)+'cand']
-            except:
-                print('ef_'+str(N)+'cand')
-            X = h5_file['X']
-            X_split = np.array_split(X,100)
-        print(np.shape(X_split[2]))
-        ef = []
-        for i in range(len(X_split)):
-            x_i = X_split[i]
-            ef_i = build_ef(x_i, N)
-            ef.append(ef_i)
-            print('done build_ef')
-        with h5py.File(file_name, "r+") as h5_file:
-            ef = np.concatenate(ef)
-            h5_file.create_dataset('ef_'+str(N)+'cand', data=ef, compression='lzf')
-
         #build_ef(files, 100)
 
     assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
@@ -257,6 +231,32 @@ def train_dataGenerator(args):
         testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
 
+    # separate files into training, validation, and testing
+    filesList = glob(os.path.join(inputPath, '*.root'))
+    filesList.sort(reverse=True)
+    print(filesList)
+    N = maxNPF
+    for files in filesList:
+        print(files)
+        file_name = files.replace('.root', '.h5')
+        with h5py.File(file_name, "r+") as h5_file:
+            try:
+                del h5_file['ef_'+str(N)+'cand']
+            except:
+                print('ef_'+str(N)+'cand')
+            X = h5_file['X']
+            X_split = np.array_split(X,100)
+        print(np.shape(X_split[2]))
+        ef = []
+        for i in range(len(X_split)):
+            x_i = X_split[i]
+            ef_i = build_ef(x_i, N)
+            ef.append(ef_i)
+            print('done build_ef')
+        with h5py.File(file_name, "r+") as h5_file:
+            ef = np.concatenate(ef)
+            h5_file.create_dataset('ef_'+str(N)+'cand', data=ef, compression='lzf')
+        
     # Load training model
     if quantized is None:
         if model == 'dense_embedding':
