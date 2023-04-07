@@ -172,9 +172,9 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         if self.compute_ef == 1:
             ef_array = 'ef_' + str(self.maxNPF) + 'cand'
             ef = h5_file['ef_100cand'][entry_start:entry_stop+1]
-            h5_file.close
+            h5_file.close()
             return X, y, ef
 
         else:
-            h5_file.close
+            h5_file.close()
             return X, y
