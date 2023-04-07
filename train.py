@@ -229,7 +229,6 @@ def train_dataGenerator(args):
             ef.append(ef_i)
             print('done build_ef')
         with h5py.File(file_name, "r+") as h5_file:
-            del h5_file['ef_'+str(N)+'cand']
             ef = np.concatenate(ef)
             h5_file.create_dataset('ef_'+str(N)+'cand', data=ef, compression='lzf')
 
