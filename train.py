@@ -206,7 +206,9 @@ def train_dataGenerator(args):
     compute_ef = args.compute_edge_feat
     edge_list = args.edge_features
 
-        #build_ef(files, 100)
+    # separate files into training, validation, and testing
+    filesList = glob(os.path.join(inputPath, '*.root'))
+    filesList.sort(reverse=True)
 
     assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
 
@@ -231,9 +233,6 @@ def train_dataGenerator(args):
         testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
 
-    # separate files into training, validation, and testing
-    filesList = glob(os.path.join(inputPath, '*.root'))
-    filesList.sort(reverse=True)
     print(filesList)
     N = maxNPF
     for files in filesList:
