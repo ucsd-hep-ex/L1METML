@@ -251,10 +251,11 @@ def train_dataGenerator(args):
             x_i = X_split[i]
             ef_i = build_ef(x_i, N)
             ef.append(ef_i)
-            print('done build_ef')
+        print("done build")
         with h5py.File(file_name, "r+") as h5_file:
             ef = np.concatenate(ef)
             h5_file.create_dataset('ef_'+str(N)+'cand', data=ef, compression='lzf')
+        print("done create")
         
     # Load training model
     if quantized is None:
