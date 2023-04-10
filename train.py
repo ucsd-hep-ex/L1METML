@@ -200,11 +200,7 @@ def train_dataGenerator(args):
                                           with_bias=False,
                                           units=units)
         elif model == 'graph_embedding':
-            keras_model = graph_embedding(num_epochs=epochs,
-                                          output_dim=output_dim,
-                                          min_temp=0.01,
-                                          batch_size=batch_size,
-                                          n_features=n_features_pf,
+            keras_model = graph_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
