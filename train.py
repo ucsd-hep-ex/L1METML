@@ -3,7 +3,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras import optimizers, initializers
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
 from tensorflow.keras.utils import plot_model
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from sklearn.model_selection import train_test_split
 
 import numpy as np
@@ -76,10 +76,25 @@ def mass2_calc(pi, pj):
 
 def get_callbacks(path_out, sample_size, batch_size):
     # early stopping callback
-    early_stopping = EarlyStopping(monitor='val_loss', patience=40, verbose=1, restore_best_weights=False)
+    #early_stopping = EarlyStopping(monitor='val_loss', patience=40, verbose=1, restore_best_weights=False)
 
     csv_logger = CSVLogger(f'{path_out}loss_history.log')
 
+    class CustomCallback(EarlyStopping):
+        def __init__(self, mean_max_target = 0.998):
+            self.mean_max_target = mean_max_target
+            super(CustomCallback, self).__init__(monitor='val_loss', patience=40, verbose=1, restore_best_weights=False)
+
+        def on_epoch_begin(self, epoch, logs = None):
+            print('mean max of probabilities:', self.get_monitor_value(logs), '- temperature', K.get_value(self.model.get_layer('concrete_select').temp))
+            #print( K.get_value(K.max(K.softmax(self.model.get_layer('concrete_select').logits), axis = -1)))
+            #print(K.get_value(K.max(self.model.get_layer('concrete_select').selections, axis = -1)))
+
+        def get_monitor_value(self, logs):
+            monitor_value = K.get_value(K.mean(K.max(K.softmax(self.model.get_layer('concrete_select').logits), axis = -1)))
+            return monitor_value
+
+    early_stopping = CustomCallback()
     # model checkpoint callback
     # this saves our model architecture + parameters into model.h5
     model_checkpoint = ModelCheckpoint(f'{path_out}model.h5', monitor='val_loss',
@@ -93,7 +108,6 @@ def get_callbacks(path_out, sample_size, batch_size):
     clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=sample_size/batch_size, mode='triangular2')
 
     stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
-
     callbacks = [early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint]
 
     return callbacks
@@ -112,10 +126,8 @@ def test(Yr_test, predict_test, PUPPI_pt, path_out):
 
     MET_rel_error_opaque(predict_test[:, 0], PUPPI_pt[:, 0], Yr_test[:, 0], name=''+path_out+'rel_error_opaque.png')
     MET_binned_predict_mean_opaque(predict_test[:, 0], PUPPI_pt[:, 0], Yr_test[:, 0], 20, 0, 500, 0, '.', name=''+path_out+'PrVSGen.png')
-
     Phi_abs_error_opaque(PUPPI_pt[:, 1], predict_test[:, 1], Yr_test[:, 1], name=path_out+'Phi_abs_err')
     Pt_abs_error_opaque(PUPPI_pt[:, 0], predict_test[:, 0], Yr_test[:, 0], name=path_out+'Pt_abs_error')
-
 
 def train_dataGenerator(args):
     # general setup
@@ -134,19 +146,32 @@ def train_dataGenerator(args):
     units = list(map(int, args.units))
     compute_ef = args.compute_edge_feat
     edge_list = args.edge_features
+    model_output = args.model_output
+    output_dim = args.output_dim
 
     # separate files into training, validation, and testing
     filesList = glob(os.path.join(inputPath, '*.root'))
     filesList.sort(reverse=True)
 
-    assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
+    if 'singleneutrino' in inputPath.lower():
+        train_filesList = []
+        test_filesList = []
+        valid_filesList = []
+        for ifile in glob(os.path.join(f'{inputPath}', '*.root')):
+            train_filesList.append(ifile.replace('.root', '_train_set.h5'))
+            test_filesList.append(ifile.replace('.root', '_test_set.h5'))
+            valid_filesList.append(ifile.replace('.root', '_val_set.h5'))
 
-    valid_nfiles = max(1, int(.1*len(filesList)))
-    train_nfiles = len(filesList) - 2*valid_nfiles
-    test_nfiles = valid_nfiles
-    train_filesList = filesList[0:train_nfiles]
-    valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
-    test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
+    else:
+        assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
+
+        valid_nfiles = max(1, int(.1*len(filesList)))
+        train_nfiles = len(filesList) - 2*valid_nfiles
+        test_nfiles = valid_nfiles
+
+        train_filesList = filesList[0:train_nfiles]
+        valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
+        test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
 
     if compute_ef == 1:
 
@@ -175,7 +200,11 @@ def train_dataGenerator(args):
                                           with_bias=False,
                                           units=units)
         elif model == 'graph_embedding':
-            keras_model = graph_embedding(n_features=n_features_pf,
+            keras_model = graph_embedding(num_epochs=epochs,
+                                          output_dim=output_dim,
+                                          min_temp=0.01,
+                                          batch_size=batch_size,
+                                          n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
                                           activation='tanh',
@@ -225,8 +254,8 @@ def train_dataGenerator(args):
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=validGenerator,
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
-    end_time = time.time()  # check end time
 
+    end_time = time.time()  # check end time
     predict_test = keras_model.predict(testGenerator) * normFac
     all_PUPPI_pt = []
     Yr_test = []
@@ -234,18 +263,61 @@ def train_dataGenerator(args):
         puppi_pt = np.sum(Xr[1], axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
-
+    
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
-
     test(Yr_test, predict_test, PUPPI_pt, path_out)
-
     fi = open("{}time.txt".format(path_out), 'w')
-
     fi.write("Working Time (s) : {}".format(end_time - start_time))
     fi.write("Working Time (m) : {}".format((end_time - start_time)/60.))
-
     fi.close()
+    
+    if isinstance(model_output,str)==True:
+        keras_model.save(model_output)
+    '''
+    load_keras_model = load_model('/l1metmlvol/saved_keras_models/def_model_100pf_300epochs', custom_objects={ 'custom_loss': custom_loss}, compile=True)
+    single_neutrino_filesList = ['/l1metmlvol/SingleNeutrino_PU200_110X_v2/perfNano_SingleNeutrino_PU200.110X_v2.h5']
+    single_neutrino_samp = DataGenerator(list_files=single_neutrino_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=0, edge_list=edge_list)
+    load_keras_model.predict(single_neutrino_samp)
+    threshold = 1/2000 # 1 per 2000 events
+    from sklearn.metrics import roc_curve
+    from sklearn.metrics import auc
+    
+    model_by_hand = Model(inputs=load_keras_model.input,
+                    outputs=(load_keras_model.get_layer('input_pxpy').output,
+                                load_keras_model.get_layer('met_weight_minus_one').output))
+    
+    x = model_by_hand[0] * model_by_hand[1]
+    from tensorflow.keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape, Multiply, Add, GlobalAveragePooling1D, Activation, Permute
+    inputs = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
+    outputs = GlobalAveragePooling1D()(inputs)
+    GlobalAveragePooling = Model(inputs=inputs,
+                                    outputs=outputs)
+    
+    pt_by_hand = np.sqrt(GlobalAveragePooling[:,0]**2 + GlobalAveragePooling[:,1]**2)
+    pt_true = np.sqrt(single_neutrino_samp[0][1][:,0]**2 + single_neutrino_samp[0][1][:,1]**2)
+    print(pt_by_hand[5])
+    print(pt_true[5])
+    # Create plot for ROC
+    plt.figure(1)
+    plt.plot([0, 1], [0, 1], "k--")
+    
+    # Creating ROC curves based on model predictions for each dataset
+    Ab_pred_keras = load_keras_model.predict(single_neutrino_samp)
+    pt_pred = np.sqrt(Ab_pred_keras[:,0]**2 + Ab_pred_keras[:,1]**2)
+    pt_true = np.sqrt(single_neutrino_samp[0][1][:,0]**2 + single_neutrino_samp[0][1][:,1]**2)
+    for i in range(1,len(single_neutrino_samp)):
+        pt_true_add = np.sqrt(single_neutrino_samp[i][1][:,0]**2 + single_neutrino_samp[i][1][:,1]**2)
+        np.concatenate([pt_true, pt_true_add],axis=0)
+    fpr_Ab, tpr_Ab, thresholds_Ab = roc_curve(pt_true, Ab_pred_keras)
+    auc_Ab = auc(fpr_Ab, tpr_Ab)
+    plt.plot(fpr_Ab, tpr_Ab, label="Pf, AUC={:.3f}".format(auc_Ab))
+    plt.plot()
+    plt.xlabel("False positive rate")
+    plt.ylabel("True positive rate")
+    plt.title("L1 Trigger ROC Curve", fontsize=16)
+    plt.legend(loc="best")
+    plt.savefig(f'{path_out}ROCCurves.png')'''
 
 
 def train_loadAllData(args):
@@ -270,9 +342,11 @@ def train_loadAllData(args):
     # convert root files to h5 and store in same location
     h5files = []
     for ifile in glob(os.path.join(f'{inputPath}', '*.root')):
-        h5file_path = ifile.replace('.root', '.h5')
+        h5file_path_train = ifile.replace('.root', '_train_set.h5')
+        h5file_path_test = ifile.replace('.root', '_test_set.h5')
+        h5file_path_val = ifile.replace('.root', '_val_set.h5')
         if not os.path.isfile(h5file_path):
-            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
+            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {[h5file_path_train, h5file_path_test, h5file_path_val]}')
         h5files.append(h5file_path)
 
     # It may be desireable to set specific files as the train, test, valid data sets
@@ -352,7 +426,6 @@ def train_loadAllData(args):
     indices_train, indices_test = train_test_split(indices, test_size=1./7., random_state=7)
     indices_train, indices_valid = train_test_split(indices_train, test_size=1./6., random_state=7)
     # roughly the same split as the data generator workflow (train:valid:test=5:1:1)
-
     Xr_train = [x[indices_train] for x in Xr]
     Xr_test = [x[indices_test] for x in Xr]
     Xr_valid = [x[indices_valid] for x in Xr]
@@ -398,7 +471,6 @@ def train_loadAllData(args):
                                                 number_of_pupcandis=maxNPF,
                                                 t_mode=t_mode,
                                                 with_bias=False,
-
                                                 logit_quantizer='quantized_bits',
                                                 logit_total_bits=logit_total_bits,
                                                 logit_int_bits=logit_int_bits,
@@ -467,9 +539,11 @@ def main():
     parser.add_argument('--quantized', action='store', required=False, nargs='+', help='optional argument: flag for quantized model and specify [total bits] [int bits]; empty for normal model')
     parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
     parser.add_argument('--model', action='store', required=False, choices=['dense_embedding', 'graph_embedding', 'node_select'], default='dense_embedding', help='optional argument: model')
-    parser.add_argument('--compute-edge-feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
+    parser.add_argument('--compute-edge-feat', action='store', type=int, required=True, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
     parser.add_argument('--maxNPF', action='store', type=int, required=False, default=100, help='maximum number of PUPPI candidates')
     parser.add_argument('--edge-features', action='store', required=False, nargs='+', help='which edge features to use (i.e. dR, kT, z, m2)')
+    parser.add_argument('--model-output', action='store', type=str, required=False, help='output path to save keras model')
+    parser.add_argument('--output-dim', action='store', type=int, required=False, help='select k number of features')
 
     args = parser.parse_args()
     workflowType = args.workflowType
