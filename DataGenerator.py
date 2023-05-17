@@ -34,16 +34,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         self.h5files = []
         for ifile in list_files:
-            if 'singleneutrino' in ifile.lower():
-                h5file_path = ifile
-            else:
-                h5file_path = ifile.replace('.root', '.h5')
+            h5file_path = ifile.replace('.root', '.h5')
             if not os.path.isfile(h5file_path):
-                if 'singleneutrino' in h5file_path.lower():
-                    raise ValueError("No single neutrino file found")
                 os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
             self.h5files.append(h5file_path)
-        print(self.h5files)
         for i, file_name in enumerate(self.h5files):
             with h5py.File(file_name, "r") as h5_file:
                 self.open_files.append(h5_file)
@@ -89,59 +83,103 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         'Updates indexes after each epoch'
         self.indexes = self.local_IDs
 
+    def deltaR_calc(self, eta1, phi1, eta2, phi2):
+        """ calculate deltaR """
+        dphi = (phi1-phi2)
+        gt_pi_idx = (dphi > np.pi)
+        lt_pi_idx = (dphi < -np.pi)
+        dphi[gt_pi_idx] -= 2*np.pi
+        dphi[lt_pi_idx] += 2*np.pi
+        deta = eta1-eta2
+        return np.hypot(deta, dphi)
+
+    def kT_calc(self, pti, ptj, dR):
+        min_pt = np.minimum(pti, ptj)
+        kT = min_pt * dR
+        return kT
+
+    def z_calc(self, pti, ptj):
+        epsilon = 1.0e-12
+        min_pt = np.minimum(pti, ptj)
+        z = min_pt/(pti + ptj + epsilon)
+        return z
+
+    def mass2_calc(self, pi, pj):
+        pij = pi + pj
+        m2 = pij[:, :, 0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
+        return m2
+
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
         # X : (n_samples, n_dim, n_channels)
         # y : (n_samples, 2)
         Xs = []
         ys = []
-        e = []
 
         # Generate data
+        for ifile, start, stop in zip(unique_files, starts, stops):
+            self.X, self.y = self.__get_features_labels(ifile, start, stop)
+            Xs.append(self.X)
+            ys.append(self.y)
+
+        # Stack data if going over multiple files
+        if len(unique_files) > 1:
+            self.X = np.concatenate(Xs, axis=0)
+            self.y = np.concatenate(ys, axis=0)
+
+        # process inputs
+        Y = self.y / (-self.normFac)
+        Xi, Xp, Xc1, Xc2 = preProcessing(self.X, self.normFac)
+
+        N = self.maxNPF
+        Nr = N*(N-1)
+
         if self.compute_ef == 1:
-            for ifile, start, stop in zip(unique_files, starts, stops):
-                self.X, self.y, self.e = self.__get_features_labels(ifile, start, stop)
-                Xs.append(self.X)
-                ys.append(self.y)
-                e.append(self.e)
-
-            # Stack data if going over multiple files
-            if len(unique_files) > 1:
-                self.X = np.concatenate(Xs, axis=0)
-                self.y = np.concatenate(ys, axis=0)
-                self.e = np.concatenate(e, axis=0)
-
-            # process inputs
-            Y = self.y / (-self.normFac)
-            Xi, Xp, Xc1, Xc2 = preProcessing(self.X, self.normFac)
-
-            edge_dict = {'dR':0, 'kT':1, 'z':2, 'm2':3}
-            ef_list = []
-            for edge in self.edge_list:
-                edge_idx = edge_dict[edge]
-                ef_list.append(self.e[:,:,edge_idx])
-            ef = np.stack(ef_list, axis=-1)
+            eta = Xi[:, :, 1]
+            phi = Xi[:, :, 2]
+            pt = Xi[:, :, 0]
+            if ('m2' in self.edge_list):
+                px = Xp[:, :, 0]
+                py = Xp[:, :, 1]
+                pz = pt*np.sinh(eta)
+                energy = np.sqrt(px**2 + py**2 + pz**2)
+                p4 = np.stack((energy, px, py, pz), axis=-1)
+            receiver_sender_list = [i for i in itertools.product(range(N), range(N)) if i[0] != i[1]]
+            edge_idx = np.array(receiver_sender_list)
+            edge_stack = []
+            if ('dR' in self.edge_list) or ('kT' in self.edge_list):
+                eta1 = eta[:, edge_idx[:, 0]]
+                phi1 = phi[:, edge_idx[:, 0]]
+                eta2 = eta[:, edge_idx[:, 1]]
+                phi2 = phi[:, edge_idx[:, 1]]
+                dR = self.deltaR_calc(eta1, phi1, eta2, phi2)
+                edge_stack.append(dR)
+            if ('kT' in self.edge_list) or ('z' in self.edge_list):
+                pt1 = pt[:, edge_idx[:, 0]]
+                pt2 = pt[:, edge_idx[:, 1]]
+                if ('kT' in self.edge_list):
+                    kT = self.kT_calc(pt1, pt2, dR)
+                    edge_stack.append(kT)
+                if ('z' in self.edge_list):
+                    z = self.z_calc(pt1, pt2)
+                    edge_stack.append(z)
+            if ('m2' in self.edge_list):
+                p1 = p4[:, edge_idx[:, 0], :]
+                p2 = p4[:, edge_idx[:, 1], :]
+                m2 = self.mass2_calc(p1, p2)
+                edge_stack.append(m2)
+            ef = np.stack(edge_stack, axis=-1)
 
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
+
             # Prepare training/val data
             Yr = Y
             Xr = [Xi, Xp] + Xc + [ef]
             return Xr, Yr
 
         else:
-            for ifile, start, stop in zip(unique_files, starts, stops):
-                self.X, self.y = self.__get_features_labels(ifile, start, stop)
-                Xs.append(self.X)
-                ys.append(self.y)
-
-            if len(unique_files) > 1:
-                self.X = np.concatenate(Xs, axis=0)
-                self.y = np.concatenate(ys, axis=0)
-    
-            Y = self.y / (-self.normFac)
-            Xi, Xp, Xc1, Xc2 = preProcessing(self.X, self.normFac)
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
@@ -170,10 +208,4 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 X[x, :, :] = X[x, order[x], :]
             X = X[:, 0:self.maxNPF, :]
 
-        if self.compute_ef == 1:
-            ef_array = 'ef_' + str(self.maxNPF) + 'cand'
-            ef = h5_file['ef_100cand'][entry_start:entry_stop+1]
-            return X, y, ef
-
-        else: 
-            return X, y
+        return X, y
