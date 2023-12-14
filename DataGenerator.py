@@ -14,11 +14,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
 
     def __init__(self, list_files, batch_size=1024, n_dim=100, maxNPF=100, compute_ef=0,
-                 max_entry=100000000, edge_list=[]):
+                 max_entry=100000000, edge_list=[], normfac=1):
         'Initialization'
         self.n_features_pf = 6
         self.n_features_pf_cat = 2
-        self.normFac = 1.
+        self.normFac = normfac
         self.batch_size = batch_size
         self.n_dim = n_dim
         self.n_channels = 8
@@ -128,6 +128,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             self.y = np.concatenate(ys, axis=0)
 
         # process inputs
+        print("------------------")
+        print(self.normFac)
         Y = self.y / (-self.normFac)
         Xi, Xp, Xc1, Xc2 = preProcessing(self.X, self.normFac)
 
