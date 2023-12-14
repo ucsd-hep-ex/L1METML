@@ -7,6 +7,9 @@ import hls4ml
 import pandas as pd
 from qkeras.utils import _add_supported_quantized_objects
 from models import dense_embedding, dense_embedding_quantized
+from utils import preProcessing
+import h5py
+
 co = {}
 _add_supported_quantized_objects(co)
 
@@ -24,13 +27,15 @@ def print_dict(d, indent=0):
 
 # load full model:
 model = tensorflow.keras.models.load_model('models/baseline_DeepMET/trained_DeepMET.h5', compile=False, custom_objects=co)
+# model = tensorflow.keras.models.load_model('models/baseline_DeepMET_quantized/baseline_DeepMET_quantized.h5', compile=False, custom_objects=co)
 
 reuse_factor = 1
-precision = 'ap_fixed<8,3>'
+precision = 'ap_fixed<16,6>'
 io_type = 'io_parallel'
 strategy = 'Latency'
-output_dir = 'hls_output_{}_{}_rf{}'.format(io_type, strategy, reuse_factor)
+output_dir = 'hls_output_{}_{}_rf{}_{}'.format(io_type, strategy, reuse_factor, precision)
 batch_size = 1
+synth = False
 
 # check everthing works
 model.summary()
@@ -41,6 +46,8 @@ config = hls4ml.utils.config_from_keras_model(model, granularity='name',
 config['Model']['Strategy'] = strategy
 config['LayerName']['input_cat0']['Precision']['result'] = 'ap_uint<4>'
 config['LayerName']['input_cat1']['Precision']['result'] = 'ap_uint<4>'
+config['LayerName']['multiply']['n_elem'] = 100
+config['LayerName']['output']['n_filt'] = 2
 # skip optimize_pointwise_conv
 # config['SkipOptimizers'] = ['optimize_pointwise_conv']
 # for layer in config['LayerName'].keys():
@@ -59,10 +66,40 @@ hls_model.compile()
 
 hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='{}/model_hls4ml.png'.format(output_dir))
 
-# y_1_hls = hls_model.predict([X.astype(np.float32), X_cat0.astype(np.float32), X_cat1.astype(np.float32)])
-# df = pd.DataFrame({'keras': y_1.flatten(), 'hls4ml': y_1_hls.flatten()})
-# print(df)
+if synth:
+    hls_model.build(synth=synth)
+    hls4ml.report.read_vivado_report(output_dir)
 
+f = h5py.File('data/test_data.h5')
+X = f['X'][:]
+y = -f['Y'][:]
 
-hls_model.build(synth=True)
-hls4ml.report.read_vivado_report(output_dir)
+# preprocessing
+X_pre = list(preProcessing(X, normFac=1))
+X_pre = [np.ascontiguousarray(x) for x in X_pre]
+
+y_pred = model.predict(X_pre)
+y_hls = hls_model.predict(X_pre)
+
+met = np.hypot(y[:, 0], y[:, 1])
+met_pred = np.hypot(y_pred[:, 0], y_pred[:, 1])
+met_hls = np.hypot(y_hls[:, 0], y_hls[:, 1])
+
+import seaborn
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.DataFrame.from_dict({'Gen MET': met, 'QKeras MET': met_pred, 'hls4ml MET': met_hls})
+plt.figure()
+seaborn.pairplot(df)
+plt.savefig(f'{output_dir}/profiling_MET.png', dpi=300)
+
+df = pd.DataFrame.from_dict({'Gen MET x': y[:, 0], 'QKeras MET x': y_pred[:, 0], 'hls4ml MET x': y_hls[:, 0]})
+plt.figure()
+seaborn.pairplot(df)
+plt.savefig(f'{output_dir}/profiling_MET_x.png', dpi=300)
+
+df = pd.DataFrame.from_dict({'Gen MET x': y[:, 1], 'QKeras MET x': y_pred[:, 1], 'hls4ml MET x': y_hls[:, 1]})
+plt.figure()
+seaborn.pairplot(df)
+plt.savefig(f'{output_dir}/profiling_MET_y.png', dpi=300)
