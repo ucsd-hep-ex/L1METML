@@ -30,12 +30,13 @@ model = tensorflow.keras.models.load_model('models/baseline_DeepMET/trained_Deep
 # model = tensorflow.keras.models.load_model('models/baseline_DeepMET_quantized/baseline_DeepMET_quantized.h5', compile=False, custom_objects=co)
 
 reuse_factor = 1
-precision = 'ap_fixed<16,6>'
+precision = 'ap_fixed<20,10>'
 io_type = 'io_parallel'
 strategy = 'Latency'
 output_dir = 'hls_output_{}_{}_rf{}_{}'.format(io_type, strategy, reuse_factor, precision)
 batch_size = 1
 synth = False
+trace = True
 
 # check everthing works
 model.summary()
@@ -44,8 +45,13 @@ model.save('{}/model.h5'.format(output_dir))
 config = hls4ml.utils.config_from_keras_model(model, granularity='name',
                                               default_reuse_factor=reuse_factor, default_precision=precision)
 config['Model']['Strategy'] = strategy
+for name in config['LayerName'].keys():
+    config['LayerName'][name]['Trace'] = trace
 config['LayerName']['input_cat0']['Precision']['result'] = 'ap_uint<4>'
 config['LayerName']['input_cat1']['Precision']['result'] = 'ap_uint<4>'
+config['LayerName']['input_cont']['Precision']['result'] = 'ap_fixed<20,10>'
+config['LayerName']['concatenate_1']['Precision']['result'] = 'ap_fixed<20,10>'
+config['LayerName']['dense']['Precision']['result'] = 'ap_fixed<20,10>'
 config['LayerName']['multiply']['n_elem'] = 100
 config['LayerName']['output']['n_filt'] = 2
 # skip optimize_pointwise_conv
@@ -71,8 +77,9 @@ if synth:
     hls4ml.report.read_vivado_report(output_dir)
 
 f = h5py.File('data/test_data.h5')
-X = f['X'][:]
-y = -f['Y'][:]
+# 1000 test events is good enough
+X = f['X'][:1000]
+y = -f['Y'][:1000]
 
 # preprocessing
 X_pre = list(preProcessing(X, normFac=1))
@@ -103,3 +110,18 @@ df = pd.DataFrame.from_dict({'Gen MET x': y[:, 1], 'QKeras MET x': y_pred[:, 1],
 plt.figure()
 seaborn.pairplot(df)
 plt.savefig(f'{output_dir}/profiling_MET_y.png', dpi=300)
+
+
+y_hls, hls4ml_trace = hls_model.trace(X_pre)
+keras_trace = hls4ml.model.profiling.get_ymodel_keras(model, X_pre)
+
+for layer in hls4ml_trace.keys():
+    plt.figure()
+    if layer not in keras_trace: continue
+    plt.scatter(hls4ml_trace[layer].flatten(), keras_trace[layer].flatten(), s=0.2)
+    min_x = min(np.amin(hls4ml_trace[layer]), np.amin(keras_trace[layer]))
+    max_x = max(np.amax(hls4ml_trace[layer]), np.amax(keras_trace[layer]))
+    plt.plot([min_x, max_x], [min_x, max_x], c='gray')
+    plt.xlabel(f'hls4ml {layer}')
+    plt.ylabel(f'QKeras {layer}')
+    plt.savefig(f'{output_dir}/profiling_{layer}.png', dpi=300)
