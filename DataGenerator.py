@@ -128,8 +128,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             self.y = np.concatenate(ys, axis=0)
 
         # process inputs
-        print("------------------")
-        print(self.normFac)
         Y = self.y / (-self.normFac)
         Xi, Xp, Xc1, Xc2 = preProcessing(self.X, self.normFac)
 
