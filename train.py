@@ -27,7 +27,7 @@ from Write_MET_binned_histogram import *
 from cyclical_learning_rate import CyclicLR
 from models import *
 from utils import *
-from loss import custom_loss
+from loss import custom_loss_wrapper
 from DataGenerator import DataGenerator
 
 import matplotlib.pyplot as plt
@@ -123,6 +123,7 @@ def train_dataGenerator(args):
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
+    custom_loss = custom_loss_wrapper(normFac)
     epochs = args.epochs
     batch_size = args.batch_size
     preprocessed = True
@@ -254,6 +255,7 @@ def train_loadAllData(args):
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
+    custom_loss = custom_loss_wrapper(normFac)
     epochs = args.epochs
     batch_size = args.batch_size
     preprocessed = True
