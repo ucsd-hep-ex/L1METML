@@ -26,32 +26,39 @@ def print_dict(d, indent=0):
 
 
 # load full model:
-model = tensorflow.keras.models.load_model('models/baseline_DeepMET/trained_DeepMET.h5', compile=False, custom_objects=co)
+model = tensorflow.keras.models.load_model('models/baseline_DeepMET_quantized/trained_quantized_DeepMET_normfac1000.h5', compile=False, custom_objects=co)
 # model = tensorflow.keras.models.load_model('models/baseline_DeepMET_quantized/baseline_DeepMET_quantized.h5', compile=False, custom_objects=co)
 
 reuse_factor = 1
-precision = 'ap_fixed<20,10>'
+precision = 'ap_fixed<32,16>'
 io_type = 'io_parallel'
 strategy = 'Latency'
 output_dir = 'hls_output_{}_{}_rf{}_{}'.format(io_type, strategy, reuse_factor, precision)
 batch_size = 1
 synth = False
 trace = True
+normFac = 1000
 
 # check everthing works
 model.summary()
 model.save('{}/model.h5'.format(output_dir))
 
-config = hls4ml.utils.config_from_keras_model(model, granularity='name',
-                                              default_reuse_factor=reuse_factor, default_precision=precision)
+config = hls4ml.utils.config_from_keras_model(model, 
+                                              granularity='name',
+                                              default_reuse_factor=reuse_factor, 
+                                              default_precision=precision)
 config['Model']['Strategy'] = strategy
 for name in config['LayerName'].keys():
     config['LayerName'][name]['Trace'] = trace
 config['LayerName']['input_cat0']['Precision']['result'] = 'ap_uint<4>'
 config['LayerName']['input_cat1']['Precision']['result'] = 'ap_uint<4>'
-config['LayerName']['input_cont']['Precision']['result'] = 'ap_fixed<20,10>'
-config['LayerName']['concatenate_1']['Precision']['result'] = 'ap_fixed<20,10>'
-config['LayerName']['dense']['Precision']['result'] = 'ap_fixed<20,10>'
+#config['LayerName']['input_cont']['Precision']['result'] = 'ap_fixed<20,10>'
+#config['LayerName']['q_dense']['Precision']['accum'] = 'ap_fixed<32,16>'
+config['LayerName']['q_dense']['Precision']['weight'] = 'ap_fixed<32,16>'
+config['LayerName']['q_dense']['Precision']['bias'] = 'ap_fixed<32,16>'
+#config['LayerName']['q_dense_1']['Precision']['accum'] = 'ap_fixed<32,16>'
+#config['LayerName']['q_dense_1']['Precision']['weight'] = 'ap_fixed<32,16>'
+#config['LayerName']['q_dense_1']['Precision']['bias'] = 'ap_fixed<32,16>'
 config['LayerName']['multiply']['n_elem'] = 100
 config['LayerName']['output']['n_filt'] = 2
 # skip optimize_pointwise_conv
@@ -82,7 +89,7 @@ X = f['X'][:1000]
 y = -f['Y'][:1000]
 
 # preprocessing
-X_pre = list(preProcessing(X, normFac=1))
+X_pre = list(preProcessing(X, normFac=normFac))
 X_pre = [np.ascontiguousarray(x) for x in X_pre]
 
 y_pred = model.predict(X_pre)
