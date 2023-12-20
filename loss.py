@@ -53,7 +53,7 @@ def custom_loss_wrapper(normFac=1):
         #dev += tf.abs(tf.reduce_sum(upar_pred_pos_bin5) + tf.reduce_sum(upar_pred_neg_bin5))
         dev /= norm
 
-        loss = 0.5*normFac**2*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
+        loss = 0.5*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
 
         #loss += 200.*dev
         loss += 5000.*dev
