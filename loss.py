@@ -25,8 +25,6 @@ def custom_loss_wrapper(normFac=1):
         pt_cut = pt_truth > 0.
         upar_pred = tf.boolean_mask(upar_pred, pt_cut)
         pt_truth_filtered = tf.boolean_mask(pt_truth, pt_cut)
-        tf.print("----------")
-        tf.print(normFac)
         #filter_bin0 = pt_truth_filtered < 50./normFac
         filter_bin0 = tf.logical_and(pt_truth_filtered > 50./normFac,  pt_truth_filtered < 100./normFac)
         filter_bin1 = tf.logical_and(pt_truth_filtered > 100./normFac, pt_truth_filtered < 200./normFac)
