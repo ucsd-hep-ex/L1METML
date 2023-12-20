@@ -123,6 +123,7 @@ def train_dataGenerator(args):
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = args.normFac
+    custom_loss = custom_loss_wrapper(normFac)
     epochs = args.epochs
     batch_size = args.batch_size
     preprocessed = True
@@ -222,11 +223,11 @@ def train_dataGenerator(args):
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
-        keras_model.compile(optimizer='adam', loss=custom_loss_wrapper, metrics=['mean_absolute_error', 'mean_squared_error'])
+        keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
     elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=custom_loss_wrapper, optimizer=optimizer,
+        keras_model.compile(loss=custom_loss, optimizer=optimizer,
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
 
@@ -269,7 +270,7 @@ def train_dataGenerator(args):
         keras_model.save(model_output[:-1] + ".h5", save_format='h5')
 
     '''
-    load_keras_model = load_model('/l1metmlvol/saved_keras_models/def_model_100pf_300epochs', custom_objects={ 'custom_loss_wrapper': custom_loss_wrapper}, compile=True)
+    load_keras_model = load_model('/l1metmlvol/saved_keras_models/def_model_100pf_300epochs', custom_objects={ 'custom_loss': custom_loss}, compile=True)
 
     single_neutrino_filesList = ['/l1metmlvol/SingleNeutrino_PU200_110X_v2/perfNano_SingleNeutrino_PU200.110X_v2.h5']
     single_neutrino_samp = DataGenerator(list_files=single_neutrino_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=0, edge_list=edge_list)
@@ -324,6 +325,7 @@ def train_loadAllData(args):
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = 1.
+    custom_loss = custom_loss_wrapper(normFac)
     epochs = args.epochs
     batch_size = args.batch_size
     preprocessed = True
@@ -482,11 +484,11 @@ def train_loadAllData(args):
 
     # Check which model will be used (0 for L1MET Model, 1 for DeepMET Model)
     if t_mode == 0:
-        keras_model.compile(optimizer='adam', loss=custom_loss_wrapper, metrics=['mean_absolute_error', 'mean_squared_error'])
+        keras_model.compile(optimizer='adam', loss=custom_loss, metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
     elif t_mode == 1:
         optimizer = optimizers.Adam(lr=1., clipnorm=1.)
-        keras_model.compile(loss=custom_loss_wrapper, optimizer=optimizer,
+        keras_model.compile(loss=custom_loss, optimizer=optimizer,
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
 
