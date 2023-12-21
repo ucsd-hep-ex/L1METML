@@ -56,7 +56,7 @@ def custom_loss_wrapper(normFac=1):
         loss = 0.5*normFac**2*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
 
         #loss += 200.*dev
-        loss += 6000.*dev
+        loss += 7000.*dev
         return loss
         
     return custom_loss
