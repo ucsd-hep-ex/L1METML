@@ -40,9 +40,9 @@ def preProcessing(A, normFac, EVT=None):
     puppi = A[:, :, 5:6]
 
     # remove outliers
-    pt[np.where(np.abs(pt > 500))] = 0.
-    px[np.where(np.abs(px > 500))] = 0.
-    py[np.where(np.abs(py > 500))] = 0.
+    pt[np.where(np.abs(pt > 500/norm))] = 0.
+    px[np.where(np.abs(px > 500/norm))] = 0.
+    py[np.where(np.abs(py > 500/norm))] = 0.
 
     inputs = np.concatenate((pt, eta, phi, puppi), axis=2)
     pxpy = np.concatenate((px, py), axis=2)

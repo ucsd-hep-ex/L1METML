@@ -7,7 +7,7 @@ dependencies:
   - python=3.9
   - pytables
   - uproot
-  - tensorflow=2.5.0
+  - tensorflow=2.11.1
   - pandas
   - h5py
   - tqdm
@@ -18,4 +18,4 @@ dependencies:
     - setGPU
     - mplhep
     - git+https://github.com/google/qkeras#egg=qkeras
-    - git+https://github.com/jmduarte/hls4ml@l1metml#egg=hls4ml[profiling]
+    - git+https://github.com/jmduarte/hls4ml@l1metml_v1#egg=hls4ml[profiling]
