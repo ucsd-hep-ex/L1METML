@@ -75,60 +75,60 @@ output_dir = "_".join([model_name,
 model.summary()
 model.save('{}/model.h5'.format(output_dir))
 
-#hls_model = hls4ml.converters.convert_from_keras_model(model,**convert_options,output_dir=output_dir)
-#
-#hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='{}/model_hls4ml.png'.format(output_dir))
-#
-#hls_model.compile()
-#
-#if build_option['synth']:
-#    hls_model.build(**build_option)
-#    hls4ml.report.read_vivado_report(output_dir)
+hls_model = hls4ml.converters.convert_from_keras_model(model,**convert_options,output_dir=output_dir)
 
-#f = h5py.File('../L1METML/data/test_data.h5')
-## 1000 test events is good enough
-#X = f['X'][:1000]
-#y = -f['Y'][:1000]
-#
-#normFac=1000
-#
-## preprocessing
-#X_pre = list(preProcessing(X, normFac=normFac))
-#X_pre = [np.ascontiguousarray(x) for x in X_pre]
-#
-#y_pred = model.predict(X_pre)
-#y_hls = hls_model.predict(X_pre)
-#
-#met = np.hypot(y[:, 0], y[:, 1])
-#met_pred = np.hypot(y_pred[:, 0], y_pred[:, 1]) * normFac
-#met_hls = np.hypot(y_hls[:, 0], y_hls[:, 1]) * normFac
-#met_pup_x = np.sum(X[:, :, 1], axis=-1)
-#met_pup_y = np.sum(X[:, :, 2], axis=-1)
-#met_pup = np.hypot(met_pup_x, met_pup_y)
-#
-#import seaborn
-#import pandas as pd
-#import matplotlib.pyplot as plt
-#
-#df = pd.DataFrame.from_dict({'Gen MET': met, 'PUPPI MET': met_pup, 'QKeras MET': met_pred, 'hls4ml MET': met_hls})
-#plt.figure()
-#seaborn.pairplot(df, corner=True)
-#plt.savefig(f'{output_dir}/profiling_MET.png', dpi=300)
-#
-#df = pd.DataFrame.from_dict({'Gen MET x': y[:, 0], 'PUPPI MET x': met_pup_x, 'QKeras MET x': y_pred[:, 0], 'hls4ml MET x': y_hls[:, 0]})
-#plt.figure()
-#seaborn.pairplot(df, corner=True)
-#plt.savefig(f'{output_dir}/profiling_MET_x.png', dpi=300)
-#
-#df = pd.DataFrame.from_dict({'Gen MET y': y[:, 1], 'PUPPI MET y': met_pup_y, 'QKeras MET y': y_pred[:, 1], 'hls4ml MET y': y_hls[:, 1]})
-#plt.figure()
-#seaborn.pairplot(df, corner=True)
-#plt.savefig(f'{output_dir}/profiling_MET_y.png', dpi=300)
-#
-#response_pup = met_pup / met
-#response_pred = met_pred / met
-#response_hls = met_hls / met
-#bins = np.linspace(0, 2, 25)
-#plt.figure(figsize=(12, 5))
-#plt.subplot(1, 3, 1)
-#plt.hist(response_pup, bins=bins, label=f'PUPPI, median={np.median(response_pup):0.2f}, IQR={scipy.stats.iqr(response_pup):0.2f}')
+hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='{}/model_hls4ml.png'.format(output_dir))
+
+hls_model.compile()
+
+if build_option['synth']:
+    hls_model.build(**build_option)
+    hls4ml.report.read_vivado_report(output_dir)
+
+f = h5py.File('../L1METML/data/test_data.h5')
+# 1000 test events is good enough
+X = f['X'][:1000]
+y = -f['Y'][:1000]
+
+normFac=1000
+
+# preprocessing
+X_pre = list(preProcessing(X, normFac=normFac))
+X_pre = [np.ascontiguousarray(x) for x in X_pre]
+
+y_pred = model.predict(X_pre)
+y_hls = hls_model.predict(X_pre)
+
+met = np.hypot(y[:, 0], y[:, 1])
+met_pred = np.hypot(y_pred[:, 0], y_pred[:, 1]) * normFac
+met_hls = np.hypot(y_hls[:, 0], y_hls[:, 1]) * normFac
+met_pup_x = np.sum(X[:, :, 1], axis=-1)
+met_pup_y = np.sum(X[:, :, 2], axis=-1)
+met_pup = np.hypot(met_pup_x, met_pup_y)
+
+import seaborn
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.DataFrame.from_dict({'Gen MET': met, 'PUPPI MET': met_pup, 'QKeras MET': met_pred, 'hls4ml MET': met_hls})
+plt.figure()
+seaborn.pairplot(df, corner=True)
+plt.savefig(f'{output_dir}/profiling_MET.png', dpi=300)
+
+df = pd.DataFrame.from_dict({'Gen MET x': y[:, 0], 'PUPPI MET x': met_pup_x, 'QKeras MET x': y_pred[:, 0], 'hls4ml MET x': y_hls[:, 0]})
+plt.figure()
+seaborn.pairplot(df, corner=True)
+plt.savefig(f'{output_dir}/profiling_MET_x.png', dpi=300)
+
+df = pd.DataFrame.from_dict({'Gen MET y': y[:, 1], 'PUPPI MET y': met_pup_y, 'QKeras MET y': y_pred[:, 1], 'hls4ml MET y': y_hls[:, 1]})
+plt.figure()
+seaborn.pairplot(df, corner=True)
+plt.savefig(f'{output_dir}/profiling_MET_y.png', dpi=300)
+
+response_pup = met_pup / met
+response_pred = met_pred / met
+response_hls = met_hls / met
+bins = np.linspace(0, 2, 25)
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 3, 1)
+plt.hist(response_pup, bins=bins, label=f'PUPPI, median={np.median(response_pup):0.2f}, IQR={scipy.stats.iqr(response_pup):0.2f}')
