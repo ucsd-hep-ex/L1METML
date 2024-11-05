@@ -212,8 +212,8 @@ def main(args):
     met = np.hypot(y[:, 0], y[:, 1])
     met_pred = np.hypot(y_pred[:, 0], y_pred[:, 1]) * normFac
     met_hls = np.hypot(y_hls[:, 0], y_hls[:, 1]) * normFac
-    met_pup_x = np.sum(X[:, :, 1], axis=-1) #does this need to be X_pre?
-    met_pup_y = np.sum(X[:, :, 2], axis=-1) #does this need to be X_pre?
+    met_pup_x = np.sum(X_pre[:, :, 1], axis=-1) #does this need to be X_pre? previously X
+    met_pup_y = np.sum(X_pre[:, :, 2], axis=-1) #does this need to be X_pre? previously X
     met_pup = np.hypot(met_pup_x, met_pup_y)
 
     data_to_plot = {
