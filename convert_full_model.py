@@ -38,7 +38,7 @@ def load_model(model_name):
 def configure_hls_model(model, config_params):
     config = hls4ml.utils.config_from_keras_model(model, 
                                                 granularity='name',
-                                                default_reuse_factor=config_params['reuse_factor'],
+                                                default_reuse_factor=config_params['reuse-factor'],
                                                 default_precision=config_params['precision'])
     config['Model']['Strategy'] = config_params['strategy']
     for name in config['LayerName'].keys():
@@ -83,7 +83,7 @@ def preprocess_data(file_path, norm_factor):
         X = f['X'][:1000]
         y = -f['Y'][:1000]
     X_preprocessed = list(preProcessing(X, normFac=norm_factor))
-    return [np.ascontiguousarray(x) for x in X_preprocessed], y
+    return [np.ascontiguousarray(x) for x in X_preprocessed], X, y
 
 
 def plot_metrics(data_to_plot, hls_model, model, output_dir):
@@ -94,6 +94,7 @@ def plot_metrics(data_to_plot, hls_model, model, output_dir):
     met_pup_x = data_to_plot['met_pup_x']
     met_pup_y = data_to_plot['met_pup_y']
     y_pred = data_to_plot['y_pred']
+    y_hls = data_to_plot['y_hls']
     y = data_to_plot['y']
     X_pre = data_to_plot['x_pre']
     
@@ -182,7 +183,7 @@ def main(args):
                                                     model_name,
                                                     io_type, 
                                                     config_params['strategy'], 
-                                                    config_params['reuse_factor'], 
+                                                    config_params['reuse-factor'], 
                                                     config_params['precision']
                                                     )
     batch_size = 1
@@ -205,7 +206,7 @@ def main(args):
         hls4ml.report.read_vivado_report(output_dir)
 
     # load and preprocess data
-    X_pre, y = preprocess_data(args.data_path, norm_factor=1)
+    X_pre, X, y= preprocess_data(args.data_path, norm_factor=1)
 
 
 
@@ -215,8 +216,8 @@ def main(args):
     met = np.hypot(y[:, 0], y[:, 1])
     met_pred = np.hypot(y_pred[:, 0], y_pred[:, 1]) * normFac
     met_hls = np.hypot(y_hls[:, 0], y_hls[:, 1]) * normFac
-    met_pup_x = np.sum(X_pre[:, :, 1], axis=-1) #does this need to be X_pre? previously X
-    met_pup_y = np.sum(X_pre[:, :, 2], axis=-1) #does this need to be X_pre? previously X
+    met_pup_x = np.sum(X[:, :, 1], axis=-1) #does this need to be X_pre? previously X
+    met_pup_y = np.sum(X[:, :, 2], axis=-1) #does this need to be X_pre? previously X
     met_pup = np.hypot(met_pup_x, met_pup_y)
 
     data_to_plot = {
@@ -227,6 +228,7 @@ def main(args):
         'met_pup_x': met_pup_x,
         'met_pup_y': met_pup_y,
         'y_pred': y_pred,
+        'y_hls': y_hls,
         'y': y,
         'x_pre': X_pre,
     }
@@ -238,7 +240,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     
     parser.add_argument(
-        '--model_name',
+        '--model-name',
         type=str,
         default='trained_DeepMET',
         choices = [
@@ -248,14 +250,13 @@ if __name__ == "__main__":
             ],
         help='Model name')
     parser.add_argument(
-        '--data_path',
+        '--data-path',
         type=str,
         default='data/test_data.h5',
         help='Location of data file (.h5 format)')
 
     args = parser.parse_args()
     #TODO: figure what knobs are tuned here by the user and pass them as arguments
-    #TODO: test if script runs without errors
     #TODO: refactor commented part of hls_config, potentially adding args or default values
     main(args)
 
