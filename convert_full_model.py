@@ -64,7 +64,7 @@ def configure_hls_model(model, config_params):
     print_dict(config)
     return config
 
-def convert_to_hls_model(model, config, ouput_dir, io_type, part, clock_period, project_name):
+def convert_to_hls_model(model, config, output_dir, io_type, part, clock_period, project_name):
     print("-----------------------------------")
     hls_model = hls4ml.converters.convert_from_keras_model(model,
                                                         hls_config=config,
@@ -169,7 +169,7 @@ def plot_metrics(data_to_plot, hls_model, model, output_dir):
 def main(args):
     model_name = args.model_name
 
-    model = load_model('trained_DeepMET')
+    model = load_model(model_name)
 
     config_params = {
         'reuse-factor': 1, 
@@ -177,22 +177,25 @@ def main(args):
         'precision': 'ap_fixed<32,16>', 
         'trace': True,
         }
-    reuse_factor = 1
-    precision = 'ap_fixed<32,16>'
     io_type = 'io_parallel'
-    strategy = 'Latency'
-    output_dir = 'hls_output_{}_{}_{}_rf{}_{}'.format(model_name ,io_type, strategy, reuse_factor, precision)
+    output_dir = 'hls_output_{}_{}_{}_rf{}_{}'.format(
+                                                    model_name,
+                                                    io_type, 
+                                                    config_params['strategy'], 
+                                                    config_params['reuse_factor'], 
+                                                    config_params['precision']
+                                                    )
     batch_size = 1
     synth = False
     trace = True
-    normFac = 1
+    normFac = 1 #identify where NormFac is used (and how) and if it can be fed via argument
 
     # check everthing works
     model.summary()
     model.save('{}/model.h5'.format(output_dir))
 
-    config = configure_hls_model(model, {})
-
+    # create hls model
+    config = configure_hls_model(model, config_params)
     hls_model = convert_to_hls_model(model, config, output_dir, io_type, 'xcvu13p-flga2577-2-e', 5, 'L1METML_v1')
 
     hls4ml.utils.plot_model(hls_model, show_shapes=True, show_precision=True, to_file='{}/model_hls4ml.png'.format(output_dir))
@@ -201,8 +204,8 @@ def main(args):
         hls_model.build(synth=synth)
         hls4ml.report.read_vivado_report(output_dir)
 
-
-    X_pre, y = preprocess_data('data/test_data.h5', norm_factor=1)
+    # load and preprocess data
+    X_pre, y = preprocess_data(args.data_path, norm_factor=1)
 
 
 
@@ -244,8 +247,15 @@ if __name__ == "__main__":
             'trained_quantized_DeepMET_normfac1000'
             ],
         help='Model name')
+    parser.add_argument(
+        '--data_path',
+        type=str,
+        default='data/test_data.h5',
+        help='Location of data file (.h5 format)')
 
     args = parser.parse_args()
-    
+    #TODO: figure what knobs are tuned here by the user and pass them as arguments
+    #TODO: test if script runs without errors
+    #TODO: refactor commented part of hls_config, potentially adding args or default values
     main(args)
 
