@@ -15,8 +15,10 @@ import seaborn
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# TODO: what does this do?
 co = {}
 _add_supported_quantized_objects(co)
+
 
 def print_dict(d, indent=0):
     align = 20
@@ -28,6 +30,7 @@ def print_dict(d, indent=0):
         else:
             print(':' + ' ' * (20 - len(key) - 2 * indent) + str(value))
 
+
 def load_model(model_name):
     if 'quantized' in model_name:
         model = tensorflow.keras.models.load_model(f'models/baseline_DeepMET_quantized/{model_name}.h5', compile=False, custom_objects=co)
@@ -35,8 +38,10 @@ def load_model(model_name):
         model = tensorflow.keras.models.load_model(f'models/baseline_DeepMET/{model_name}.h5', compile=False)
     return model
 
+
 def configure_hls_model(model, config_params):
-    config = hls4ml.utils.config_from_keras_model(model, 
+    config = hls4ml.utils.config_from_keras_model(
+                                                model,
                                                 granularity='name',
                                                 default_reuse_factor=config_params['reuse-factor'],
                                                 default_precision=config_params['precision'])
@@ -46,7 +51,7 @@ def configure_hls_model(model, config_params):
     config['LayerName']['input_cat0']['Precision']['result'] = 'ap_uint<4>'
     config['LayerName']['input_cat1']['Precision']['result'] = 'ap_uint<4>'
     # config['LayerName']['input_cont']['Precision']['result'] = 'ap_fixed<20,10>'
-    #if 'q_dense' in config['LayerName']:
+    # if 'q_dense' in config['LayerName']:
     #    config['LayerName']['q_dense']['Precision']['accum'] = 'ap_fixed<32,16>'
     #    config['LayerName']['q_dense']['Precision']['weight'] = 'ap_fixed<32,16>'
     #    config['LayerName']['q_dense']['Precision']['bias'] = 'ap_fixed<32,16>'
@@ -64,18 +69,20 @@ def configure_hls_model(model, config_params):
     print_dict(config)
     return config
 
+
 def convert_to_hls_model(model, config, output_dir, io_type, part, clock_period, project_name):
     print("-----------------------------------")
     hls_model = hls4ml.converters.convert_from_keras_model(model,
-                                                        hls_config=config,
-                                                        io_type=io_type,
-                                                        output_dir=output_dir,
-                                                        part=part,
-                                                        clock_period=clock_period,
-                                                        project_name=project_name,
-    )
+                                                           hls_config=config,
+                                                           io_type=io_type,
+                                                           output_dir=output_dir,
+                                                           part=part,
+                                                           clock_period=clock_period,
+                                                           project_name=project_name,
+                                                           )
     hls_model.compile()
     return hls_model
+
 
 def preprocess_data(file_path, norm_factor):
     with h5py.File(file_path, 'r') as f:
@@ -97,8 +104,7 @@ def plot_metrics(data_to_plot, hls_model, model, output_dir):
     y_hls = data_to_plot['y_hls']
     y = data_to_plot['y']
     X_pre = data_to_plot['x_pre']
-    
-    
+
     df = pd.DataFrame.from_dict({
             'Gen MET': met,
             'PUPPI MET': met_pup,
@@ -111,19 +117,19 @@ def plot_metrics(data_to_plot, hls_model, model, output_dir):
     plt.close()
 
     df = pd.DataFrame.from_dict(
-            {'Gen MET x': y[:, 0], 
-            'PUPPI MET x': met_pup_x, 
-            'QKeras MET x': y_pred[:, 0], 
-            'hls4ml MET x': y_hls[:, 0],
-            })
+            {'Gen MET x': y[:, 0],
+             'PUPPI MET x': met_pup_x,
+             'QKeras MET x': y_pred[:, 0],
+             'hls4ml MET x': y_hls[:, 0],
+             })
     plt.figure()
     seaborn.pairplot(df, corner=True)
     plt.savefig(f'{output_dir}/profiling_MET_x.png', dpi=300)
 
     df = pd.DataFrame.from_dict({
-            'Gen MET y': y[:, 1], 
-            'PUPPI MET y': met_pup_y, 
-            'QKeras MET y': y_pred[:, 1], 
+            'Gen MET y': y[:, 1],
+            'PUPPI MET y': met_pup_y,
+            'QKeras MET y': y_pred[:, 1],
             'hls4ml MET y': y_hls[:, 1]
             })
     plt.figure()
@@ -138,17 +144,17 @@ def plot_metrics(data_to_plot, hls_model, model, output_dir):
     plt.subplot(1, 3, 1)
     plt.hist(response_pup, bins=bins, label=f'PUPPI, median={np.median(response_pup):0.2f}, IQR={scipy.stats.iqr(response_pup):0.2f}')
     plt.legend()
-    plt.xlabel("MET response $\hat{y}/y$")
+    plt.xlabel("MET response $\\hat{y}/y$")
     plt.ylabel("Events")
     plt.subplot(1, 3, 2)
     plt.hist(response_pred, bins=bins, label=f'QKeras, median={np.median(response_pred):0.2f}, IQR={scipy.stats.iqr(response_pred):0.2f}')
     plt.legend()
-    plt.xlabel("MET response $\hat{y}/y$")
+    plt.xlabel("MET response $\\hat{y}/y$")
     plt.ylabel("Events")
     plt.subplot(1, 3, 3)
     plt.hist(response_hls, bins=bins, label=f'hls4ml, median={np.median(response_hls):0.2f}, IQR={scipy.stats.iqr(response_hls):0.2f}')
     plt.legend()
-    plt.xlabel("MET response $\hat{y}/y$")
+    plt.xlabel("MET response $\\hat{y}/y$")
     plt.ylabel("Events")
     plt.tight_layout()
     plt.savefig(f"{output_dir}/response_MET.png", dpi=300)
@@ -158,7 +164,8 @@ def plot_metrics(data_to_plot, hls_model, model, output_dir):
 
     for layer in hls4ml_trace.keys():
         plt.figure()
-        if layer not in keras_trace: continue
+        if layer not in keras_trace:
+            continue
         plt.scatter(hls4ml_trace[layer].flatten(), keras_trace[layer].flatten(), s=0.2)
         min_x = min(np.amin(hls4ml_trace[layer]), np.amin(keras_trace[layer]))
         max_x = max(np.amax(hls4ml_trace[layer]), np.amax(keras_trace[layer]))
@@ -167,29 +174,30 @@ def plot_metrics(data_to_plot, hls_model, model, output_dir):
         plt.ylabel(f'QKeras {layer}')
         plt.savefig(f'{output_dir}/profiling_{layer}.png', dpi=300)
 
+
 def main(args):
     model_name = args.model_name
 
     model = load_model(model_name)
 
     config_params = {
-        'reuse-factor': 1, 
-        'strategy': 'Latency', 
-        'precision': 'ap_fixed<32,16>', 
+        'reuse-factor': 1,
+        'strategy': 'Latency',
+        'precision': 'ap_fixed<32,16>',
         'trace': True,
         }
     io_type = 'io_parallel'
     output_dir = 'hls_output_{}_{}_{}_rf{}_{}'.format(
                                                     model_name,
-                                                    io_type, 
-                                                    config_params['strategy'], 
-                                                    config_params['reuse-factor'], 
+                                                    io_type,
+                                                    config_params['strategy'],
+                                                    config_params['reuse-factor'],
                                                     config_params['precision']
                                                     )
     batch_size = 1
     synth = False
     trace = True
-    normFac = 1 #identify where NormFac is used (and how) and if it can be fed via argument
+    normFac = 1  # identify where NormFac is used (and how) and if it can be fed via argument
 
     # check everthing works
     model.summary()
@@ -206,9 +214,7 @@ def main(args):
         hls4ml.report.read_vivado_report(output_dir)
 
     # load and preprocess data
-    X_pre, X, y= preprocess_data(args.data_path, norm_factor=1)
-
-
+    X_pre, X, y = preprocess_data(args.data_path, norm_factor=1)
 
     y_pred = model.predict(X_pre)
     y_hls = hls_model.predict(X_pre)
@@ -216,8 +222,8 @@ def main(args):
     met = np.hypot(y[:, 0], y[:, 1])
     met_pred = np.hypot(y_pred[:, 0], y_pred[:, 1]) * normFac
     met_hls = np.hypot(y_hls[:, 0], y_hls[:, 1]) * normFac
-    met_pup_x = np.sum(X[:, :, 1], axis=-1) #does this need to be X_pre? previously X
-    met_pup_y = np.sum(X[:, :, 2], axis=-1) #does this need to be X_pre? previously X
+    met_pup_x = np.sum(X[:, :, 1], axis=-1)  # does this need to be X_pre? previously X
+    met_pup_y = np.sum(X[:, :, 2], axis=-1)  # does this need to be X_pre? previously X
     met_pup = np.hypot(met_pup_x, met_pup_y)
 
     data_to_plot = {
@@ -238,12 +244,12 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    
+
     parser.add_argument(
         '--model-name',
         type=str,
         default='trained_DeepMET',
-        choices = [
+        choices=[
             'trained_DeepMET',
             'trained_quantized_DeepMET',
             'trained_quantized_DeepMET_normfac1000'
@@ -256,7 +262,6 @@ if __name__ == "__main__":
         help='Location of data file (.h5 format)')
 
     args = parser.parse_args()
-    #TODO: figure what knobs are tuned here by the user and pass them as arguments
-    #TODO: refactor commented part of hls_config, potentially adding args or default values
+    # TODO: figure what knobs are tuned here by the user and pass them as arguments
+    # TODO: refactor commented part of hls_config, potentially adding args or default values
     main(args)
-

@@ -1,14 +1,14 @@
 model_name: "trained_DeepMET"  # Choose from available models
 
-data_path: "~/data/l1_trigger_h5_ntuples/perfNano_TTbar_PU200.110X_set0.h5"  # Location of data file (.h5 format)
+# not implemented yet 
 
-output_dir: "hls_output_Nov4"
-
+# HLS config parameters
 config_params:
   reuse-factor: 1
   strategy: "Latency"
   precision: "ap_fixed<32,16>"
   trace: true
+
 
 io_type: "io_parallel"
 part: "xcvu13p-flga2577-2-e"

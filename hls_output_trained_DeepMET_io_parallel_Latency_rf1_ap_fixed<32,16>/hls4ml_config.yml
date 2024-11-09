@@ -1,0 +1,119 @@
+Backend: Vivado
+ClockPeriod: 5
+HLSConfig:
+  LayerName:
+    activation:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+    activation_1:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+    batch_normalization:
+      Precision:
+        bias: ap_fixed<32,16>
+        result: ap_fixed<32,16>
+        scale: ap_fixed<32,16>
+      Trace: true
+    batch_normalization_1:
+      Precision:
+        bias: ap_fixed<32,16>
+        result: ap_fixed<32,16>
+        scale: ap_fixed<32,16>
+      Trace: true
+    concatenate:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+    concatenate_1:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+    dense:
+      Precision:
+        bias: ap_fixed<32,16>
+        result: ap_fixed<32,16>
+        weight: ap_fixed<32,16>
+      Trace: true
+    dense_1:
+      Precision:
+        bias: ap_fixed<32,16>
+        result: ap_fixed<32,16>
+        weight: ap_fixed<32,16>
+      Trace: true
+    dense_1_linear:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+    dense_linear:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+    embedding0:
+      Precision:
+        embeddings: ap_fixed<32,16>
+        result: ap_fixed<32,16>
+      Trace: true
+    embedding1:
+      Precision:
+        embeddings: ap_fixed<32,16>
+        result: ap_fixed<32,16>
+      Trace: true
+    input_cat0:
+      Precision:
+        result: ap_uint<4>
+      Trace: true
+    input_cat1:
+      Precision:
+        result: ap_uint<4>
+      Trace: true
+    input_cont:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+    input_pxpy:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+    met_weight:
+      Precision:
+        bias: ap_fixed<32,16>
+        result: ap_fixed<32,16>
+        weight: ap_fixed<32,16>
+      Trace: true
+    met_weight_linear:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+    met_weight_minus_one:
+      Precision:
+        bias: ap_fixed<32,16>
+        result: ap_fixed<32,16>
+        scale: ap_fixed<32,16>
+      Trace: true
+    multiply:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+      n_elem: 100
+    output:
+      Precision:
+        result: ap_fixed<32,16>
+      Trace: true
+      n_filt: 2
+  Model:
+    BramFactor: 1000000000
+    Precision: ap_fixed<32,16>
+    ReuseFactor: 1
+    Strategy: Latency
+    TraceOutput: false
+IOType: io_parallel
+InputData: null
+KerasModel: !keras_model 'hls_output_trained_DeepMET_io_parallel_Latency_rf1_ap_fixed<32,16>/keras_model.h5'
+OutputDir: hls_output_trained_DeepMET_io_parallel_Latency_rf1_ap_fixed<32,16>
+OutputPredictions: null
+Part: xcvu13p-flga2577-2-e
+ProjectName: L1METML_v1
+Stamp: 95715E3e
+Version: 1.0.0
