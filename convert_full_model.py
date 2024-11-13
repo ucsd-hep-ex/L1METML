@@ -34,6 +34,8 @@ def print_dict(d, indent=0):
 def load_model(model_name):
     if 'quantized' in model_name:
         model = tensorflow.keras.models.load_model(f'models/baseline_DeepMET_quantized/{model_name}.h5', compile=False, custom_objects=co)
+    if 'test' in model_name:
+        model = tensorflow.keras.models.load_model(f'test_12_36/model.h5', compile=False, custom_objects=co)
     else:
         model = tensorflow.keras.models.load_model(f'models/baseline_DeepMET/{model_name}.h5', compile=False)
     return model
@@ -252,8 +254,8 @@ if __name__ == "__main__":
         choices=[
             'trained_DeepMET',
             'trained_quantized_DeepMET',
-            'trained_quantized_DeepMET_normfac1000'
-            ],
+            'trained_quantized_DeepMET_normfac1000',
+            'test_12_36'],
         help='Model name')
     parser.add_argument(
         '--data-path',
