@@ -80,7 +80,10 @@ tree = upfile['Events'].arrays(varList, entry_stop=opt.maxevents)
 # general setup
 maxNPuppi = 128
 nFeatures = 8
-maxEntries = len(tree['nL1PuppiCands'])
+if opt.maxevents == -1:
+    maxEntries = len(tree['nL1PuppiCands'])
+else:
+    maxEntries = opt.maxevents 
 # input Puppi candidates
 X = np.zeros(shape=(maxEntries, maxNPuppi, nFeatures), dtype=float, order='F')
 # recoil estimators
