@@ -7,6 +7,7 @@ def read_input(inputfiles):
     import h5py
     for i, fname in enumerate(inputfiles):
         print("read file", fname)
+        X, Y = None, None
         with h5py.File(fname, 'r') as h5f:
             if i == 0:
                 X = h5f['X'][:]
