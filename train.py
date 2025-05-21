@@ -254,7 +254,7 @@ def train_loadAllData(args):
     maxNPF = args.maxNPF
     n_features_pf = 6
     n_features_pf_cat = 2
-    normFac = 1.
+    normFac = 1000.
     custom_loss = custom_loss_wrapper(normFac)
     epochs = args.epochs
     batch_size = args.batch_size
@@ -470,7 +470,7 @@ def main():
     parser.add_argument('--units', action='store', required=False, nargs='+', help='optional argument: specify number of units in each layer (also sets the number of layers)')
     parser.add_argument('--model', action='store', required=False, choices=['dense_embedding', 'graph_embedding', 'node_select'], default='dense_embedding', help='optional argument: model')
     parser.add_argument('--compute-edge-feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
-    parser.add_argument('--maxNPF', action='store', type=int, required=False, default=100, help='maximum number of PUPPI candidates')
+    parser.add_argument('--maxNPF', action='store', type=int, required=False, default=128, help='maximum number of PUPPI candidates')
     parser.add_argument('--edge-features', action='store', required=False, nargs='+', help='which edge features to use (i.e. dR, kT, z, m2)')
 
     args = parser.parse_args()

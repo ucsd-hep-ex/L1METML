@@ -72,7 +72,7 @@ def dense_embedding(n_features=6,
 
 def dense_embedding_quantized(n_features=6,
                               n_features_cat=2,
-                              number_of_pupcandis=100,
+                              number_of_pupcandis=128,
                               embedding_input_dim={0: 13, 1: 3},
                               emb_out_dim=2,
                               with_bias=True,
@@ -85,7 +85,7 @@ def dense_embedding_quantized(n_features=6,
                               activation_int_bits=2,
                               alpha=1,
                               use_stochastic_rounding=False,
-                              units=[64, 32, 16]):
+                              units=[32, 16]):
     n_dense_layers = len(units)
 
     logit_quantizer = getattr(qkeras.quantizers, logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
@@ -119,7 +119,7 @@ def dense_embedding_quantized(n_features=6,
         x = QActivation(activation=activation_quantizer)(x)
 
     if t_mode == 0:
-        x = qkeras.qpooling.QGlobalAveragePooling1D(name='pool', quantizer=logit_quantizer)(x)
+        x = GlobalAveragePooling1D(name='pool')(x)
         # pool size?
         outputs = QDense(2, name='output', bias_quantizer=logit_quantizer, kernel_quantizer=logit_quantizer, activation='linear')(x)
 
@@ -132,11 +132,11 @@ def dense_embedding_quantized(n_features=6,
         x = Multiply()([w, pxpy])
 
         x = GlobalAveragePooling1D(name='output')(x)
-    outputs = x
+        outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
-    keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
+    #keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
 
     return keras_model
 
