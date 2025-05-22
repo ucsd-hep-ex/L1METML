@@ -13,7 +13,7 @@ import itertools
 def dense_embedding(n_features=6,
                     n_features_cat=2,
                     activation='relu',
-                    number_of_pupcandis=100,
+                    number_of_pupcandis=128,
                     embedding_input_dim={0: 13, 1: 3},
                     emb_out_dim=8,
                     with_bias=True,
@@ -65,7 +65,7 @@ def dense_embedding(n_features=6,
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
-    keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
+    #keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
 
     return keras_model
 
