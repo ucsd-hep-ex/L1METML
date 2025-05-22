@@ -150,8 +150,25 @@ def train_dataGenerator(args):
             train_filesList.append(ifile.replace('.root', '_train_set.h5'))
             test_filesList.append(ifile.replace('.root', '_test_set.h5'))
             valid_filesList.append(ifile.replace('.root', '_val_set.h5'))
+    if len(filesList) == 1:
+        single_file = filesList[0]
 
+        # Convert the single ROOT file to HDF5 if necessary
+        h5_file = single_file.replace('.root', '.h5')
+        if not os.path.isfile(h5_file):
+            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {single_file} -o {h5_file}')
 
+        with h5py.File(h5_file, 'r') as f:
+            X = f['X'][:]
+            Y = f['Y'][:]
+
+        X_train, X_temp, Y_train, Y_temp = train_test_split(X, Y, test_size=0.4, random_state=42)
+        X_valid, X_test, Y_valid, Y_test = train_test_split(X_temp, Y_temp, test_size=0.5, random_state=42)
+
+        # Create data generators for each split
+        trainGenerator = DataGenerator(X_train, Y_train, batch_size=batch_size, maxNPF=maxNPF, normfac=normFac)
+        validGenerator = DataGenerator(X_valid, Y_valid, batch_size=batch_size, maxNPF=maxNPF, normfac=normFac)
+        testGenerator = DataGenerator(X_test, Y_test, batch_size=batch_size, maxNPF=maxNPF, normfac=normFac)
     else:
         assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
 
