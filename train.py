@@ -139,8 +139,13 @@ def train_dataGenerator(args):
 
     # separate files into training, validation, and testing
     filesList = glob(os.path.join(inputPath, '*.root'))
+    h5FilesList = glob(os.path.join(inputPath, '*.h5'))
     filesList.sort(reverse=True)
 
+    # If no ROOT files are found, use HDF5 files directly
+    if len(filesList) == 0 and len(h5FilesList) > 0:
+        print("No ROOT files found. Using HDF5 files directly.")
+        filesList = h5FilesList
     
     if 'singleneutrino' in inputPath.lower():
         train_filesList = []
@@ -150,35 +155,17 @@ def train_dataGenerator(args):
             train_filesList.append(ifile.replace('.root', '_train_set.h5'))
             test_filesList.append(ifile.replace('.root', '_test_set.h5'))
             valid_filesList.append(ifile.replace('.root', '_val_set.h5'))
-    if len(filesList) == 1:
-        single_file = filesList[0]
-
-        # Convert the single ROOT file to HDF5 if necessary
-        h5_file = single_file.replace('.root', '.h5')
-        if not os.path.isfile(h5_file):
-            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {single_file} -o {h5_file}')
-
-        with h5py.File(h5_file, 'r') as f:
-            X = f['X'][:]
-            Y = f['Y'][:]
-
-        X_train, X_temp, Y_train, Y_temp = train_test_split(X, Y, test_size=0.4, random_state=42)
-        X_valid, X_test, Y_valid, Y_test = train_test_split(X_temp, Y_temp, test_size=0.5, random_state=42)
-
-        # Create data generators for each split
-        trainGenerator = DataGenerator(X_train, Y_train, batch_size=batch_size, maxNPF=maxNPF, normfac=normFac)
-        validGenerator = DataGenerator(X_valid, Y_valid, batch_size=batch_size, maxNPF=maxNPF, normfac=normFac)
-        testGenerator = DataGenerator(X_test, Y_test, batch_size=batch_size, maxNPF=maxNPF, normfac=normFac)
     else:
         assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
 
-        valid_nfiles = max(1, int(.1*len(filesList)))
-        train_nfiles = len(filesList) - 2*valid_nfiles
-        test_nfiles = valid_nfiles
+        train_filesList = [f for f in filesList if "train" in f.lower()]
+        valid_filesList = [f for f in filesList if "valid" in f.lower()]
+        test_filesList = [f for f in filesList if "test" in f.lower()]
 
-        train_filesList = filesList[0:train_nfiles]
-        valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
-        test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
+        # Ensure there are files in each category
+        assert len(train_filesList) > 0, "No training files found in filesList."
+        assert len(valid_filesList) > 0, "No validation files found in filesList."
+        assert len(test_filesList) > 0, "No testing files found in filesList."
 
     if compute_ef == 1:
 
