@@ -13,7 +13,7 @@ import itertools
 def dense_embedding(n_features=6,
                     n_features_cat=2,
                     activation='relu',
-                    number_of_pupcandis=100,
+                    number_of_pupcandis=128,
                     embedding_input_dim={0: 13, 1: 3},
                     emb_out_dim=8,
                     with_bias=True,
@@ -137,6 +137,7 @@ def dense_embedding_quantized(n_features=6,
         x = Multiply()([w, pxpy])
 
         x = GlobalAveragePooling1D(name='output')(x)
+        #GlobalAveragePooling needs to be quantized
     outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
