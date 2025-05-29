@@ -72,7 +72,7 @@ def dense_embedding(n_features=6,
 
 def dense_embedding_quantized(n_features=6,
                               n_features_cat=2,
-                              number_of_pupcandis=100,
+                              number_of_pupcandis=128,
                               embedding_input_dim={0: 13, 1: 3},
                               emb_out_dim=2,
                               with_bias=True,
@@ -121,13 +121,18 @@ def dense_embedding_quantized(n_features=6,
     if t_mode == 0:
         x = qkeras.qpooling.QGlobalAveragePooling1D(name='pool', quantizer=logit_quantizer)(x)
         # pool size?
-        outputs = QDense(2, name='output', bias_quantizer=logit_quantizer, kernel_quantizer=logit_quantizer, activation='linear')(x)
+        outputs = QDense(2, name='output', bias_quantizer=logit_quantizer, 
+                         kernel_quantizer=logit_quantizer, activation='linear')(x)
 
     if t_mode == 1:
         if with_bias:
-            b = QDense(2, name='met_bias', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+            b = QDense(2, name='met_bias', kernel_quantizer=logit_quantizer, 
+                       bias_quantizer=logit_quantizer, 
+                       kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
             pxpy = Add()([pxpy, b])
-        w = QDense(1, name='met_weight', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        w = QDense(1, name='met_weight', kernel_quantizer=logit_quantizer, 
+                   bias_quantizer=logit_quantizer, 
+                   kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
         x = Multiply()([w, pxpy])
 
