@@ -58,7 +58,7 @@ def dense_embedding(n_features=6,
             b = Dense(2, name='met_bias', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
             pxpy = Add()([pxpy, b])
         w = Dense(1, name='met_weight', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
-        w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
+        w = BatchNormalization(name='met_weight_minus_one', epsilon=False)(w)
         x = Multiply()([w, pxpy])
 
         x = GlobalAveragePooling1D(name='output')(x)
