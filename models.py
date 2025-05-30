@@ -66,7 +66,7 @@ def dense_embedding(n_features=6,
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
-    #keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
+    keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
 
     return keras_model
 
