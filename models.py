@@ -8,6 +8,7 @@ import qkeras
 from qkeras.qlayers import QDense, QActivation
 import numpy as np
 import itertools
+from qpooling import QGlobalAveragePooling1D
 
 
 def dense_embedding(n_features=6,
@@ -136,7 +137,7 @@ def dense_embedding_quantized(n_features=6,
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
         x = Multiply()([w, pxpy])
 
-        x = GlobalAveragePooling1D(name='output')(x)
+        x = QGlobalAveragePooling1D(name='output')(x)
         #GlobalAveragePooling needs to be quantized
     outputs = x
 
