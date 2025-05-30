@@ -16,7 +16,7 @@ from qkeras.qlayers import QActivation
 from qkeras.quantizers import get_quantizer
 
 class QGlobalAveragePooling1D(GlobalAveragePooling1D):
-    """Cmputes the quantized version of GlobalAveragePooling1D."""
+    """Computes the quantized version of GlobalAveragePooling1D."""
 
     def __init__(self, data_format=None,
                  average_quantizer=None,
