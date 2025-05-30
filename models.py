@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow import slice
 from tensorflow.keras import initializers
 import qkeras
-from qkeras.qlayers import QDense, QActivation
+from qkeras.qlayers import QDense, QActivation, QEmbedding
 import numpy as np
 import itertools
 from qpooling import QGlobalAveragePooling1D
@@ -100,7 +100,7 @@ def dense_embedding_quantized(n_features=6,
     for i_emb in range(n_features_cat):
         input_cat = Input(shape=(number_of_pupcandis, ), name='input_cat{}'.format(i_emb))
         inputs.append(input_cat)
-        embedding = Embedding(
+        embedding = QEmbedding(
             input_dim=embedding_input_dim[i_emb],
             output_dim=emb_out_dim,
             embeddings_initializer=initializers.RandomNormal(
