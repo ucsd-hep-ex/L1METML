@@ -5,6 +5,8 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, Early
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Model, load_model
 from sklearn.model_selection import train_test_split
+from tensorflow_model_optimization.python.core.sparsity.keras import prune, pruning_callbacks, pruning_schedule
+from tensorflow_model_optimization.sparsity.keras import strip_pruning, UpdatePruningStep, PruningSummaries
 
 import numpy as np
 import tables
@@ -184,6 +186,8 @@ def train_dataGenerator(args):
     # Load training model
     if quantized is None:
         if model == 'dense_embedding':
+            pruning_params = {"pruning_schedule": pruning_schedule.ConstantSparsity(0.75, begin_step=2000, frequency=100)}
+
             keras_model = dense_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
@@ -193,6 +197,8 @@ def train_dataGenerator(args):
                                           t_mode=t_mode,
                                           with_bias=False,
                                           units=units)
+            keras_model = prune.prune_low_magnitude(keras_model, **pruning_params)
+
         elif model == 'graph_embedding':
             keras_model = graph_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
@@ -235,6 +241,10 @@ def train_dataGenerator(args):
                             metrics=['mean_absolute_error', 'mean_squared_error'])
         verbose = 1
 
+    pruning_callbacks = [
+        UpdatePruningStep(),
+        PruningSummaries(log_dir=path_out + '/pruning_logs')
+    ]
     # Run training
     print(keras_model.summary())
 
@@ -243,7 +253,7 @@ def train_dataGenerator(args):
                               epochs=epochs,
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=validGenerator,
-                              callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
+                              callbacks=(get_callbacks(path_out, len(trainGenerator), batch_size) + pruning_callbacks))
   
 
     end_time = time.time()  # check end time
@@ -270,6 +280,7 @@ def train_dataGenerator(args):
     fi.close()
     
     if isinstance(model_output,str)==True:
+        keras_model = strip_pruning(keras_model)
         keras_model.save(model_output)
         keras_model.save(model_output[:-1] + ".h5", save_format='h5')
 
