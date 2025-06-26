@@ -34,10 +34,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         self.h5files = []
         for ifile in list_files:
-             h5file_path = ifile.replace('.root', '.h5')
-             if not os.path.isfile(h5file_path):
-                 os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
-             self.h5files.append(h5file_path)
+            h5file_path = ifile.replace('.root', '.h5')
+            if not os.path.isfile(h5file_path):
+                os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
+            self.h5files.append(h5file_path)
         for i, file_name in enumerate(self.h5files):
             with h5py.File(file_name, "r") as h5_file:
                 self.open_files.append(h5_file)
