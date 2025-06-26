@@ -141,7 +141,7 @@ def train_dataGenerator(args):
     filesList.sort(reverse=True)
 
     assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
-    
+
     valid_nfiles = max(1, int(.1*len(filesList)))
     train_nfiles = len(filesList) - 2*valid_nfiles
     test_nfiles = valid_nfiles
