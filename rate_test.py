@@ -20,8 +20,8 @@ import time
 import argparse
 import collections as co
 import matplotlib.pyplot as plt
-import tensorflow.keras.backend as K
-import tensorflow as tf
+#import tensorflow.keras.backend as K
+#import tensorflow as tf
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -251,7 +251,37 @@ class PlotGenerator:
 
 def main(args: argparse.Namespace) -> None:
 
+    config = AnalysisConfig()
+
+    # Load data 
+    laoder = DataLoader(args.input)
+    data = laoder.load_arrays()
+
+    # Perform analysis
+    analyzer = RateAnalyzer(config)
+    rates = analyzer.calculate_rates(data)
+
+    # Generate plots
+    plotter = PlotGenerator(config)
+
+    if args.plot == "ROC":
+        auc_scores = analyzer.calculate_auc(data)
+        logger.info(f"ML AUC: {auc_scores[0]:.4f}")
+        logger.info(f"PUPPI AUC: {auc_scores[1]:.4f}")
+        plotter.plot_roc_curve(rates, auc_scores)
+
+    elif args.plot == "rate":
+        plotter.plot_trigger_rates(rates)
+
+    elif args.plot == "rate_com":
+        plotter.plot_combined_rates(rates)
     
+    else:
+        raise ValueError(f"Unknown plot type: {args.plot}")
+    
+    logger.info("Analysis complete. Plots saved in output directory.")
+        
+    '''
     print("\n*****************************************\n")
 
     # load Predicted MET (TTbar-1, SingleNeutrino-0)
@@ -401,6 +431,7 @@ def main(args: argparse.Namespace) -> None:
         plt.ylabel('SingleNeutrino rate [kHz]')
         plt.savefig('combined_True.png')
         plt.show()
+'''
 
 def parse_arguments() -> argparse.Namespace:
     """Parse command line arguments."""
