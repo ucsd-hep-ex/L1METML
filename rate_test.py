@@ -1,6 +1,15 @@
+"""
+Rate test for ML MET vs PUPPI MET
+
+Compares performance of ML MET and PUPPI MET by analyzing 
+ROC curve and trigger rates for various datasets.
+
+"""
+
 from sklearn.metrics import auc, roc_curve, roc_auc_score
 
 import h5py
+import logging
 import os
 import numpy as np
 import numpy.ma
@@ -11,8 +20,8 @@ import matplotlib.pyplot as plt
 import tensorflow.keras.backend as K
 import tensorflow as tf
 
-# Will test how much difference between PUPPI MET and Predicted MET in ID.
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def main(args):
 
@@ -166,13 +175,39 @@ def main(args):
         plt.savefig('combined_True.png')
         plt.show()
 
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Analyze L1 MET ML model performance",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    
+    parser.add_argument(
+        '--input', 
+        type=str, 
+        required=True,
+        help='Input directory containing numpy arrays (output path of training)'
+    )
+    
+    parser.add_argument(
+        '--plot', 
+        type=str, 
+        required=True,
+        choices=['ROC', 'rate', 'rate_com'],
+        help='Type of plot to generate'
+    )
+    
+    parser.add_argument(
+        '--output-dir',
+        type=str,
+        default='plots',
+        help='Output directory for plots'
+    )
+    
+    return parser.parse_args()
+
 
 # Configuration
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path (= output path of training)')
-    parser.add_argument('--plot', action='store', type=str, required=True, help='ROC for ROC curve, trigger for trigger rate ')
-
-    args = parser.parse_args()
+    args = parse_arguments()
     main(args)
