@@ -168,10 +168,90 @@ class RateAnalyzer:
         puppi_auc = roc_auc_score(y_true, y_score_puppi)
 
         return ml_auc, puppi_auc
+
+class PlotGenerator:
+    """Generates various plots for rate/ROC analysis."""
+
+    def __init__(self, config: AnalysisConfig):
+        self.config = config
+        self.output_dir = Path(config.output_dir)
+        self.output_dir.mkdir(exist_ok=True)
+
+    def plot_roc_curve(self, rates: Dict[str, np.ndarray], auc_scores: Tuple[float, float]) -> None:
+        """Generate ROC curve plot."""
+        ml_auc, puppi_auc = auc_scores
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(rates['ml_roc'][:,0], rates['ml_roc'][:,1],
+                 label=f'ML ROC, AUC = {ml_auc:.3f}', linewidth=2)
+        plt.plot(rates['puppi_roc'][:,0], rates['puppi_roc'][:,1],
+                 label=f'PUPPI ROC, AUC = {puppi_auc:.3f}', linewidth=2, color='red')
+        
+        self._setup_plot_style()
+        plt.xlabel('Signal Efficiency (TPR)')
+        plt.ylabel('Background Efficiency (FPR)')
+        plt.title('ROC Curve: ML vs PUPPI MET')
+        plt.xlim(0., 1.)
+        plt.yscale("log")
+        plt.ylim(1e-6, 1.1)
+        plt.legend()
+
+        output_path = self.output_dir / 'ROC_curve.png'
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"ROC curve saved to {output_path}")
     
+    def plot_trigger_rates(self, rates: Dict[str, np.ndarray]) -> None:
+        """Generate trigger rate plot."""
+        thresholds = np.arange(0, self.config.step * self.config.bin_number, self.config.step)
 
-def main(args):
+        plt.figure(figsize=(10, 6))
+        plt.plot(thresholds, rates['ml_ttbar'], 'bo', label = 'ML', markersize=2)
+        plt.plot(thresholds, rates['puppi_ttbar'], 'ro', label = 'PUPPI', markersize=2)
 
+        self._setup_plot_style()
+        plt.xlim(0, self.config.max_threshold_gev)
+        plt.xlabel('MET Threshold (GeV)')
+        plt.ylabel('TTbar Efficiency')
+        plt.title('Trigger Rates: ML vs PUPPI MET')
+        plt.legend()
+
+        output_path = self.output_dir / 'trigger_rates.png'
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Trigger rates plot saved to {output_path}")
+
+    def plot_combined_rates(self, rates: Dict[str, np.ndarray]) -> None:
+        """Generate combined rates plot for ML and PUPPI."""
+        plt.figure(figsize=(10, 6))
+
+        ml_bg_rate = rates['ml_sn'] * self.config.trigger_rate_khz
+        puppi_bg_rate = rates['puppi_sn'] * self.config.trigger_rate_khz
+
+        plt.plot(rates['ml_ttbar'], ml_bg_rate, 'bo', label='ML', markersize=2)
+        plt.plot(rates['puppi_ttbar'], puppi_bg_rate, 'ro', label='PUPPI', markersize=2)
+
+        self._setup_plot_style()
+        plt.yscale("log")
+        plt.xlabel('TTbar Efficiency')
+        plt.ylabel('Single Neutrino Rate (kHz)')
+        plt.title('Combined Rates: ML vs PUPPI MET')
+        plt.legend()
+
+        output_path = self.output_dir / 'combined_rates.png'
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Combined rates plot saved to {output_path}")
+    
+    def _setup_plot_style(self) -> None:
+        """Apply consistent style to plots."""
+        plt.grid(True, color='gray', alpha=0.5, linestyle='--')
+        plt.tight_layout()
+
+
+def main(args: argparse.Namespace) -> None:
+
+    
     print("\n*****************************************\n")
 
     # load Predicted MET (TTbar-1, SingleNeutrino-0)
