@@ -4,7 +4,7 @@ channels:
   - conda-forge
   - anaconda
 dependencies:
-  - python 
+  - python=3.9
   - pytables
   - uproot
   - tensorflow=2.11.1
