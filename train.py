@@ -124,7 +124,7 @@ def train_dataGenerator(args):
     maxNPF = args.maxNPF
     n_features_pf = 6
     n_features_pf_cat = 2
-    normFac = args.normFac
+    normFac = 1.
     custom_loss = custom_loss_wrapper(normFac)
     epochs = args.epochs
     batch_size = args.batch_size
@@ -137,7 +137,6 @@ def train_dataGenerator(args):
     units = list(map(int, args.units))
     compute_ef = args.compute_edge_feat
     edge_list = args.edge_features
-    model_output = args.model_output
 
     # separate files into training, validation, and testing
     filesList = glob(os.path.join(inputPath, '*.root'))
@@ -160,34 +159,30 @@ def train_dataGenerator(args):
     else:
         assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
 
-        train_filesList = [f for f in filesList if "train" in f.lower()]
-        valid_filesList = [f for f in filesList if "valid" in f.lower()]
-        test_filesList = [f for f in filesList if "test" in f.lower()]
-
-        # Ensure there are files in each category
-        assert len(train_filesList) > 0, "No training files found in filesList."
-        assert len(valid_filesList) > 0, "No validation files found in filesList."
-        assert len(test_filesList) > 0, "No testing files found in filesList."
+    valid_nfiles = max(1, int(.1*len(filesList)))
+    train_nfiles = len(filesList) - 2*valid_nfiles
+    test_nfiles = valid_nfiles
+    train_filesList = filesList[0:train_nfiles]
+    valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
+    test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
 
     if compute_ef == 1:
 
         # set up data generators; they perform h5 conversion if necessary and load in data batch by batch
-        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list,normfac=normFac)
-        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list,normfac=normFac)
-        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list,normfac=normFac)
+        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
+        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
 
     else:
-        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size,normfac=normFac)
-        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size,normfac=normFac)
-        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size,normfac=normFac)
+        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
+        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
 
     # Load training model
     if quantized is None:
         if model == 'dense_embedding':
-            pruning_params = {"pruning_schedule": pruning_schedule.ConstantSparsity(0.75, begin_step=2000, frequency=100)}
-
             keras_model = dense_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
                                           n_features_cat=n_features_pf_cat,
@@ -197,8 +192,6 @@ def train_dataGenerator(args):
                                           t_mode=t_mode,
                                           with_bias=False,
                                           units=units)
-            keras_model = prune.prune_low_magnitude(keras_model, **pruning_params)
-
         elif model == 'graph_embedding':
             keras_model = graph_embedding(n_features=n_features_pf,
                                           emb_out_dim=2,
@@ -559,8 +552,6 @@ def main():
     parser.add_argument('--compute-edge-feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
     parser.add_argument('--maxNPF', action='store', type=int, required=False, default=100, help='maximum number of PUPPI candidates')
     parser.add_argument('--edge-features', action='store', required=False, nargs='+', help='which edge features to use (i.e. dR, kT, z, m2)')
-    parser.add_argument('--model-output', action='store', type=str, required=False, help='output path to save keras model')
-    parser.add_argument('--normFac', action='store', type=int, default=1, required=False, help='Norm factor')
 
     args = parser.parse_args()
     workflowType = args.workflowType

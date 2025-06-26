@@ -14,7 +14,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
 
     def __init__(self, list_files, batch_size=1024, n_dim=100, maxNPF=100, compute_ef=0,
-                 max_entry=100000000, edge_list=[], normfac=1):
+                 max_entry=100000000, edge_list=[]):
         'Initialization'
         self.n_features_pf = 6
         self.n_features_pf_cat = 2
