@@ -141,7 +141,7 @@ class RateAnalyzer:
                 threshold
             )
 
-            return rates
+        return rates
         
     def _calculate_roc_point(self, tp: int, fp: int, total_pos: int, total_neg: int, threshold: float) -> np.ndarray:
         """Calculate TPR, FPR for a single threshold."""
@@ -254,8 +254,8 @@ def main(args: argparse.Namespace) -> None:
     config = AnalysisConfig()
 
     # Load data 
-    laoder = DataLoader(args.input)
-    data = laoder.load_arrays()
+    loader = DataLoader(args.input)
+    data = loader.load_arrays()
 
     # Perform analysis
     analyzer = RateAnalyzer(config)
@@ -431,8 +431,9 @@ def main(args: argparse.Namespace) -> None:
         plt.ylabel('SingleNeutrino rate [kHz]')
         plt.savefig('combined_True.png')
         plt.show()
-'''
 
+    '''
+    
 def parse_arguments() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
