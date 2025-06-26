@@ -11,6 +11,9 @@ from sklearn.metrics import auc, roc_curve, roc_auc_score
 import h5py
 import logging
 import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, Tuple, Optional
 import numpy as np
 import numpy.ma
 import time
@@ -22,6 +25,150 @@ import tensorflow as tf
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+@dataclass
+class AnalysisConfig:
+    """Configuration for rate analysis."""
+    bin_number: int = 300
+    step: float = 2.0
+    trigger_rate_khz: float = 31000.0
+    max_threshold_gev: int = 200
+    output_dir: str = "plots"
+
+@dataclass
+class DataArrays:
+    '''Holds numpy arrays for ML and PUPPI MET data.'''
+    #TODO: change to use signal/bkg instead of ttbar/sn
+    # and handle more samples
+    ttbar_ml: np.ndarray
+    single_neutrino_ml: np.ndarray
+    ttbar_puppi: np.ndarray
+    single_neutrino_puppi: np.ndarray
+class DataLoader:
+    """Handles loading and preprocessing of numpy arrays."""
+    """Different from training data-laoder"""
+    #TODO: change to use signal/bkg instead of ttbar/sn
+    # and handle more samples
+    
+    def __init__(self, input_path: str):
+        self.input_path = Path(input_path)
+
+    def load_arrays(self) -> DataArrays:
+        """Load and preprocess all required arrays."""
+        logger.info(f"Loading data from {self.input_path}")
+
+        #Load ML arrays
+        ttbar_ml = self._load_and_process_arrays("TTbar", "MLMET")
+        sn_ml = self._load_and_process_arrays("SingleNeutrino", "MLMET", is_signal=False)
+
+        #Load PUPPI arrays
+        ttbar_puppi = self._load_and_process_arrays("TTbar", "PUMET")
+        sn_puppi = self._load_and_process_arrays("SingleNeutrino", "PUMET", is_signal=False)
+
+        return DataArrays(ttbar_ml, sn_ml, ttbar_puppi, sn_puppi)
+
+    def _load_and_process_arrays(self, sample: str, met_type: str, is_signal: bool = True) -> np.ndarray:
+        """Load and process arrays for a specific sample and MET type."""
+        #TODO: consistently change naming to prediction instead of feature
+        feature_file = f"{sample}_feature_array_{met_type}.npy" 
+        target_file = f"{sample}_target_array_{met_type}.npy"
+
+        feature_array = np.load(self.input_path / feature_file)  
+        target_array = np.load(self.input_path / target_file)
+
+        logger.info(f"Loaded {feature_file} and {target_file}")
+
+        # Create label column (1 for signal, 0 fopr backgroudn)
+        label = np.ones((feature_array.shape[0],1)) if is_signal else np.zeros((feature_array.shape[0],1)) 
+
+        return np.concatenate([feature_array[:, 0:1], target_array[:, 0:1], label], axis=1)
+
+class RateAnalyzer:
+    """Performs the rate and classification analysis for ML and PUPPI MET."""
+
+    def __init__(self, config: AnalysisConfig):
+        self.config = config
+
+    def calculate_rates(self, data: DataArrays) -> Dict[str, np.ndarray]:
+        """Calculate trigger rates for both ML and PUPPI methods."""
+        bin_count = int(self.config.bin_number)
+
+        # Initialize arrays to hold rates and thresholds
+        #TODO: adjust for sig/bkg instead of ttbar/sn
+        rates = {
+            'ml_ttbar': np.zeros(bin_count),
+            'ml_sn': np.zeros(bin_count),
+            'puppi_ttbar': np.zeros(bin_count),
+            'puppi_sn': np.zeros(bin_count),
+            'ml_roc': np.zeros((bin_count, 3)), # TPR, FPR, threshold
+            'puppi_roc': np.zeros((bin_count, 3)) # TPR, FPR, threshold
+        }
+
+        ttbar_total = data.ttbar_ml.shape[0]
+        sn_total = data.single_neutrino_ml.shape[0]
+
+        for i in range(bin_count):
+            threshold = i * self.config.step
+
+            # ML rates
+            ml_ttbar_pass = np.sum(data.ttbar_ml[:,0] > threshold)
+            ml_sn_pass = np.sum(data.single_neutrino_ml[:,0] > threshold)
+
+            rates['ml_ttbar'][i] = ml_ttbar_pass / ttbar_total
+            rates['ml_sn'][i] = ml_sn_pass / sn_total
+
+            # ML ROC values
+            rates['ml_roc'][i] = self._calculate_roc_point(
+                ml_ttbar_pass,
+                ml_sn_pass,
+                ttbar_total,
+                sn_total,
+                threshold
+            )
+
+            # PUPPI rates
+            puppi_ttbar_pass = np.sum(data.ttbar_puppi[:,0] > threshold)
+            puppi_sn_pass = np.sum(data.single_neutrino_puppi[:,0] > threshold)
+
+            rates['puppi_ttbar'][i] = puppi_ttbar_pass / ttbar_total
+            rates['puppi_sn'][i] = puppi_sn_pass / sn_total
+
+            # PUPPI ROC values
+            rates['puppi_roc'][i] = self._calculate_roc_point(
+                puppi_ttbar_pass,
+                puppi_sn_pass,
+                ttbar_total,
+                sn_total,
+                threshold
+            )
+
+            return rates
+        
+    def _calculate_roc_point(self, tp: int, fp: int, total_pos: int, total_neg: int, threshold: float) -> np.ndarray:
+        """Calculate TPR, FPR for a single threshold."""
+        fn = total_pos - tp
+        tn = total_neg - fp
+
+        tpr = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+
+        return np.array([tpr, fpr, threshold])
+    
+    def calculate_auc(self, data: DataArrays) -> Tuple[float, float]:
+        """Calcualte AUC using sklearn."""
+        # Prepare data for sklearn
+        y_true = np.concatenate([
+            np.ones(data.ttbar_ml.shape[0]),
+            np.zeros(data.single_neutrino_ml.shape[0])
+        ])
+
+        y_score_ml = np.concatenate([data.ttbar_ml[:, 0], data.single_neutrino_ml[:, 0]])
+        y_score_puppi = np.concatenate([data.ttbar_puppi[:, 0], data.single_neutrino_puppi[:, 0]])
+
+        ml_auc = roc_auc_score(y_true, y_score_ml)
+        puppi_auc = roc_auc_score(y_true, y_score_puppi)
+
+        return ml_auc, puppi_auc
+    
 
 def main(args):
 
@@ -123,8 +270,8 @@ def main(args):
         #ML_sort_idx = np.argsort(ML_array[:, 1])
         #PU_sort_idx = np.argsort(PU_array[:, 1])
 
-        ML_AUC = auc(ML_array[:, 1], ML_array[:, 0])
-        PU_AUC = auc(PU_array[:, 1], PU_array[:, 0])
+        #ML_AUC = auc(ML_array[:, 1], ML_array[:, 0])
+        #PU_AUC = auc(PU_array[:, 1], PU_array[:, 0])
         
         #new AUC calculation, last zeroed out all contributions
         y_true  = np.r_[np.ones(All1_count), np.zeros(All0_count)]
