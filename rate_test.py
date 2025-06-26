@@ -1,166 +1,319 @@
-from sklearn.metrics import auc
+"""
+Rate test for ML MET vs PUPPI MET
+
+Compares performance of ML MET and PUPPI MET by analyzing 
+ROC curve and trigger rates for various datasets.
+
+"""
+
+from sklearn.metrics import auc, roc_curve, roc_auc_score
 
 import h5py
+import logging
 import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, Tuple, Optional
 import numpy as np
 import numpy.ma
 import time
 import argparse
 import collections as co
 import matplotlib.pyplot as plt
-import tensorflow.keras.backend as K
-import tensorflow as tf
+#import tensorflow.keras.backend as K
+#import tensorflow as tf
 
-# Will test how much difference between PUPPI MET and Predicted MET in ID.
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+@dataclass
+class AnalysisConfig:
+    """Configuration for rate analysis."""
+    bin_number: int = 300
+    step: float = 2.0
+    trigger_rate_khz: float = 31000.0
+    max_threshold_gev: int = 200
+    output_dir: str = "plots"
 
+@dataclass
+class DataArrays:
+    '''Holds numpy arrays for ML and PUPPI MET data.'''
+    #TODO: change to use signal/bkg instead of ttbar/sn
+    # and handle more samples
+    ttbar_ml: np.ndarray
+    single_neutrino_ml: np.ndarray
+    ttbar_puppi: np.ndarray
+    single_neutrino_puppi: np.ndarray
+class DataLoader:
+    """Handles loading and preprocessing of numpy arrays."""
+    """Different from training data-laoder"""
+    #TODO: change to use signal/bkg instead of ttbar/sn
+    # and handle more samples
+    
+    def __init__(self, input_path: str):
+        self.input_path = Path(input_path)
 
-def main(args):
+    def load_arrays(self) -> DataArrays:
+        """Load and preprocess all required arrays."""
+        logger.info(f"Loading data from {self.input_path}")
 
-    print("\n*****************************************\n")
+        #Load ML arrays
+        ttbar_ml = self._load_and_process_arrays("TTbar", "MLMET")
+        sn_ml = self._load_and_process_arrays("SingleNeutrino", "MLMET", is_signal=False)
 
-    # load Predicted MET (TTbar-1, SingleNeutrino-0)
-    Tarray_ML = np.load(os.path.join(args.input, "TTbar_feature_array_MLMET.npy"))
-    Tarray_ML_target = np.load(os.path.join(args.input, "TTbar_target_array_MLMET.npy"))
-    print("reading", args.input, "TTbar_feature_array_MLMET.npy")
-    Sarray_ML = np.load(os.path.join(args.input, "SingleNeutrino_feature_array_MLMET.npy"))
-    Sarray_ML_target = np.load(os.path.join(args.input, "SingleNeutrino_target_array_MLMET.npy"))
-    print("reading", args.input, "SingleNeutrino_feature_array_MLMET.npy")
-    Tarray_ML = np.concatenate((Tarray_ML[:, 0:1], Tarray_ML_target[:, 0:1], 1+np.zeros((Tarray_ML.shape[0], 1))), axis=1)
-    Sarray_ML = np.concatenate((Sarray_ML[:, 0:1], Sarray_ML_target[:, 0:1], np.zeros((Sarray_ML.shape[0], 1))), axis=1)
+        #Load PUPPI arrays
+        ttbar_puppi = self._load_and_process_arrays("TTbar", "PUMET")
+        sn_puppi = self._load_and_process_arrays("SingleNeutrino", "PUMET", is_signal=False)
 
-    print("finish reading ML MET files")
-    print("\n*****************************************\n")
+        return DataArrays(ttbar_ml, sn_ml, ttbar_puppi, sn_puppi)
 
-    # load PUPPI MET (TTbar-1, SingleNeutrino-0)
-    Tarray_PU = np.load(os.path.join(args.input, "TTbar_feature_array_PUMET.npy"))
-    Tarray_PU_target = np.load(os.path.join(args.input, "TTbar_target_array_PUMET.npy"))
-    print("reading", args.input, "TTbar_feature_array_PUMET.npy")
-    Sarray_PU = np.load(os.path.join(args.input, "SingleNeutrino_feature_array_PUMET.npy"))
-    Sarray_PU_target = np.load(os.path.join(args.input, "SingleNeutrino_target_array_PUMET.npy"))
-    print("reading", args.input, "SingleNeutrino_feature_array_PUMET.npy")
-    Tarray_PU = np.concatenate((Tarray_PU[:, 0:1], Tarray_PU_target[:, 0:1], 1+np.zeros((Tarray_PU.shape[0], 1))), axis=1)
-    Sarray_PU = np.concatenate((Sarray_PU[:, 0:1], Sarray_PU_target[:, 0:1], np.zeros((Sarray_PU.shape[0], 1))), axis=1)
+    def _load_and_process_arrays(self, sample: str, met_type: str, is_signal: bool = True) -> np.ndarray:
+        """Load and process arrays for a specific sample and MET type."""
+        #TODO: consistently change naming to prediction instead of feature
+        feature_file = f"{sample}_feature_array_{met_type}.npy" 
+        target_file = f"{sample}_target_array_{met_type}.npy"
 
-    print("finish reading PUPPI MET files")
-    print("\n*****************************************\n")
+        feature_array = np.load(self.input_path / feature_file)  
+        target_array = np.load(self.input_path / target_file)
 
-    # concatenate TTbar and SingleNeutrino and shuffle
-    ML1 = Tarray_ML
-    ML0 = Sarray_ML
+        logger.info(f"Loaded {feature_file} and {target_file}")
 
-    PU1 = Tarray_PU
-    PU0 = Sarray_PU
+        # Create label column (1 for signal, 0 fopr backgroudn)
+        label = np.ones((feature_array.shape[0],1)) if is_signal else np.zeros((feature_array.shape[0],1)) 
 
-    bin_number = 300.
-    step = 2.
+        return np.concatenate([feature_array[:, 0:1], target_array[:, 0:1], label], axis=1)
 
-    ML_array = np.zeros((int(bin_number), 3))
-    PU_array = np.zeros((int(bin_number), 3))
+class RateAnalyzer:
+    """Performs the rate and classification analysis for ML and PUPPI MET."""
 
-    ML_rate = np.zeros(int(bin_number))
-    PU_rate = np.zeros(int(bin_number))
-    ML_rate_SN = np.zeros(int(bin_number))
-    PU_rate_SN = np.zeros(int(bin_number))
-    target_rate = np.zeros(int(bin_number))
-    target_rate_SN = np.zeros(int(bin_number))
+    def __init__(self, config: AnalysisConfig):
+        self.config = config
 
-    All1_count = ML1.shape[0]
-    All0_count = ML0.shape[0]
+    def calculate_rates(self, data: DataArrays) -> Dict[str, np.ndarray]:
+        """Calculate trigger rates for both ML and PUPPI methods."""
+        bin_count = int(self.config.bin_number)
 
-    for i in range(int(bin_number)):
-        # ML
+        # Initialize arrays to hold rates and thresholds
+        #TODO: adjust for sig/bkg instead of ttbar/sn
+        rates = {
+            'ml_ttbar': np.zeros(bin_count),
+            'ml_sn': np.zeros(bin_count),
+            'puppi_ttbar': np.zeros(bin_count),
+            'puppi_sn': np.zeros(bin_count),
+            'ml_roc': np.zeros((bin_count, 3)), # TPR, FPR, threshold
+            'puppi_roc': np.zeros((bin_count, 3)) # TPR, FPR, threshold
+        }
 
-        ML1_count = np.sum(ML1[:, 0] > i*step)
-        ML0_count = np.sum(ML0[:, 0] > i*step)
-        Ta1_count = np.sum(PU1[:, 1] > i*step)
-        Ta0_count = np.sum(PU0[:, 1] > i*step)
+        ttbar_total = data.ttbar_ml.shape[0]
+        sn_total = data.single_neutrino_ml.shape[0]
 
-        TP = ML1_count
-        FP = ML0_count
-        FN = All1_count - ML1_count
-        TN = All0_count - ML0_count
+        for i in range(bin_count):
+            threshold = i * self.config.step
 
-        # save plot data. -> TPR, FPR
-        ML_array[i, 0] = TP / (TP + FN + 1)  # TPR
-        ML_array[i, 1] = FP / (FP + TN)  # FPR
-        ML_array[i, 2] = step*i
+            # ML rates
+            ml_ttbar_pass = np.sum(data.ttbar_ml[:,0] > threshold)
+            ml_sn_pass = np.sum(data.single_neutrino_ml[:,0] > threshold)
 
-        ML_rate[i] = ML1_count/All1_count
-        ML_rate_SN[i] = ML0_count/All0_count
-        target_rate[i] = Ta1_count/All1_count
-        target_rate_SN[i] = Ta0_count/All0_count
+            rates['ml_ttbar'][i] = ml_ttbar_pass / ttbar_total
+            rates['ml_sn'][i] = ml_sn_pass / sn_total
 
-        # PU
+            # ML ROC values
+            rates['ml_roc'][i] = self._calculate_roc_point(
+                ml_ttbar_pass,
+                ml_sn_pass,
+                ttbar_total,
+                sn_total,
+                threshold
+            )
 
-        PU1_count = np.sum(PU1[:, 0] > i*step)
-        PU0_count = np.sum(PU0[:, 0] > i*step)
+            # PUPPI rates
+            puppi_ttbar_pass = np.sum(data.ttbar_puppi[:,0] > threshold)
+            puppi_sn_pass = np.sum(data.single_neutrino_puppi[:,0] > threshold)
 
-        TP = PU1_count
-        FP = PU0_count
-        FN = All1_count - PU1_count
-        TN = All0_count - PU0_count
+            rates['puppi_ttbar'][i] = puppi_ttbar_pass / ttbar_total
+            rates['puppi_sn'][i] = puppi_sn_pass / sn_total
 
-        # save plot data. -> TPR, FPR
-        PU_array[i, 0] = TP / (TP + FN + 1)  # TPR
-        PU_array[i, 1] = FP / (FP + TN)  # FPR
-        PU_array[i, 2] = step*i
+            # PUPPI ROC values
+            rates['puppi_roc'][i] = self._calculate_roc_point(
+                puppi_ttbar_pass,
+                puppi_sn_pass,
+                ttbar_total,
+                sn_total,
+                threshold
+            )
 
-        PU_rate[i] = PU1_count/All1_count
-        PU_rate_SN[i] = PU0_count/All0_count
+        return rates
+        
+    def _calculate_roc_point(self, tp: int, fp: int, total_pos: int, total_neg: int, threshold: float) -> np.ndarray:
+        """Calculate TPR, FPR for a single threshold."""
+        fn = total_pos - tp
+        tn = total_neg - fp
 
-    which_plot = args.plot
+        tpr = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
 
-    if which_plot == "ROC":
-        ML_AUC = auc(ML_array[:, 1], ML_array[:, 0])
-        PU_AUC = auc(PU_array[:, 1], PU_array[:, 0])
+        return np.array([tpr, fpr, threshold])
+    
+    def calculate_auc(self, data: DataArrays) -> Tuple[float, float]:
+        """Calcualte AUC using sklearn."""
+        # Prepare data for sklearn
+        y_true = np.concatenate([
+            np.ones(data.ttbar_ml.shape[0]),
+            np.zeros(data.single_neutrino_ml.shape[0])
+        ])
 
-        print("ML AUC : {}".format(ML_AUC))
-        print("PU AUC : {}".format(PU_AUC))
+        y_score_ml = np.concatenate([data.ttbar_ml[:, 0], data.single_neutrino_ml[:, 0]])
+        y_score_puppi = np.concatenate([data.ttbar_puppi[:, 0], data.single_neutrino_puppi[:, 0]])
 
-        plt.plot(ML_array[:, 1], ML_array[:, 0], label='ML ROC, AUC = {}'.format(round(ML_AUC, 3)))
-        plt.plot(PU_array[:, 1], PU_array[:, 0], '-r', label='PUPPI ROC, AUC = {}'.format(round(PU_AUC, 3)))
-        plt.grid(True, axis='x', color='gray', alpha=0.5, linestyle='--')
-        plt.xlabel('FPR')
+        ml_auc = roc_auc_score(y_true, y_score_ml)
+        puppi_auc = roc_auc_score(y_true, y_score_puppi)
+
+        return ml_auc, puppi_auc
+
+class PlotGenerator:
+    """Generates various plots for rate/ROC analysis."""
+
+    def __init__(self, config: AnalysisConfig):
+        self.config = config
+        self.output_dir = Path(config.output_dir)
+        self.output_dir.mkdir(exist_ok=True)
+
+    def plot_roc_curve(self, rates: Dict[str, np.ndarray], auc_scores: Tuple[float, float]) -> None:
+        """Generate ROC curve plot."""
+        ml_auc, puppi_auc = auc_scores
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(rates['ml_roc'][:,0], rates['ml_roc'][:,1],
+                 label=f'ML ROC, AUC = {ml_auc:.3f}', linewidth=2)
+        plt.plot(rates['puppi_roc'][:,0], rates['puppi_roc'][:,1],
+                 label=f'PUPPI ROC, AUC = {puppi_auc:.3f}', linewidth=2, color='red')
+        
+        self._setup_plot_style()
+        plt.xlabel('Signal Efficiency (TPR)')
+        plt.ylabel('Background Efficiency (FPR)')
+        plt.title('ROC Curve: ML vs PUPPI MET')
         plt.xlim(0., 1.)
-        plt.grid(True, axis='y', color='gray', alpha=0.5, linestyle='--')
-        plt.ylabel('TPR')
-        plt.title('ROC')
-        plt.legend()
-        plt.savefig('ROC_curve.png')
-
-    elif which_plot == "rate":
-        x_ = range(0, int(step*bin_number), int(step))
-        plt.plot(x_, ML_rate, 'bo', label='ML')
-        plt.plot(x_, PU_rate, 'ro', label='PUPPI')
-        plt.grid(True, axis='x', color='gray', alpha=0.5, linestyle='--')
-        plt.grid(True, axis='y', color='gray', alpha=0.5, linestyle='--')
-        plt.xlim(0, 200)
-        plt.legend()
-        plt.xlabel('MET threshold (ML, PU MET) [GeV]')
-        plt.ylabel('TTbar efficiency')
-        plt.savefig('triggerrate_SN_nolog_200.png')
-        plt.show()
-
-    elif which_plot == "rate_com":
-        x_ = range(0, int(step*bin_number), int(step))
-        plt.plot(ML_rate, ML_rate_SN*31000, 'bo', label='ML')
-        plt.plot(PU_rate, PU_rate_SN*31000, 'ro', label='PUPPI')
-        plt.grid(True, axis='y', color='gray', alpha=0.5, linestyle='--')
-        plt.grid(True, axis='x', color='gray', alpha=0.5, linestyle='--')
         plt.yscale("log")
+        plt.ylim(1e-6, 1.1)
         plt.legend()
-        plt.xlabel('TTbar efficiency')
-        plt.ylabel('SingleNeutrino rate [kHz]')
-        plt.savefig('combined_True.png')
-        plt.show()
+
+        output_path = self.output_dir / 'ROC_curve.png'
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"ROC curve saved to {output_path}")
+    
+    def plot_trigger_rates(self, rates: Dict[str, np.ndarray]) -> None:
+        """Generate trigger rate plot."""
+        thresholds = np.arange(0, self.config.step * self.config.bin_number, self.config.step)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(thresholds, rates['ml_ttbar'], 'bo', label = 'ML', markersize=2)
+        plt.plot(thresholds, rates['puppi_ttbar'], 'ro', label = 'PUPPI', markersize=2)
+
+        self._setup_plot_style()
+        plt.xlim(0, self.config.max_threshold_gev)
+        plt.xlabel('MET Threshold (GeV)')
+        plt.ylabel('TTbar Efficiency')
+        plt.title('Trigger Rates: ML vs PUPPI MET')
+        plt.legend()
+
+        output_path = self.output_dir / 'trigger_rates.png'
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Trigger rates plot saved to {output_path}")
+
+    def plot_combined_rates(self, rates: Dict[str, np.ndarray]) -> None:
+        """Generate combined rates plot for ML and PUPPI."""
+        plt.figure(figsize=(10, 6))
+
+        ml_bg_rate = rates['ml_sn'] * self.config.trigger_rate_khz
+        puppi_bg_rate = rates['puppi_sn'] * self.config.trigger_rate_khz
+
+        plt.plot(rates['ml_ttbar'], ml_bg_rate, 'bo', label='ML', markersize=2)
+        plt.plot(rates['puppi_ttbar'], puppi_bg_rate, 'ro', label='PUPPI', markersize=2)
+
+        self._setup_plot_style()
+        plt.yscale("log")
+        plt.xlabel('TTbar Efficiency')
+        plt.ylabel('Single Neutrino Rate (kHz)')
+        plt.title('Combined Rates: ML vs PUPPI MET')
+        plt.legend()
+
+        output_path = self.output_dir / 'combined_rates.png'
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Combined rates plot saved to {output_path}")
+    
+    def _setup_plot_style(self) -> None:
+        """Apply consistent style to plots."""
+        plt.grid(True, color='gray', alpha=0.5, linestyle='--')
+        plt.tight_layout()
+
+
+def main(args: argparse.Namespace) -> None:
+
+    config = AnalysisConfig()
+
+    # Load data 
+    loader = DataLoader(args.input)
+    data = loader.load_arrays()
+
+    # Perform analysis
+    analyzer = RateAnalyzer(config)
+    rates = analyzer.calculate_rates(data)
+
+    # Generate plots
+    plotter = PlotGenerator(config)
+
+    if args.plot == "ROC":
+        auc_scores = analyzer.calculate_auc(data)
+        logger.info(f"ML AUC: {auc_scores[0]:.4f}")
+        logger.info(f"PUPPI AUC: {auc_scores[1]:.4f}")
+        plotter.plot_roc_curve(rates, auc_scores)
+
+    elif args.plot == "rate":
+        plotter.plot_trigger_rates(rates)
+
+    elif args.plot == "rate_com":
+        plotter.plot_combined_rates(rates)
+    
+    else:
+        raise ValueError(f"Unknown plot type: {args.plot}")
+    
+    logger.info("Analysis complete. Plots saved in output directory.")
+        
+def parse_arguments() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Analyze L1 MET ML model performance",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    
+    parser.add_argument(
+        '--input', 
+        type=str, 
+        required=True,
+        help='Input directory containing numpy arrays (output path of training)'
+    )
+    
+    parser.add_argument(
+        '--plot', 
+        type=str, 
+        required=True,
+        choices=['ROC', 'rate', 'rate_com'],
+        help='Type of plot to generate'
+    )
+    
+    parser.add_argument(
+        '--output-dir',
+        type=str,
+        default='plots',
+        help='Output directory for plots'
+    )
+    
+    return parser.parse_args()
 
 
 # Configuration
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input', action='store', type=str, required=True, help='designate input file path (= output path of training)')
-    parser.add_argument('--plot', action='store', type=str, required=True, help='ROC for ROC curve, trigger for trigger rate ')
-
-    args = parser.parse_args()
+    args = parse_arguments()
     main(args)
