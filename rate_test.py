@@ -1,4 +1,4 @@
-from sklearn.metrics import auc
+from sklearn.metrics import auc, roc_curve, roc_auc_score
 
 import h5py
 import os
@@ -81,7 +81,7 @@ def main(args):
         TN = All0_count - ML0_count
 
         # save plot data. -> TPR, FPR
-        ML_array[i, 0] = TP / (TP + FN + 1)  # TPR
+        ML_array[i, 0] = TP / (TP + FN)  # TPR
         ML_array[i, 1] = FP / (FP + TN)  # FPR
         ML_array[i, 2] = step*i
 
@@ -101,7 +101,7 @@ def main(args):
         TN = All0_count - PU0_count
 
         # save plot data. -> TPR, FPR
-        PU_array[i, 0] = TP / (TP + FN + 1)  # TPR
+        PU_array[i, 0] = TP / (TP + FN)  # TPR
         PU_array[i, 1] = FP / (FP + TN)  # FPR
         PU_array[i, 2] = step*i
 
@@ -111,20 +111,32 @@ def main(args):
     which_plot = args.plot
 
     if which_plot == "ROC":
+        #ML_sort_idx = np.argsort(ML_array[:, 1])
+        #PU_sort_idx = np.argsort(PU_array[:, 1])
+
         ML_AUC = auc(ML_array[:, 1], ML_array[:, 0])
         PU_AUC = auc(PU_array[:, 1], PU_array[:, 0])
+        
+        #new AUC calculation, last zeroed out all contributions
+        y_true  = np.r_[np.ones(All1_count), np.zeros(All0_count)]
+        y_score = np.r_[ML1[:,0],            ML0[:,0]]        
+        y_score_PU = np.r_[PU1[:,0],            PU0[:,0]]       
+        #fpr, tpr, _ = roc_curve(y_true, y_score)   # unique, monotonic FPR
+        ml_auc      = roc_auc_score(y_true, y_score)
+        pu_auc     = roc_auc_score(y_true, y_score_PU)
+        print("ML AUC : {}".format(ml_auc))
+        print("PU AUC : {}".format(pu_auc))
 
-        print("ML AUC : {}".format(ML_AUC))
-        print("PU AUC : {}".format(PU_AUC))
-
-        plt.plot(ML_array[:, 1], ML_array[:, 0], label='ML ROC, AUC = {}'.format(round(ML_AUC, 3)))
-        plt.plot(PU_array[:, 1], PU_array[:, 0], '-r', label='PUPPI ROC, AUC = {}'.format(round(PU_AUC, 3)))
+        plt.plot(ML_array[:, 0], ML_array[:, 1], label='ML ROC, AUC = {}'.format(round(ml_auc, 3)))
+        plt.plot(PU_array[:, 0], PU_array[:, 1], '-r', label='PUPPI ROC, AUC = {}'.format(round(pu_auc, 3)))
         plt.grid(True, axis='x', color='gray', alpha=0.5, linestyle='--')
-        plt.xlabel('FPR')
+        plt.xlabel('Signal Efficiency (TPR)')
         plt.xlim(0., 1.)
+        plt.yscale("log")
+        plt.ylim(1e-6, 1.1)
         plt.grid(True, axis='y', color='gray', alpha=0.5, linestyle='--')
-        plt.ylabel('TPR')
-        plt.title('ROC')
+        plt.ylabel('Backgground Efficiency (FPR)')
+        plt.title('ttbar vs single neutrino - ROC')
         plt.legend()
         plt.savefig('ROC_curve.png')
 
