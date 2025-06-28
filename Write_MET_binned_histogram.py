@@ -332,8 +332,8 @@ def MET_rel_error_bad(predict_met, gen_met, name='Met_res.pdf'):
     # for i in range(rel_err.shape[0]):
     #    std += (mean - rel_err[i]) **2
 
-    #std = std/rel_err.shape[0]
-    #std = math.sqrt(std)
+    # std = std/rel_err.shape[0]
+    # std = math.sqrt(std)
 
     mean = mean * 1000
     mean = int(mean)
@@ -467,8 +467,8 @@ def Phi_abs_error(predict_met, gen_met, name='Met_res.pdf'):
 def Pt_abs_error_opaque(puppi_met, ml_met, gen_met, name='Met_res.pdf'):
     puppi_err = (puppi_met - gen_met)
     ml_err = (ml_met - gen_met)
-    #minErr = min(np.array([rel_err, rel_err2]).flatten())
-    #maxErr = max(np.array([rel_err, rel_err2]).flatten())
+    # minErr = min(np.array([rel_err, rel_err2]).flatten())
+    # maxErr = max(np.array([rel_err, rel_err2]).flatten())
     plt.figure()
     plt.hist(puppi_err, bins=np.linspace(-250, 250, 50+1), alpha=0.5, label='puppi')
     plt.hist(ml_err, bins=np.linspace(-250, 250, 50+1), alpha=0.5, label='ML')
@@ -573,7 +573,7 @@ def MET_binned_predict_mean(predict_met, gen_met, binning, mini, maxi, genMET_cu
     plt.xlim(mini, maxi)
     plt.ylim(mini, 700)
     plt.xlabel('Gen MET mean [GeV]', fontsize=16)
-    #plt.ylabel('PUPPI MET mean [GeV]', fontsize = 16)
+    # plt.ylabel('PUPPI MET mean [GeV]', fontsize = 16)
     plt.ylabel('predicted MET mean [GeV]', fontsize=16)
     plt.legend()
     plt.savefig(name)
@@ -621,7 +621,7 @@ def MET_binned_predict_mean_opaque(predict_met, predict_met2, gen_met, binning, 
     plt.xlim(mini, maxi)
     plt.ylim(mini, maxi)
     plt.xlabel('Gen MET mean [GeV]', fontsize=16)
-    #plt.ylabel('PUPPI MET mean [GeV]', fontsize = 16)
+    # plt.ylabel('PUPPI MET mean [GeV]', fontsize = 16)
     plt.ylabel('predicted MET mean [GeV]', fontsize=16)
     plt.legend()
     plt.savefig(name)
@@ -673,9 +673,9 @@ def extract_result(feat_array, targ_array, path, name, mode):
 def histo_2D(predict_pT, gen_pT, min_, max_, name='2D_histo.png'):
     X_hist = np.arange(0, 500, 20)
     Y_hist = X_hist  # 1.25*X_hist
-    #Y_hist_1 = 0.75*X_hist
+    # Y_hist_1 = 0.75*X_hist
     plt.plot(X_hist, Y_hist, '-r')
-    #plt.plot(X_hist, Y_hist_1, '-r')
+    # plt.plot(X_hist, Y_hist_1, '-r')
     x_bins = np.linspace(min_, max_, 50)
     y_bins = np.linspace(min_, max_, 50)
     plt.hist2d(gen_pT, predict_pT,  bins=[x_bins, y_bins], cmap=plt.cm.jet)
