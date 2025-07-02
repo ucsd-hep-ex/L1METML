@@ -31,26 +31,28 @@ class Dataset(Enum):
     SINGLE_NEUTRINO = "SingleNeutrino"
     HIGGS_TO_INVISIBLE = "HtoInvisible"
     SUSY = "SUSY"
+    VBF_H_TO_BB = "VBFHToBB"
 
 # Signal/background mappings
 PHYSICS_MAPPINGS = {
-    Dataset.TTBAR: "signal",
+    Dataset.TTBAR: "signal", #can be background (mappings currently not used)
     Dataset.HIGGS_TO_INVISIBLE: "signal", 
     Dataset.SUSY: "signal",
-    Dataset.SINGLE_NEUTRINO: "background" 
+    Dataset.SINGLE_NEUTRINO: "background",
+    Dataset.VBF_H_TO_BB: "signal" 
 }
 @dataclass
 class AnalysisConfig:
     """Configuration for rate analysis."""
     signal_dataset: Dataset #set via CL arg
+    background_dataset: Dataset
 
     bin_number: int = 300
     step: float = 2.0
+    bunch_x_frequency_MHz: float = 40
     trigger_rate_khz: float = 31000.0
-    max_threshold_gev: int = 200
+    max_threshold_gev: int = bin_number * step
     output_dir: str = "plots"
-
-    background_dataset: Dataset = Dataset.SINGLE_NEUTRINO
 
 @dataclass
 class DataArrays:
@@ -114,31 +116,33 @@ class RateAnalyzer:
 
     def calculate_rates(self, data: DataArrays) -> Dict[str, np.ndarray]:
         """Calculate trigger rates for both ML and PUPPI methods."""
-        bin_count = int(self.config.bin_number)
-
+        bin_number = self.config.bin_number
         # Initialize arrays to hold rates and thresholds
         rates = {
-            'ml_signal': np.zeros(bin_count),
-            'ml_background': np.zeros(bin_count),
-            'puppi_signal': np.zeros(bin_count),
-            'puppi_background': np.zeros(bin_count),
-            'ml_roc': np.zeros((bin_count, 3)), # TPR, FPR, threshold
-            'puppi_roc': np.zeros((bin_count, 3)) # TPR, FPR, threshold
+            'ml_signal': np.zeros(bin_number),
+            'ml_background': np.zeros(bin_number),
+            'ml_rate': np.zeros(bin_number),
+            'puppi_signal': np.zeros(bin_number),
+            'puppi_background': np.zeros(bin_number),
+            'puppi_rate': np.zeros(bin_number),
+            'ml_roc': np.zeros((bin_number, 3)), # TPR, FPR, threshold
+            'puppi_roc': np.zeros((bin_number, 3)) # TPR, FPR, threshold
         }
 
         signal_total = data.signal_ml.shape[0]
         background_total = data.signal_ml.shape[0]
 
-        for i in range(bin_count):
+        for i in range(bin_number):
             threshold = i * self.config.step
 
             # ML rates
             ml_sig_pass = np.sum(data.signal_ml[:,0] > threshold)
             ml_bg_pass = np.sum(data.background_ml[:,0] > threshold)
 
-            rates['ml_signal'][i] = ml_sig_pass / signal_total
-            rates['ml_background'][i] = ml_bg_pass / background_total
-
+            rates['ml_rate'][i] = (ml_sig_pass + ml_bg_pass) / (signal_total + background_total) * self.config.bunch_x_frequency_MHz
+            rates['ml_signal'][i] = (ml_sig_pass / signal_total) * self.config.bunch_x_frequency_MHz
+            rates['ml_background'][i] = (ml_bg_pass / background_total) * self.config.bunch_x_frequency_MHz
+            
             # ML ROC values
             rates['ml_roc'][i] = self._calculate_roc_point(
                 ml_sig_pass,
@@ -152,8 +156,9 @@ class RateAnalyzer:
             puppi_sig_pass = np.sum(data.signal_puppi[:,0] > threshold)
             puppi_bg_pass = np.sum(data.background_puppi[:,0] > threshold)
 
-            rates['puppi_signal'][i] = puppi_sig_pass / signal_total
-            rates['puppi_background'][i] = puppi_bg_pass / background_total
+            rates['puppi_rate'][i] = (puppi_sig_pass + puppi_bg_pass) / (signal_total + background_total) * self.config.bunch_x_frequency_MHz
+            rates['puppi_signal'][i] = (puppi_sig_pass / signal_total) * self.config.bunch_x_frequency_MHz
+            rates['puppi_background'][i] = (puppi_bg_pass / background_total) * self.config.bunch_x_frequency_MHz
 
             # PUPPI ROC values
             rates['puppi_roc'][i] = self._calculate_roc_point(
@@ -213,13 +218,13 @@ class PlotGenerator:
                  label=f'PUPPI ROC, AUC = {puppi_auc:.3f}', linewidth=2, color='red')
         
         self._setup_plot_style()
-        plt.xlabel('Signal Efficiency (TPR)')
-        plt.ylabel('Background Efficiency (FPR)')
-        plt.title('ROC Curve: ML vs PUPPI MET')
+        plt.xlabel('Signal Efficiency (TPR)', fontsize=16)
+        plt.ylabel('Background Efficiency (FPR)', fontsize=16)
+        plt.title('ROC Curve: ML vs PUPPI MET', fontsize=18)
         plt.xlim(0., 1.)
         plt.yscale("log")
-        plt.ylim(1e-6, 1.1)
-        plt.legend()
+        plt.ylim(4e-5, 1.1)
+        plt.legend(fontsize=14)
 
         output_path = self.output_dir / f'ROC_curve_{self.signal_sample}_{self.background_sample}.png'
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
@@ -228,18 +233,19 @@ class PlotGenerator:
     
     def plot_trigger_rates(self, rates: Dict[str, np.ndarray]) -> None:
         """Generate trigger rate plot."""
-        thresholds = np.arange(0, self.config.step * self.config.bin_number, self.config.step)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(thresholds, rates['ml_signal'], 'bo', label = 'ML', markersize=2)
-        plt.plot(thresholds, rates['puppi_signal'], 'ro', label = 'PUPPI', markersize=2)
+        plt.figure(figsize=(6, 6))
+        plt.plot(rates['ml_roc'][:,0], rates['ml_rate'], 'b-', label = 'ML', markersize=2)
+        plt.plot(rates['puppi_roc'][:,0], rates['puppi_rate'], 'r-', label = 'PUPPI', markersize=2)
 
         self._setup_plot_style()
-        plt.xlim(0, self.config.max_threshold_gev)
-        plt.xlabel('MET Threshold (GeV)')
-        plt.ylabel(f'{self.signal_sample} Efficiency')
-        plt.title('Trigger Rates: ML vs PUPPI MET')
-        plt.legend()
+        plt.xlim(0, 0.2)
+        plt.yscale("log")
+        plt.ylim(1, 40)
+        plt.xlabel(f'{self.signal_sample} Signal Efficiency', fontsize=16)
+        plt.ylabel(f'MET Trigger Rate (MHz)', fontsize=16)
+        plt.title('Trigger Rates: ML vs PUPPI MET',fontsize=18)
+        plt.legend(fontsize=14)
 
         output_path = self.output_dir / f'trigger_rates_{self.signal_sample}.png'
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
@@ -278,12 +284,13 @@ class PlotGenerator:
 def main(args: argparse.Namespace) -> None:
 
     try:
-        signal_dataset = Dataset(args.signal)
+        signal_dataset = Dataset(args.sig)
+        background_dataset = Dataset(args.bg)
     except ValueError:
         logger.error(f"Invalid dataset.")
         raise ValueError(f"Invalid dataset.")
 
-    config = AnalysisConfig(signal_dataset=signal_dataset)
+    config = AnalysisConfig(signal_dataset=signal_dataset, background_dataset=background_dataset)
 
     # Load data 
     loader = DataLoader(args.input, config)
@@ -327,11 +334,18 @@ def parse_arguments() -> argparse.Namespace:
         help='Input directory containing numpy arrays (output path of training)'
     )
     parser.add_argument(
-        '--signal',
+        '--sig',
         type=str,
         required=True,
-        choices=['TTbar', 'HtoInvisible', 'SUSY'],
+        choices=['TTbar', 'VBFHToBB', 'HtoInvisible', 'SUSY'],
         help='Signal dataset'
+    )
+    parser.add_argument(
+        '--bg',
+        type=str,
+        required=True,
+        choices=['TTbar', 'SingleNeutrino'],
+        help='Background dataset'
     )
     parser.add_argument(
         '--plot', 
