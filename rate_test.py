@@ -1,7 +1,7 @@
 """
 Rate test for ML MET vs PUPPI MET
 
-Compares performance of ML MET and PUPPI MET by analyzing 
+Compares performance of ML MET and PUPPI MET by analyzing
 ROC curve and trigger rates for various datasets.
 
 """
@@ -14,73 +14,107 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple, Optional
+from enum import Enum
 import numpy as np
 import numpy.ma
 import time
 import argparse
 import collections as co
 import matplotlib.pyplot as plt
-#import tensorflow.keras.backend as K
-#import tensorflow as tf
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Defining available datasets
+
+
+class Dataset(Enum):
+    TTBAR = "TTbar"
+    SINGLE_NEUTRINO = "SingleNeutrino"
+    HIGGS_TO_INVISIBLE = "HtoInvisible"
+    SUSY = "SUSY"
+    VBF_H_TO_BB = "VBFHToBB"
+
+
+# Signal/background mappings
+PHYSICS_MAPPINGS = {
+    Dataset.TTBAR: "signal",  # can be background (mappings currently not used)
+    Dataset.HIGGS_TO_INVISIBLE: "signal",
+    Dataset.SUSY: "signal",
+    Dataset.SINGLE_NEUTRINO: "background",
+    Dataset.VBF_H_TO_BB: "signal"
+}
+
+
 @dataclass
 class AnalysisConfig:
     """Configuration for rate analysis."""
+    signal_dataset: Dataset  # set via CL arg
+    background_dataset: Dataset
+
     bin_number: int = 300
     step: float = 2.0
+    bunch_x_frequency_MHz: float = 40
     trigger_rate_khz: float = 31000.0
-    max_threshold_gev: int = 200
+    max_threshold_gev: int = bin_number * step
     output_dir: str = "plots"
+
 
 @dataclass
 class DataArrays:
     '''Holds numpy arrays for ML and PUPPI MET data.'''
-    #TODO: change to use signal/bkg instead of ttbar/sn
-    # and handle more samples
-    ttbar_ml: np.ndarray
-    single_neutrino_ml: np.ndarray
-    ttbar_puppi: np.ndarray
-    single_neutrino_puppi: np.ndarray
+    signal_ml: np.ndarray
+    background_ml: np.ndarray
+    signal_puppi: np.ndarray
+    background_puppi: np.ndarray
+
+
 class DataLoader:
     """Handles loading and preprocessing of numpy arrays."""
     """Different from training data-laoder"""
-    #TODO: change to use signal/bkg instead of ttbar/sn
-    # and handle more samples
-    
-    def __init__(self, input_path: str):
+
+    def __init__(self, input_path: str, config: AnalysisConfig):
         self.input_path = Path(input_path)
+        self.config = config
 
     def load_arrays(self) -> DataArrays:
         """Load and preprocess all required arrays."""
         logger.info(f"Loading data from {self.input_path}")
 
-        #Load ML arrays
-        ttbar_ml = self._load_and_process_arrays("TTbar", "MLMET")
-        sn_ml = self._load_and_process_arrays("SingleNeutrino", "MLMET", is_signal=False)
+        # Load ML arrays
+        signal_ml = self._load_and_process_arrays(
+            self.config.signal_dataset.value, "MLMET"
+            )
+        background_ml = self._load_and_process_arrays(
+            self.config.background_dataset.value, "MLMET", is_signal=False
+            )
 
-        #Load PUPPI arrays
-        ttbar_puppi = self._load_and_process_arrays("TTbar", "PUMET")
-        sn_puppi = self._load_and_process_arrays("SingleNeutrino", "PUMET", is_signal=False)
+        # Load PUPPI arrays
+        signal_puppi = self._load_and_process_arrays(
+            self.config.signal_dataset.value, "PUMET"
+            )
+        background_puppi = self._load_and_process_arrays(
+            self.config.background_dataset.value, "PUMET", is_signal=False
+            )
 
-        return DataArrays(ttbar_ml, sn_ml, ttbar_puppi, sn_puppi)
+        return DataArrays(signal_ml, background_ml, signal_puppi, background_puppi)
 
     def _load_and_process_arrays(self, sample: str, met_type: str, is_signal: bool = True) -> np.ndarray:
         """Load and process arrays for a specific sample and MET type."""
-        #TODO: consistently change naming to prediction instead of feature
-        feature_file = f"{sample}_feature_array_{met_type}.npy" 
+        # TODO: consistently change naming to prediction instead of feature
+        feature_file = f"{sample}_feature_array_{met_type}.npy"
         target_file = f"{sample}_target_array_{met_type}.npy"
 
-        feature_array = np.load(self.input_path / feature_file)  
+        feature_array = np.load(self.input_path / feature_file)
         target_array = np.load(self.input_path / target_file)
 
         logger.info(f"Loaded {feature_file} and {target_file}")
 
         # Create label column (1 for signal, 0 fopr backgroudn)
-        label = np.ones((feature_array.shape[0],1)) if is_signal else np.zeros((feature_array.shape[0],1)) 
+        label = np.ones((feature_array.shape[0], 1)) if is_signal else np.zeros((feature_array.shape[0], 1))
 
         return np.concatenate([feature_array[:, 0:1], target_array[:, 0:1], label], axis=1)
+
 
 class RateAnalyzer:
     """Performs the rate and classification analysis for ML and PUPPI MET."""
@@ -90,59 +124,61 @@ class RateAnalyzer:
 
     def calculate_rates(self, data: DataArrays) -> Dict[str, np.ndarray]:
         """Calculate trigger rates for both ML and PUPPI methods."""
-        bin_count = int(self.config.bin_number)
-
+        bin_number = self.config.bin_number
         # Initialize arrays to hold rates and thresholds
-        #TODO: adjust for sig/bkg instead of ttbar/sn
         rates = {
-            'ml_ttbar': np.zeros(bin_count),
-            'ml_sn': np.zeros(bin_count),
-            'puppi_ttbar': np.zeros(bin_count),
-            'puppi_sn': np.zeros(bin_count),
-            'ml_roc': np.zeros((bin_count, 3)), # TPR, FPR, threshold
-            'puppi_roc': np.zeros((bin_count, 3)) # TPR, FPR, threshold
+            'ml_signal': np.zeros(bin_number),
+            'ml_background': np.zeros(bin_number),
+            'ml_rate': np.zeros(bin_number),
+            'puppi_signal': np.zeros(bin_number),
+            'puppi_background': np.zeros(bin_number),
+            'puppi_rate': np.zeros(bin_number),
+            'ml_roc': np.zeros((bin_number, 3)),  # TPR, FPR, threshold
+            'puppi_roc': np.zeros((bin_number, 3))  # TPR, FPR, threshold
         }
 
-        ttbar_total = data.ttbar_ml.shape[0]
-        sn_total = data.single_neutrino_ml.shape[0]
+        signal_total = data.signal_ml.shape[0]
+        background_total = data.background_ml.shape[0]
 
-        for i in range(bin_count):
+        for i in range(bin_number):
             threshold = i * self.config.step
 
             # ML rates
-            ml_ttbar_pass = np.sum(data.ttbar_ml[:,0] > threshold)
-            ml_sn_pass = np.sum(data.single_neutrino_ml[:,0] > threshold)
+            ml_sig_pass = np.sum(data.signal_ml[:, 0] > threshold)
+            ml_bg_pass = np.sum(data.background_ml[:, 0] > threshold)
 
-            rates['ml_ttbar'][i] = ml_ttbar_pass / ttbar_total
-            rates['ml_sn'][i] = ml_sn_pass / sn_total
+            rates['ml_rate'][i] = (ml_sig_pass + ml_bg_pass) / (signal_total + background_total) * self.config.bunch_x_frequency_MHz
+            rates['ml_signal'][i] = (ml_sig_pass / signal_total) * self.config.bunch_x_frequency_MHz
+            rates['ml_background'][i] = (ml_bg_pass / background_total) * self.config.bunch_x_frequency_MHz
 
             # ML ROC values
             rates['ml_roc'][i] = self._calculate_roc_point(
-                ml_ttbar_pass,
-                ml_sn_pass,
-                ttbar_total,
-                sn_total,
+                ml_sig_pass,
+                ml_bg_pass,
+                signal_total,
+                background_total,
                 threshold
             )
 
             # PUPPI rates
-            puppi_ttbar_pass = np.sum(data.ttbar_puppi[:,0] > threshold)
-            puppi_sn_pass = np.sum(data.single_neutrino_puppi[:,0] > threshold)
+            puppi_sig_pass = np.sum(data.signal_puppi[:, 0] > threshold)
+            puppi_bg_pass = np.sum(data.background_puppi[:, 0] > threshold)
 
-            rates['puppi_ttbar'][i] = puppi_ttbar_pass / ttbar_total
-            rates['puppi_sn'][i] = puppi_sn_pass / sn_total
+            rates['puppi_rate'][i] = (puppi_sig_pass + puppi_bg_pass) / (signal_total + background_total) * self.config.bunch_x_frequency_MHz
+            rates['puppi_signal'][i] = (puppi_sig_pass / signal_total) * self.config.bunch_x_frequency_MHz
+            rates['puppi_background'][i] = (puppi_bg_pass / background_total) * self.config.bunch_x_frequency_MHz
 
             # PUPPI ROC values
             rates['puppi_roc'][i] = self._calculate_roc_point(
-                puppi_ttbar_pass,
-                puppi_sn_pass,
-                ttbar_total,
-                sn_total,
+                puppi_sig_pass,
+                puppi_bg_pass,
+                signal_total,
+                background_total,
                 threshold
             )
 
         return rates
-        
+
     def _calculate_roc_point(self, tp: int, fp: int, total_pos: int, total_neg: int, threshold: float) -> np.ndarray:
         """Calculate TPR, FPR for a single threshold."""
         fn = total_pos - tp
@@ -152,22 +188,23 @@ class RateAnalyzer:
         fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
 
         return np.array([tpr, fpr, threshold])
-    
+
     def calculate_auc(self, data: DataArrays) -> Tuple[float, float]:
-        """Calcualte AUC using sklearn."""
+        """Calculate AUC using sklearn."""
         # Prepare data for sklearn
         y_true = np.concatenate([
-            np.ones(data.ttbar_ml.shape[0]),
-            np.zeros(data.single_neutrino_ml.shape[0])
+            np.ones(data.signal_ml.shape[0]),
+            np.zeros(data.background_ml.shape[0])
         ])
 
-        y_score_ml = np.concatenate([data.ttbar_ml[:, 0], data.single_neutrino_ml[:, 0]])
-        y_score_puppi = np.concatenate([data.ttbar_puppi[:, 0], data.single_neutrino_puppi[:, 0]])
+        y_score_ml = np.concatenate([data.signal_ml[:, 0], data.background_ml[:, 0]])
+        y_score_puppi = np.concatenate([data.signal_puppi[:, 0], data.background_puppi[:, 0]])
 
         ml_auc = roc_auc_score(y_true, y_score_ml)
         puppi_auc = roc_auc_score(y_true, y_score_puppi)
 
         return ml_auc, puppi_auc
+
 
 class PlotGenerator:
     """Generates various plots for rate/ROC analysis."""
@@ -176,65 +213,69 @@ class PlotGenerator:
         self.config = config
         self.output_dir = Path(config.output_dir)
         self.output_dir.mkdir(exist_ok=True)
+        self.signal_sample = self.config.signal_dataset.value
+        self.background_sample = self.config.background_dataset.value
 
     def plot_roc_curve(self, rates: Dict[str, np.ndarray], auc_scores: Tuple[float, float]) -> None:
         """Generate ROC curve plot."""
         ml_auc, puppi_auc = auc_scores
 
         plt.figure(figsize=(8, 6))
-        plt.plot(rates['ml_roc'][:,0], rates['ml_roc'][:,1],
+        plt.plot(rates['ml_roc'][:, 0], rates['ml_roc'][:, 1],
                  label=f'ML ROC, AUC = {ml_auc:.3f}', linewidth=2)
-        plt.plot(rates['puppi_roc'][:,0], rates['puppi_roc'][:,1],
+        plt.plot(rates['puppi_roc'][:, 0], rates['puppi_roc'][:, 1],
                  label=f'PUPPI ROC, AUC = {puppi_auc:.3f}', linewidth=2, color='red')
-        
+
         self._setup_plot_style()
-        plt.xlabel('Signal Efficiency (TPR)')
-        plt.ylabel('Background Efficiency (FPR)')
-        plt.title('ROC Curve: ML vs PUPPI MET')
+        plt.xlabel('Signal Efficiency (TPR)', fontsize=16)
+        plt.ylabel('Background Efficiency (FPR)', fontsize=16)
+        plt.title('ROC Curve: ML vs PUPPI MET', fontsize=18)
         plt.xlim(0., 1.)
         plt.yscale("log")
-        plt.ylim(1e-6, 1.1)
-        plt.legend()
+        plt.ylim(4e-5, 1.1)
+        plt.legend(fontsize=14)
 
-        output_path = self.output_dir / 'ROC_curve.png'
+        output_path = self.output_dir / f'ROC_curve_{self.signal_sample}_{self.background_sample}.png'
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         logger.info(f"ROC curve saved to {output_path}")
-    
+
     def plot_trigger_rates(self, rates: Dict[str, np.ndarray]) -> None:
         """Generate trigger rate plot."""
-        thresholds = np.arange(0, self.config.step * self.config.bin_number, self.config.step)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(thresholds, rates['ml_ttbar'], 'bo', label = 'ML', markersize=2)
-        plt.plot(thresholds, rates['puppi_ttbar'], 'ro', label = 'PUPPI', markersize=2)
+        plt.figure(figsize=(6, 6))
+        plt.plot(rates['ml_roc'][:, 0], rates['ml_rate'], 'b-', label='ML', markersize=2)
+        plt.plot(rates['puppi_roc'][:, 0], rates['puppi_rate'], 'r-', label='PUPPI', markersize=2)
 
         self._setup_plot_style()
-        plt.xlim(0, self.config.max_threshold_gev)
-        plt.xlabel('MET Threshold (GeV)')
-        plt.ylabel('TTbar Efficiency')
-        plt.title('Trigger Rates: ML vs PUPPI MET')
-        plt.legend()
+        plt.xlim(0, 0.2)
+        plt.yscale("log")
+        plt.ylim(1, 40)
+        plt.xlabel(f'{self.signal_sample} Signal Efficiency', fontsize=16)
+        plt.ylabel(f'MET Trigger Rate (MHz)', fontsize=16)
+        plt.title('Trigger Rates: ML vs PUPPI MET', fontsize=18)
+        plt.legend(fontsize=14)
 
-        output_path = self.output_dir / 'trigger_rates.png'
+        output_path = self.output_dir / f'trigger_rates_{self.signal_sample}.png'
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         logger.info(f"Trigger rates plot saved to {output_path}")
 
+    # refactor of old combined rates, may be outdated (replaced by ROC curve)
     def plot_combined_rates(self, rates: Dict[str, np.ndarray]) -> None:
         """Generate combined rates plot for ML and PUPPI."""
         plt.figure(figsize=(10, 6))
 
-        ml_bg_rate = rates['ml_sn'] * self.config.trigger_rate_khz
-        puppi_bg_rate = rates['puppi_sn'] * self.config.trigger_rate_khz
+        ml_bg_rate = rates['ml_background'] * self.config.trigger_rate_khz
+        puppi_bg_rate = rates['puppi_background'] * self.config.trigger_rate_khz
 
-        plt.plot(rates['ml_ttbar'], ml_bg_rate, 'bo', label='ML', markersize=2)
-        plt.plot(rates['puppi_ttbar'], puppi_bg_rate, 'ro', label='PUPPI', markersize=2)
+        plt.plot(rates['ml_signal'], ml_bg_rate, 'bo', label='ML', markersize=2)
+        plt.plot(rates['puppi_signal'], puppi_bg_rate, 'ro', label='PUPPI', markersize=2)
 
         self._setup_plot_style()
         plt.yscale("log")
-        plt.xlabel('TTbar Efficiency')
-        plt.ylabel('Single Neutrino Rate (kHz)')
+        plt.xlabel(f'{self.signal_sample} Efficiency')
+        plt.ylabel(f'{self.background_sample} (kHz)')
         plt.title('Combined Rates: ML vs PUPPI MET')
         plt.legend()
 
@@ -242,7 +283,7 @@ class PlotGenerator:
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         logger.info(f"Combined rates plot saved to {output_path}")
-    
+
     def _setup_plot_style(self) -> None:
         """Apply consistent style to plots."""
         plt.grid(True, color='gray', alpha=0.5, linestyle='--')
@@ -251,10 +292,17 @@ class PlotGenerator:
 
 def main(args: argparse.Namespace) -> None:
 
-    config = AnalysisConfig()
+    try:
+        signal_dataset = Dataset(args.sig)
+        background_dataset = Dataset(args.bg)
+    except ValueError:
+        logger.error(f"Invalid dataset.")
+        raise ValueError(f"Invalid dataset.")
 
-    # Load data 
-    loader = DataLoader(args.input)
+    config = AnalysisConfig(signal_dataset=signal_dataset, background_dataset=background_dataset)
+
+    # Load data
+    loader = DataLoader(args.input, config)
     data = loader.load_arrays()
 
     # Perform analysis
@@ -275,41 +323,55 @@ def main(args: argparse.Namespace) -> None:
 
     elif args.plot == "rate_com":
         plotter.plot_combined_rates(rates)
-    
+
     else:
         raise ValueError(f"Unknown plot type: {args.plot}")
-    
+
     logger.info("Analysis complete. Plots saved in output directory.")
-        
+
+
 def parse_arguments() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Analyze L1 MET ML model performance",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    
+
     parser.add_argument(
-        '--input', 
-        type=str, 
+        '--input',
+        type=str,
         required=True,
         help='Input directory containing numpy arrays (output path of training)'
     )
-    
     parser.add_argument(
-        '--plot', 
-        type=str, 
+        '--sig',
+        type=str,
+        required=True,
+        choices=['TTbar', 'VBFHToBB', 'HtoInvisible', 'SUSY'],
+        help='Signal dataset'
+    )
+    parser.add_argument(
+        '--bg',
+        type=str,
+        required=True,
+        choices=['TTbar', 'SingleNeutrino'],
+        help='Background dataset'
+    )
+    parser.add_argument(
+        '--plot',
+        type=str,
         required=True,
         choices=['ROC', 'rate', 'rate_com'],
         help='Type of plot to generate'
     )
-    
+
     parser.add_argument(
         '--output-dir',
         type=str,
         default='plots',
         help='Output directory for plots'
     )
-    
+
     return parser.parse_args()
 
 

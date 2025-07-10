@@ -6,7 +6,7 @@ import uproot
 import numpy as np
 import awkward as ak
 import h5py
-#import progressbar
+# import progressbar
 from tqdm import tqdm
 import os
 
@@ -78,7 +78,7 @@ if not opt.data:
 upfile = uproot.open(opt.input)
 tree = upfile['Events'].arrays(varList, entry_stop=opt.maxevents)
 # general setup
-maxNPuppi = 100
+maxNPuppi = 128
 nFeatures = 8
 maxEntries = len(tree['nL1PuppiCands'])
 # input Puppi candidates
