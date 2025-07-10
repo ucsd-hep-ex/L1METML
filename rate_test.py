@@ -49,15 +49,17 @@ PHYSICS_MAPPINGS = {
 @dataclass
 class AnalysisConfig:
     """Configuration for rate analysis."""
+    output_dir: str   # set via CL arg
     signal_dataset: Dataset  # set via CL arg
     background_dataset: Dataset
 
     bin_number: int = 300
     step: float = 2.0
+    true_met_threshold: float = 150.0
     bunch_x_frequency_MHz: float = 40
     trigger_rate_khz: float = 31000.0
     max_threshold_gev: int = bin_number * step
-    output_dir: str = "plots"
+    
 
 
 @dataclass
@@ -102,18 +104,19 @@ class DataLoader:
     def _load_and_process_arrays(self, sample: str, met_type: str, is_signal: bool = True) -> np.ndarray:
         """Load and process arrays for a specific sample and MET type."""
         # TODO: consistently change naming to prediction instead of feature
-        feature_file = f"{sample}_feature_array_{met_type}.npy"
+        pred_file = f"{sample}_feature_array_{met_type}.npy"
         target_file = f"{sample}_target_array_{met_type}.npy"
 
-        feature_array = np.load(self.input_path / feature_file)
+        pred_array = np.load(self.input_path / pred_file)
         target_array = np.load(self.input_path / target_file)
-
-        logger.info(f"Loaded {feature_file} and {target_file}")
+        pred_met = np.linalg.norm(pred_array, axis=1)  # Calculate predicted MET magnitude
+        target_met = np.linalg.norm(target_array, axis=1)  # Calculate target MET magnitude
+        logger.info(f"Loaded {pred_file} and {target_file}")
 
         # Create label column (1 for signal, 0 fopr backgroudn)
-        label = np.ones((feature_array.shape[0], 1)) if is_signal else np.zeros((feature_array.shape[0], 1))
+        label = np.ones((pred_met.shape[0], 1)) if is_signal else np.zeros((pred_met.shape[0], 1))
 
-        return np.concatenate([feature_array[:, 0:1], target_array[:, 0:1], label], axis=1)
+        return np.column_stack([pred_met, target_met, label])
 
 
 class RateAnalyzer:
@@ -127,11 +130,11 @@ class RateAnalyzer:
         bin_number = self.config.bin_number
         # Initialize arrays to hold rates and thresholds
         rates = {
-            'ml_signal': np.zeros(bin_number),
-            'ml_background': np.zeros(bin_number),
+            'ml_signal_rate': np.zeros(bin_number),
+            'ml_background_rate': np.zeros(bin_number),
             'ml_rate': np.zeros(bin_number),
-            'puppi_signal': np.zeros(bin_number),
-            'puppi_background': np.zeros(bin_number),
+            'puppi_signal_rate': np.zeros(bin_number),
+            'puppi_background_rate': np.zeros(bin_number),
             'puppi_rate': np.zeros(bin_number),
             'ml_roc': np.zeros((bin_number, 3)),  # TPR, FPR, threshold
             'puppi_roc': np.zeros((bin_number, 3))  # TPR, FPR, threshold
@@ -147,9 +150,8 @@ class RateAnalyzer:
             ml_sig_pass = np.sum(data.signal_ml[:, 0] > threshold)
             ml_bg_pass = np.sum(data.background_ml[:, 0] > threshold)
 
-            rates['ml_rate'][i] = (ml_sig_pass + ml_bg_pass) / (signal_total + background_total) * self.config.bunch_x_frequency_MHz
-            rates['ml_signal'][i] = (ml_sig_pass / signal_total) * self.config.bunch_x_frequency_MHz
-            rates['ml_background'][i] = (ml_bg_pass / background_total) * self.config.bunch_x_frequency_MHz
+            rates['ml_signal_rate'][i] = (ml_sig_pass / signal_total) * self.config.bunch_x_frequency_MHz
+            rates['ml_background_rate'][i] = (ml_bg_pass / background_total) * self.config.bunch_x_frequency_MHz
 
             # ML ROC values
             rates['ml_roc'][i] = self._calculate_roc_point(
@@ -164,9 +166,8 @@ class RateAnalyzer:
             puppi_sig_pass = np.sum(data.signal_puppi[:, 0] > threshold)
             puppi_bg_pass = np.sum(data.background_puppi[:, 0] > threshold)
 
-            rates['puppi_rate'][i] = (puppi_sig_pass + puppi_bg_pass) / (signal_total + background_total) * self.config.bunch_x_frequency_MHz
-            rates['puppi_signal'][i] = (puppi_sig_pass / signal_total) * self.config.bunch_x_frequency_MHz
-            rates['puppi_background'][i] = (puppi_bg_pass / background_total) * self.config.bunch_x_frequency_MHz
+            rates['puppi_signal_rate'][i] = (puppi_sig_pass / signal_total) * self.config.bunch_x_frequency_MHz
+            rates['puppi_background_rate'][i] = (puppi_bg_pass / background_total) * self.config.bunch_x_frequency_MHz
 
             # PUPPI ROC values
             rates['puppi_roc'][i] = self._calculate_roc_point(
@@ -242,13 +243,14 @@ class PlotGenerator:
 
     def plot_trigger_rates(self, rates: Dict[str, np.ndarray]) -> None:
         """Generate trigger rate plot."""
+        """ NB: this is equivalent to ROC curve but BG_eff scaled by trigger rate """
 
         plt.figure(figsize=(6, 6))
-        plt.plot(rates['ml_roc'][:, 0], rates['ml_rate'], 'b-', label='ML', markersize=2)
-        plt.plot(rates['puppi_roc'][:, 0], rates['puppi_rate'], 'r-', label='PUPPI', markersize=2)
+        plt.plot(rates['ml_roc'][:, 0], rates['ml_background_rate'], 'b-', label='ML', markersize=2)
+        plt.plot(rates['puppi_roc'][:, 0], rates['puppi_background_rate'], 'r-', label='PUPPI', markersize=2)
 
         self._setup_plot_style()
-        plt.xlim(0, 0.2)
+        plt.xlim(0, 1)
         plt.yscale("log")
         plt.ylim(1, 40)
         plt.xlabel(f'{self.signal_sample} Signal Efficiency', fontsize=16)
@@ -266,11 +268,11 @@ class PlotGenerator:
         """Generate combined rates plot for ML and PUPPI."""
         plt.figure(figsize=(10, 6))
 
-        ml_bg_rate = rates['ml_background'] * self.config.trigger_rate_khz
-        puppi_bg_rate = rates['puppi_background'] * self.config.trigger_rate_khz
+        ml_bg_rate = rates['ml_background_rate'] * self.config.trigger_rate_khz
+        puppi_bg_rate = rates['puppi_background_rate'] * self.config.trigger_rate_khz
 
-        plt.plot(rates['ml_signal'], ml_bg_rate, 'bo', label='ML', markersize=2)
-        plt.plot(rates['puppi_signal'], puppi_bg_rate, 'ro', label='PUPPI', markersize=2)
+        plt.plot(rates['ml_signal_rate'], ml_bg_rate, 'bo', label='ML', markersize=2)
+        plt.plot(rates['puppi_signal_rate'], puppi_bg_rate, 'ro', label='PUPPI', markersize=2)
 
         self._setup_plot_style()
         plt.yscale("log")
@@ -299,7 +301,7 @@ def main(args: argparse.Namespace) -> None:
         logger.error(f"Invalid dataset.")
         raise ValueError(f"Invalid dataset.")
 
-    config = AnalysisConfig(signal_dataset=signal_dataset, background_dataset=background_dataset)
+    config = AnalysisConfig(args.output_dir,signal_dataset=signal_dataset, background_dataset=background_dataset)
 
     # Load data
     loader = DataLoader(args.input, config)
