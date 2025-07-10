@@ -111,14 +111,15 @@ class DataLoader:
 
         pred_array = np.load(self.input_path / pred_file)
         target_array = np.load(self.input_path / target_file)
-        pred_met = np.linalg.norm(pred_array, axis=1)  # Calculate predicted MET magnitude
-        target_met = np.linalg.norm(target_array, axis=1)  # Calculate target MET magnitude
+        #pred_met = np.linalg.norm(pred_array, axis=1)  # Calculate predicted MET magnitude
+        #target_met = np.linalg.norm(target_array, axis=1)  # Calculate target MET magnitude
         logger.info(f"Loaded {pred_file} and {target_file}")
 
         # Create label column (1 for signal, 0 fopr backgroudn)
-        label = np.ones((pred_met.shape[0], 1)) if is_signal else np.zeros((pred_met.shape[0], 1))
-
-        return np.column_stack([pred_met, target_met, label])
+        label = np.ones((pred_array.shape[0], 1)) if is_signal else np.zeros((pred_array.shape[0], 1))
+        breakpoint()
+        return np.concatenate([pred_array[:, 1:2], target_array[:, 1:2], label], axis=1)
+        #return np.column_stack([pred_met, target_met, label])
 
 
 class RateAnalyzer:
@@ -351,7 +352,7 @@ def parse_arguments() -> argparse.Namespace:
         '--sig',
         type=str,
         required=True,
-        choices=['TTbar', 'VBFHToBB', 'HtoInvisible', 'SUSY'],
+        choices=['TTbar', 'VBFHToBB', 'HtoInvisible', 'SUSY', 'SingleNeutrino'],
         help='Signal dataset'
     )
     parser.add_argument(
