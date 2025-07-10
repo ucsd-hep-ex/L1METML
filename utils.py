@@ -101,7 +101,7 @@ def MakePlots(trueXY, mlXY, puppiXY, path_out):
 
     # width of a distribution at 1 standard deviation
     def resolqt(y):
-        return(np.percentile(y, 84)-np.percentile(y, 16))/2.0
+        return (np.percentile(y, 84)-np.percentile(y, 16))/2.0
 
     # response correction factors
     # the events are split into 20 bins based on true_pt and get assigned the corresponding `truth_means/ml_means` of all events in that bin
