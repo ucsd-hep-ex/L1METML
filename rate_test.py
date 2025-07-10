@@ -34,6 +34,7 @@ class Dataset(Enum):
     HIGGS_TO_INVISIBLE = "HtoInvisible"
     SUSY = "SUSY"
     VBF_H_TO_BB = "VBFHToBB"
+    MIN_BIAS = "MinBias"
 
 
 # Signal/background mappings
@@ -42,7 +43,8 @@ PHYSICS_MAPPINGS = {
     Dataset.HIGGS_TO_INVISIBLE: "signal",
     Dataset.SUSY: "signal",
     Dataset.SINGLE_NEUTRINO: "background",
-    Dataset.VBF_H_TO_BB: "signal"
+    Dataset.VBF_H_TO_BB: "signal",
+    Dataset.MIN_BIAS: "background"
 }
 
 
@@ -356,7 +358,7 @@ def parse_arguments() -> argparse.Namespace:
         '--bg',
         type=str,
         required=True,
-        choices=['TTbar', 'SingleNeutrino'],
+        choices=['TTbar', 'SingleNeutrino', 'MinBias'],
         help='Background dataset'
     )
     parser.add_argument(
