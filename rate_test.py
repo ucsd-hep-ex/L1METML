@@ -117,8 +117,8 @@ class DataLoader:
 
         # Create label column (1 for signal, 0 fopr backgroudn)
         label = np.ones((pred_array.shape[0], 1)) if is_signal else np.zeros((pred_array.shape[0], 1))
-        breakpoint()
-        return np.concatenate([pred_array[:, 1:2], target_array[:, 1:2], label], axis=1)
+        
+        return np.concatenate([pred_array[:, 0:1], target_array[:, 0:1], label], axis=1)
         #return np.column_stack([pred_met, target_met, label])
 
 
@@ -261,7 +261,7 @@ class PlotGenerator:
         plt.title('Trigger Rates: ML vs PUPPI MET', fontsize=18)
         plt.legend(fontsize=14)
 
-        output_path = self.output_dir / f'trigger_rates_{self.signal_sample}.png'
+        output_path = self.output_dir / f'trigger_rates_{self.signal_sample}v{self.background_sample}.png'
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         logger.info(f"Trigger rates plot saved to {output_path}")
