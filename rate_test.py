@@ -182,7 +182,7 @@ class RateAnalyzer:
         return np.array([tpr, fpr, threshold])
     
     def calculate_auc(self, data: DataArrays) -> Tuple[float, float]:
-        """Calcualte AUC using sklearn."""
+        """Calculate AUC using sklearn."""
         # Prepare data for sklearn
         y_true = np.concatenate([
             np.ones(data.signal_ml.shape[0]),
