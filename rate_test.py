@@ -130,7 +130,7 @@ class RateAnalyzer:
         }
 
         signal_total = data.signal_ml.shape[0]
-        background_total = data.signal_ml.shape[0]
+        background_total = data.background_ml.shape[0]
 
         for i in range(bin_number):
             threshold = i * self.config.step
