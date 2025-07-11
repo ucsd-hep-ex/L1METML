@@ -1,7 +1,7 @@
 import tensorflow
 import tensorflow.keras.backend as K
 from tensorflow.keras import optimizers, initializers
-from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
+from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger, TensorBoard
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Model, load_model
 from sklearn.model_selection import train_test_split
@@ -94,7 +94,19 @@ def get_callbacks(path_out, sample_size, batch_size):
 
     stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
 
-    callbacks = [early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint]
+    # tensorboard callback
+    tensorboard = TensorBoard(
+        log_dir=f'{path_out}tensorboard_logs',
+        histogram_freq=1, 
+        write_graph=True, 
+        write_images=True,
+        update_freq='batch',
+        profile_batch=0,
+        embeddings_freq=0,
+        write_steps_per_second=True,
+    )
+
+    callbacks = [early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint, tensorboard]
 
     return callbacks
 
