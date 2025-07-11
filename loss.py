@@ -1,4 +1,8 @@
-def custom_loss_wrapper(normFac=1):
+import tensorflow as tf
+from tensorflow import keras
+import tensorflow.keras.backend as K
+
+def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1):
     '''
     customized loss function to improve the recoil response,
     by balancing the response above one and below one
@@ -6,8 +10,6 @@ def custom_loss_wrapper(normFac=1):
 
 
     def custom_loss(y_true, y_pred):
-        import tensorflow.keras.backend as K
-        import tensorflow as tf
 
         px_truth = K.flatten(y_true[:, 0])
         py_truth = K.flatten(y_true[:, 1])
@@ -53,10 +55,30 @@ def custom_loss_wrapper(normFac=1):
         #dev += tf.abs(tf.reduce_sum(upar_pred_pos_bin5) + tf.reduce_sum(upar_pred_neg_bin5))
         dev /= norm
 
-        loss = 0.5*normFac**2*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
-
+        mse_loss = 0.5*normFac**2*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
+        base_loss = mse_loss + 7000.*dev
         #loss += 200.*dev
-        loss += 7000.*dev
-        return loss
+        if use_symmetry:
+            # Calculate residuals
+            px_residual = px_pred - px_truth
+            py_residual = py_pred - py_truth
+            
+            # Symmetry penalty terms 
+            # Mean symmetry 
+            px_var = K.mean(px_residual)
+            py_var = K.mean(py_residual)
+            mean_penalty = K.abs(px_var - py_var)
+
+            # Option to later add variance/std_dev penalty
+
+            # Toal symmetry penalty (add oters here later if needed)
+            symmetry_penalty = mean_penalty
+            
+            # Combine base loss with symmetry penalty
+            total_loss = base_loss + symmetry_weight * symmetry_penalty
+            return total_loss
+        else:
+            return base_loss
+        
         
     return custom_loss

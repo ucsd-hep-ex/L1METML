@@ -135,7 +135,13 @@ def train_dataGenerator(args):
     n_features_pf = 6
     n_features_pf_cat = 2
     normFac = args.normFac
-    custom_loss = custom_loss_wrapper(normFac)
+
+    custom_loss = custom_loss_wrapper(
+        normFac=normFac,
+        use_symmetry=args.loss_symmetry,
+        symmetry_weight=args.symmetry_weight
+    )
+    
     epochs = args.epochs
     batch_size = args.batch_size
     preprocessed = True
@@ -562,7 +568,11 @@ def main():
     parser.add_argument('--edge-features', action='store', required=False, nargs='+', help='which edge features to use (i.e. dR, kT, z, m2)')
     parser.add_argument('--model-output', action='store', type=str, required=False, help='output path to save keras model')
     parser.add_argument('--normFac', action='store', type=int, default=1, required=False, help='Norm factor')
-
+    parser.add_argument('--loss-symmetry', action='store_true',
+                       help='Enable symmetry enforcement in loss function'
+                       )
+    parser.add_argument('--symmetry-weight', type=float, default=1.0,
+                       help='Weight for symmetry penalty term (default: 1.0)')
     args = parser.parse_args()
     workflowType = args.workflowType
 
