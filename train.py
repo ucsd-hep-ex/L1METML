@@ -1,7 +1,7 @@
 import tensorflow
 import tensorflow.keras.backend as K
 from tensorflow.keras import optimizers, initializers
-from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
+from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger, TensorBoard
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Model
 from sklearn.model_selection import train_test_split
@@ -30,7 +30,6 @@ from utils import *
 from loss import custom_loss_wrapper
 from DataGenerator import DataGenerator
 
-import matplotlib.pyplot as plt
 import mplhep as hep
 
 
@@ -94,7 +93,19 @@ def get_callbacks(path_out, sample_size, batch_size):
 
     stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
 
-    callbacks = [early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint]
+    # tensorboard callback
+    tensorboard = TensorBoard(
+        log_dir=f'{path_out}tensorboard_logs',
+        histogram_freq=1, 
+        write_graph=True, 
+        write_images=True,
+        update_freq='batch',
+        profile_batch=0,
+        embeddings_freq=0,
+        write_steps_per_second=True,
+    )
+
+    callbacks = [early_stopping, clr, stop_on_nan, csv_logger, model_checkpoint, tensorboard]
 
     return callbacks
 
@@ -122,8 +133,14 @@ def train_dataGenerator(args):
     maxNPF = args.maxNPF
     n_features_pf = 6
     n_features_pf_cat = 2
-    normFac = 1.
-    custom_loss = custom_loss_wrapper(normFac)
+    normFac = args.normFac
+
+    custom_loss = custom_loss_wrapper(
+        normFac=normFac,
+        use_symmetry=args.loss_symmetry,
+        symmetry_weight=args.symmetry_weight
+    )
+    
     epochs = args.epochs
     batch_size = args.batch_size
     preprocessed = True
@@ -472,7 +489,13 @@ def main():
     parser.add_argument('--compute-edge-feat', action='store', type=int, required=False, choices=[0, 1], default=0, help='0 for no edge features, 1 to include edge features')
     parser.add_argument('--maxNPF', action='store', type=int, required=False, default=100, help='maximum number of PUPPI candidates')
     parser.add_argument('--edge-features', action='store', required=False, nargs='+', help='which edge features to use (i.e. dR, kT, z, m2)')
-
+    parser.add_argument('--model-output', action='store', type=str, required=False, help='output path to save keras model')
+    parser.add_argument('--normFac', action='store', type=int, default=1, required=False, help='Norm factor')
+    parser.add_argument('--loss-symmetry', action='store_true',
+                       help='Enable symmetry enforcement in loss function'
+                       )
+    parser.add_argument('--symmetry-weight', type=float, default=1.0,
+                       help='Weight for symmetry penalty term (default: 1.0)')
     args = parser.parse_args()
     workflowType = args.workflowType
 
