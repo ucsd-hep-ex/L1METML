@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: l1metml-train-prune
+spec:
+  template:
+    spec:
+      containers:
+      - name: gpu-container
+        image: gitlab-registry.nrp-nautilus.io/jmduarte/l1metml:latest
+        command:
+        - "/bin/bash"
+        - "-c"
+        - " git clone https://github.com/ucsd-hep-ex/L1METML.git -b pruning &&
+            cd L1METML &&
+	    python train.py --workflowType dataGenerator --input /l1metmlvol/TT_PU200_140X_v0/  --mode 1 --epochs 500 --maxNPF 128 --batch-size 256 --units 12 36 --output /l1metmlvol/experiments/25Jun7_pruning --model dense_embedding --compute-edge-feat 0 --model-output /l1metmlvol/saved_keras_models/25Jun7_pruning --normFac 100"
+        volumeMounts:
+        - mountPath: /l1metmlvol
+          name: l1metmlvol
+        resources:
+          limits:
+            memory: 32Gi
+            cpu: "2"
+            nvidia.com/gpu: "1"
+          requests:
+            memory: 16Gi
+            cpu: "1"
+            nvidia.com/gpu: "1"
+      volumes:
+      - name: l1metmlvol
+        persistentVolumeClaim:
+          claimName: l1metmlvol
+
+      restartPolicy: Never
+  backoffLimit: 0

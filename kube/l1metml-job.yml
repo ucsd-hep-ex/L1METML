@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: l1metml-12-36
+spec:
+  template:
+    spec:
+      containers:
+      - name: gpu-container
+        image: gitlab-registry.nautilus.optiputer.net/jmduarte/l1metml:latest
+        command:
+        - "/bin/bash"
+        - "-c"
+        - " git clone https://github.com/hanhiller/L1METML &&
+            cd L1METML &&
+            python train.py --workflowType loadAllData --input /l1metmlvol/TTbar_PU200_110X_1M/ --output /l1metmlvol/12-36/ --mode 1 --epochs 100 --units 12 36"
+        volumeMounts:
+        - mountPath: /l1metmlvol
+          name: l1metmlvol
+        resources:
+          limits:
+            memory: 50Gi
+            cpu: "10"
+            nvidia.com/gpu: "1"
+          requests:
+            memory: 25Gi
+            cpu: "10"
+            nvidia.com/gpu: "1"
+      volumes:
+      - name: l1metmlvol
+        persistentVolumeClaim:
+          claimName: l1metmlvol
+
+      restartPolicy: Never
+  backoffLimit: 0

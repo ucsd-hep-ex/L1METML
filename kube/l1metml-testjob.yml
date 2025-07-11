@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: l1metml
+spec:
+  template:
+    spec:
+      containers:
+      - name: gpu-container
+        image: gitlab-registry.nrp-nautilus.io/jmduarte/l1metml:latest
+        command:
+        - "/bin/bash"
+        - "-c"
+        - " git clone https://github.com/dprim7/L1METML.git -b feature_scaling &&
+            cd L1METML &&
+            python train.py --workflowType dataGenerator --input /l1metmlvol/TTbar_PU200_110X_1M/  --mode 1 --epochs 1 --maxNPF 100 --batch-size 256 --units 12 36 --output /l1metmlvol/experiments/25Nov24_FStest --quantized 8 2 --model dense_embedding --compute-edge-feat 0 --model-output /l1metmlvol/saved_keras_models/quantized_dense_model_100pf_1epochs_1_FStest --normFac 1 --feature-scaling True"
+        volumeMounts:
+        - mountPath: /l1metmlvol
+          name: l1metmlvol
+        resources:
+          limits:
+            memory: 32Gi
+            cpu: "2"
+            nvidia.com/gpu: "1"
+          requests:
+            memory: 16Gi
+            cpu: "1"
+            nvidia.com/gpu: "1"
+      volumes:
+      - name: l1metmlvol
+        persistentVolumeClaim:
+          claimName: l1metmlvol
+
+      restartPolicy: Never
+  backoffLimit: 0

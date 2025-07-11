@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-pod
+  namespace: cms-ml
+spec:
+  containers:
+  - name: debug-container
+    image: debian:bullseye-slim
+    command: ["/bin/bash", "-c", "sleep infinity"]
+    volumeMounts:
+    - mountPath: /l1metmlvol
+      name: l1metmlvol
+  volumes:
+  - name: l1metmlvol
+    persistentVolumeClaim:
+      claimName: l1metmlvol
