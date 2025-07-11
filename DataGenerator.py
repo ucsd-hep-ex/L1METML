@@ -14,11 +14,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
 
     def __init__(self, list_files, batch_size=1024, n_dim=100, maxNPF=100, compute_ef=0,
-                 max_entry=100000000, edge_list=[], normfac=1):
+                 max_entry=100000000, edge_list=[]):
         'Initialization'
         self.n_features_pf = 6
         self.n_features_pf_cat = 2
-        self.normFac = normfac
+        self.normFac = 1.
         self.batch_size = batch_size
         self.n_dim = n_dim
         self.n_channels = 8
@@ -34,16 +34,10 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         self.h5files = []
         for ifile in list_files:
-            if ifile.endswith('.h5'):
-                # If the file is already an HDF5 file, add it directly
-                self.h5files.append(ifile)
-            elif ifile.endswith('.root'):
-                h5file_path = ifile.replace('.root', '.h5')
-                if not os.path.isfile(h5file_path):
-                    os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
-                self.h5files.append(h5file_path)
-            else:
-                raise ValueError(f"Unsupported file format: {ifile}. Only .h5 and .root files are supported.")
+            h5file_path = ifile.replace('.root', '.h5')
+            if not os.path.isfile(h5file_path):
+                os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
+            self.h5files.append(h5file_path)
         for i, file_name in enumerate(self.h5files):
             with h5py.File(file_name, "r") as h5_file:
                 self.open_files.append(h5_file)

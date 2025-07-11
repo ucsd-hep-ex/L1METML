@@ -3,7 +3,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras import optimizers, initializers
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger, TensorBoard
 from tensorflow.keras.utils import plot_model
-from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.models import Model
 from sklearn.model_selection import train_test_split
 
 import numpy as np
@@ -30,7 +30,6 @@ from utils import *
 from loss import custom_loss_wrapper
 from DataGenerator import DataGenerator
 
-import matplotlib.pyplot as plt
 import mplhep as hep
 
 
@@ -153,50 +152,32 @@ def train_dataGenerator(args):
     units = list(map(int, args.units))
     compute_ef = args.compute_edge_feat
     edge_list = args.edge_features
-    model_output = args.model_output
 
     # separate files into training, validation, and testing
     filesList = glob(os.path.join(inputPath, '*.root'))
-    h5FilesList = glob(os.path.join(inputPath, '*.h5'))
     filesList.sort(reverse=True)
 
-    # If no ROOT files are found, use HDF5 files directly
-    if len(filesList) == 0 and len(h5FilesList) > 0:
-        print("No ROOT files found. Using HDF5 files directly.")
-        filesList = h5FilesList
-    
-    if 'singleneutrino' in inputPath.lower():
-        train_filesList = []
-        test_filesList = []
-        valid_filesList = []
-        for ifile in glob(os.path.join(f'{inputPath}', '*.root')):
-            train_filesList.append(ifile.replace('.root', '_train_set.h5'))
-            test_filesList.append(ifile.replace('.root', '_test_set.h5'))
-            valid_filesList.append(ifile.replace('.root', '_val_set.h5'))
-    else:
-        assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
+    assert len(filesList) >= 3, "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
 
-        train_filesList = [f for f in filesList if "train" in f.lower()]
-        valid_filesList = [f for f in filesList if "valid" in f.lower()]
-        test_filesList = [f for f in filesList if "test" in f.lower()]
-
-        # Ensure there are files in each category
-        assert len(train_filesList) > 0, "No training files found in filesList."
-        assert len(valid_filesList) > 0, "No validation files found in filesList."
-        assert len(test_filesList) > 0, "No testing files found in filesList."
+    valid_nfiles = max(1, int(.1*len(filesList)))
+    train_nfiles = len(filesList) - 2*valid_nfiles
+    test_nfiles = valid_nfiles
+    train_filesList = filesList[0:train_nfiles]
+    valid_filesList = filesList[train_nfiles: train_nfiles+valid_nfiles]
+    test_filesList = filesList[train_nfiles+valid_nfiles:test_nfiles+train_nfiles+valid_nfiles]
 
     if compute_ef == 1:
 
         # set up data generators; they perform h5 conversion if necessary and load in data batch by batch
-        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list,normfac=normFac)
-        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list,normfac=normFac)
-        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list,normfac=normFac)
+        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
+        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=1, edge_list=edge_list)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
 
     else:
-        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size,normfac=normFac)
-        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size,normfac=normFac)
-        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size,normfac=normFac)
+        trainGenerator = DataGenerator(list_files=train_filesList, batch_size=batch_size)
+        validGenerator = DataGenerator(list_files=valid_filesList, batch_size=batch_size)
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
         Xr_train, Yr_train = trainGenerator[0]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
 
     # Load training model
@@ -262,8 +243,6 @@ def train_dataGenerator(args):
                               verbose=verbose,  # switch to 1 for more verbosity
                               validation_data=validGenerator,
                               callbacks=get_callbacks(path_out, len(trainGenerator), batch_size))
-  
-
     end_time = time.time()  # check end time
 
     predict_test = keras_model.predict(testGenerator) * normFac
@@ -273,7 +252,6 @@ def train_dataGenerator(args):
         puppi_pt = np.sum(Xr[1], axis=1)
         all_PUPPI_pt.append(puppi_pt)
         Yr_test.append(Yr)
-    
 
     PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
     Yr_test = normFac * np.concatenate(Yr_test)
@@ -286,60 +264,7 @@ def train_dataGenerator(args):
     fi.write("Working Time (m) : {}".format((end_time - start_time)/60.))
 
     fi.close()
-    
-    if isinstance(model_output,str)==True:
-        keras_model.save(model_output)
-        keras_model.save(model_output[:-1] + ".h5", save_format='h5')
 
-    '''
-    load_keras_model = load_model('/l1metmlvol/saved_keras_models/def_model_100pf_300epochs', custom_objects={ 'custom_loss': custom_loss}, compile=True)
-
-    single_neutrino_filesList = ['/l1metmlvol/SingleNeutrino_PU200_110X_v2/perfNano_SingleNeutrino_PU200.110X_v2.h5']
-    single_neutrino_samp = DataGenerator(list_files=single_neutrino_filesList, batch_size=batch_size, maxNPF=maxNPF, compute_ef=0, edge_list=edge_list)
-
-    load_keras_model.predict(single_neutrino_samp)
-    threshold = 1/2000 # 1 per 2000 events
-
-    from sklearn.metrics import roc_curve
-    from sklearn.metrics import auc
-    
-    model_by_hand = Model(inputs=load_keras_model.input,
-                    outputs=(load_keras_model.get_layer('input_pxpy').output,
-                                load_keras_model.get_layer('met_weight_minus_one').output))
-    
-    x = model_by_hand[0] * model_by_hand[1]
-    from tensorflow.keras.layers import Input, Dense, Embedding, BatchNormalization, Dropout, Lambda, Conv1D, SpatialDropout1D, Concatenate, Flatten, Reshape, Multiply, Add, GlobalAveragePooling1D, Activation, Permute
-    inputs = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
-    outputs = GlobalAveragePooling1D()(inputs)
-    GlobalAveragePooling = Model(inputs=inputs,
-                                    outputs=outputs)
-    
-    pt_by_hand = np.sqrt(GlobalAveragePooling[:,0]**2 + GlobalAveragePooling[:,1]**2)
-    pt_true = np.sqrt(single_neutrino_samp[0][1][:,0]**2 + single_neutrino_samp[0][1][:,1]**2)
-    print(pt_by_hand[5])
-    print(pt_true[5])
-
-    # Create plot for ROC
-    plt.figure(1)
-    plt.plot([0, 1], [0, 1], "k--")
-    
-    # Creating ROC curves based on model predictions for each dataset
-    Ab_pred_keras = load_keras_model.predict(single_neutrino_samp)
-    pt_pred = np.sqrt(Ab_pred_keras[:,0]**2 + Ab_pred_keras[:,1]**2)
-    pt_true = np.sqrt(single_neutrino_samp[0][1][:,0]**2 + single_neutrino_samp[0][1][:,1]**2)
-    for i in range(1,len(single_neutrino_samp)):
-        pt_true_add = np.sqrt(single_neutrino_samp[i][1][:,0]**2 + single_neutrino_samp[i][1][:,1]**2)
-        np.concatenate([pt_true, pt_true_add],axis=0)
-    fpr_Ab, tpr_Ab, thresholds_Ab = roc_curve(pt_true, Ab_pred_keras)
-    auc_Ab = auc(fpr_Ab, tpr_Ab)
-    plt.plot(fpr_Ab, tpr_Ab, label="Pf, AUC={:.3f}".format(auc_Ab))
-    plt.plot()
-
-    plt.xlabel("False positive rate")
-    plt.ylabel("True positive rate")
-    plt.title("L1 Trigger ROC Curve", fontsize=16)
-    plt.legend(loc="best")
-    plt.savefig(f'{path_out}ROCCurves.png')'''
 
 def train_loadAllData(args):
     # general setup
@@ -364,11 +289,9 @@ def train_loadAllData(args):
     # convert root files to h5 and store in same location
     h5files = []
     for ifile in glob(os.path.join(f'{inputPath}', '*.root')):
-        h5file_path_train = ifile.replace('.root', '_train_set.h5')
-        h5file_path_test = ifile.replace('.root', '_test_set.h5')
-        h5file_path_val = ifile.replace('.root', '_val_set.h5')
+        h5file_path = ifile.replace('.root', '.h5')
         if not os.path.isfile(h5file_path):
-            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {[h5file_path_train, h5file_path_test, h5file_path_val]}')
+            os.system(f'python convertNanoToHDF5_L1triggerToDeepMET.py -i {ifile} -o {h5file_path}')
         h5files.append(h5file_path)
 
     # It may be desireable to set specific files as the train, test, valid data sets

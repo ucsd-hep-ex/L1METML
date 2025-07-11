@@ -8,13 +8,12 @@ import qkeras
 from qkeras.qlayers import QDense, QActivation
 import numpy as np
 import itertools
-from qpooling import QGlobalAveragePooling1D
 
 
 def dense_embedding(n_features=6,
                     n_features_cat=2,
                     activation='relu',
-                    number_of_pupcandis=128,
+                    number_of_pupcandis=100,
                     embedding_input_dim={0: 13, 1: 3},
                     emb_out_dim=8,
                     with_bias=True,
@@ -73,7 +72,7 @@ def dense_embedding(n_features=6,
 
 def dense_embedding_quantized(n_features=6,
                               n_features_cat=2,
-                              number_of_pupcandis=128,
+                              number_of_pupcandis=100,
                               embedding_input_dim={0: 13, 1: 3},
                               emb_out_dim=2,
                               with_bias=True,
@@ -122,23 +121,17 @@ def dense_embedding_quantized(n_features=6,
     if t_mode == 0:
         x = qkeras.qpooling.QGlobalAveragePooling1D(name='pool', quantizer=logit_quantizer)(x)
         # pool size?
-        outputs = QDense(2, name='output', bias_quantizer=logit_quantizer, 
-                         kernel_quantizer=logit_quantizer, activation='linear')(x)
+        outputs = QDense(2, name='output', bias_quantizer=logit_quantizer, kernel_quantizer=logit_quantizer, activation='linear')(x)
 
     if t_mode == 1:
         if with_bias:
-            b = QDense(2, name='met_bias', kernel_quantizer=logit_quantizer, 
-                       bias_quantizer=logit_quantizer, 
-                       kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+            b = QDense(2, name='met_bias', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
             pxpy = Add()([pxpy, b])
-        w = QDense(1, name='met_weight', kernel_quantizer=logit_quantizer, 
-                   bias_quantizer=logit_quantizer, 
-                   kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        w = QDense(1, name='met_weight', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
         x = Multiply()([w, pxpy])
 
-        x = QGlobalAveragePooling1D(name='output')(x)
-        #GlobalAveragePooling needs to be quantized
+        x = GlobalAveragePooling1D(name='output')(x)
     outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
@@ -158,30 +151,6 @@ def assign_matrices(N, Nr):
         Rs[s, i] = 1
     return Rs, Rr
 
-import tensorflow as tf
-from tensorflow.keras.layers import Layer
-
-class weighted_sum_layer(Layer):
-    '''Either does weight times inputs
-    or weight times inputs + bias
-    Input to be provided as:
-      - Weights
-      - ndim biases (if applicable)
-      - ndim items to sum
-    Currently works for 3-dim input, summing over the 2nd axis'''
-    #def __init__(self, ndim=2, with_bias=False, **kwargs):
-    #    super(weighted_sum_layer, self).__init__(**kwargs)
-    #    self.with_bias = with_bias
-    #    self.ndim = ndim
-#
-    #def get_config(self):
-    #    cfg = super(weighted_sum_layer, self).get_config()
-    #    cfg['ndim'] = self.ndim
-    #    cfg['with_bias'] = self.with_bias
-    #    return cfg
-
-    def call(self, inputs):
-        return tf.reduce_sum(inputs, axis=1)
 
 def graph_embedding(compute_ef, n_features=6,
                     n_features_cat=2,
@@ -270,8 +239,7 @@ def graph_embedding(compute_ef, n_features=6,
     w = Dense(1, name='met_weight', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(h)
     w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
     x = Multiply()([w, pxpy])
-    outputs = weighted_sum_layer(name='output')(x)
-    #outputs = GlobalAveragePooling1D(name='output')(x)
+    outputs = GlobalAveragePooling1D(name='output')(x)
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
