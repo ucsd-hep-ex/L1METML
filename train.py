@@ -21,7 +21,7 @@ from tensorflow.keras.callbacks import (
     TensorBoard,
 )
 
-from config import Config, load_config, merge_config_with_args
+from config import Config, create_default_config, load_config, merge_config_with_args
 from cyclical_learning_rate import CyclicLR
 from DataGenerator import DataGenerator
 from loss import custom_loss_wrapper
@@ -199,7 +199,7 @@ def train_dataGenerator_from_config(config: Config):
     maxNPF = config.get("data.maxNPF")
     n_features_pf = config.get("data.n_features_pf")
     n_features_pf_cat = config.get("data.n_features_pf_cat")
-    normFac = config.get("data.normFac")
+    normFac = config.get("training.normFac")
 
     # initialize custom loss function
     custom_loss = custom_loss_wrapper(
@@ -885,6 +885,7 @@ def main():
     time_path = time.strftime("%Y-%m-%d", time.localtime(time.time()))
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, help="Path to configuration YAML file")
     parser.add_argument(
         "--workflowType",
         action="store",
@@ -897,21 +898,18 @@ def main():
         "--input",
         action="store",
         type=str,
-        required=True,
         help="designate input file path",
     )
     parser.add_argument(
         "--output",
         action="store",
         type=str,
-        required=True,
         help="designate output file path",
     )
     parser.add_argument(
         "--mode",
         action="store",
         type=int,
-        required=True,
         choices=[0, 1],
         help="0 for L1MET, 1 for DeepMET",
     )
@@ -1010,7 +1008,7 @@ def main():
         config = load_config(args.config)
         print(f"Using configuration from {args.config}")
     else:
-        config = Config()
+        config = create_default_config()
 
     # Override config parameters with command line arguments
     config = merge_config_with_args(config, args)
@@ -1038,18 +1036,13 @@ def main():
     print(f"Output: {config.get('paths.output')}")
     print("=" * 30)
 
-    # Legacy mode: if workflowType is specified via args, use old functions
-    if args.workflowType:
-        if args.workflowType == "dataGenerator":
-            train_dataGenerator(args)
-        elif args.workflowType == "loadAllData":
-            train_loadAllData(args)
-    else:
+    # Use config-based training if config file is provided
+    if args.config:
         # Config-based training
         try:
             """
             Train with:
-            python train.py --config configs/<config>.yaml
+            python train.py --config <path-to-config-file>
             """
             history, model = train_dataGenerator_from_config(config)
             print("Training completed successfully!")
@@ -1057,6 +1050,12 @@ def main():
         except Exception as e:
             print(f"Training failed: {e}")
             raise
+    else:
+        # Legacy mode: use old functions when no config file is provided
+        if args.workflowType == "dataGenerator":
+            train_dataGenerator(args)
+        elif args.workflowType == "loadAllData":
+            train_loadAllData(args)
 
 
 if __name__ == "__main__":

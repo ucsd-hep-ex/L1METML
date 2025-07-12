@@ -97,12 +97,13 @@ def create_default_config() -> Config:
             "emb_out_dim": 8,
         },
         "data": {
-            "maxNPF": 100,
+            "maxNPF": 128,
             "n_features_pf": 6,
             "n_features_pf_cat": 2,
             "compute_edge_feat": 0,
             "edge_features": [],
             "preprocessed": True,
+            "normFac": 100,
         },
         "training": {
             "workflow_type": "dataGenerator",
