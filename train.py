@@ -26,11 +26,10 @@ from cyclical_learning_rate import CyclicLR
 from DataGenerator import DataGenerator
 from loss import custom_loss_wrapper
 from models import dense_embedding, dense_embedding_quantized, graph_embedding
-from utils import read_input, preProcessing, convertXY2PtPhi, MakePlots
+from utils import MakePlots, convertXY2PtPhi, preProcessing, read_input
 from Write_MET_binned_histogram import extract_result
 
 # Import custom modules
-
 
 
 def get_callbacks_from_config(
@@ -93,6 +92,99 @@ def get_callbacks_from_config(
     callbacks.append(tensorboard)
 
     return callbacks
+
+
+def create_model_from_config(config: Config, emb_input_dim: int, maxNPF: int):
+
+    model_type = config.get("model.type")
+    units = config.get("model.units")
+    n_features_pf = config.get("data.n_features_pf")
+    n_features_pf_cat = config.get("data.n_features_pf_cat")
+    activation = config.get("model.activation")
+    emb_out_dim = config.get("model.emb_out_dim")
+    with_bias = config.get("model.with_bias")
+    t_mode = config.get("training.mode")
+    compute_ef = config.get("data.compute_edge_feat")
+    edge_list = config.get("data.edge_features", [])
+
+    if config.get("quantization.enabled"):
+        # Quantization aware training model
+
+        logit_total_bits = config.get("quantization.total_bits")
+        logit_int_bits = config.get("quantization.int_bits")
+        activation_total_bits = config.get("quantization.total_bits")
+        activation_int_bits = config.get("quantization.int_bits")
+
+        return dense_embedding_quantized(
+            n_features=n_features_pf,
+            emb_out_dim=emb_out_dim,
+            n_features_cat=n_features_pf_cat,
+            activation_quantizer="quantized_relu",
+            embedding_input_dim=emb_input_dim,
+            number_of_pupcandis=maxNPF,
+            t_mode=t_mode,
+            with_bias=with_bias,
+            logit_quantizer="quantized_bits",
+            logit_total_bits=logit_total_bits,
+            logit_int_bits=logit_int_bits,
+            activation_total_bits=activation_total_bits,
+            activation_int_bits=activation_int_bits,
+            alpha=1,
+            use_stochastic_rounding=False,
+            units=units,
+        )
+    elif model_type == "dense_embedding":
+        # Densely connected DNN with embedding layer
+        return dense_embedding(
+            n_features=n_features_pf,
+            emb_out_dim=emb_out_dim,
+            n_features_cat=n_features_pf_cat,
+            activation=activation,
+            embedding_input_dim=emb_input_dim,
+            number_of_pupcandis=maxNPF,
+            t_mode=t_mode,
+            with_bias=with_bias,
+            units=units,
+        )
+    elif model_type == "graph_embedding":
+        # Graph neural network with embedding layer
+        return graph_embedding(
+            n_features=n_features_pf,
+            emb_out_dim=emb_out_dim,
+            n_features_cat=n_features_pf_cat,
+            activation=activation,
+            embedding_input_dim=emb_input_dim,
+            number_of_pupcandis=maxNPF,
+            units=units,
+            compute_ef=compute_ef,
+            edge_list=edge_list,
+        )
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+
+
+def compile_model(model, config: Config, custom_loss):
+
+    t_mode = config.get("training.mode")
+    optimizer_config = config.get("training.optimizer", {})
+
+    if t_mode == 0:
+        model.compile(
+            optimizer=optimizer_config.get("type", "adam"),
+            loss=custom_loss,
+            metrics=["mean_absolute_error", "mean_squared_error"],
+        )
+    elif t_mode == 1:
+        optimizer = optimizers.Adam(
+            lr=optimizer_config.get("learning_rate", 1.0),
+            clipnorm=optimizer_config.get("clipnorm", 1.0),
+        )
+        model.compile(
+            loss=custom_loss,
+            optimizer=optimizer,
+            metrics=["mean_absolute_error", "mean_squared_error"],
+        )
+    return model
 
 
 def MakeEdgeHist(
