@@ -21,7 +21,7 @@ from tensorflow.keras.callbacks import (
     TensorBoard,
 )
 
-from config import Config
+from config import Config, load_config, merge_config_with_args
 from cyclical_learning_rate import CyclicLR
 from DataGenerator import DataGenerator
 from loss import custom_loss_wrapper
@@ -191,6 +191,132 @@ def compile_model(model, config: Config, custom_loss):
             metrics=["mean_absolute_error", "mean_squared_error"],
         )
     return model
+
+
+def train_dataGenerator_from_config(config: Config):
+
+    # Extract parameters from config
+    maxNPF = config.get("data.maxNPF")
+    n_features_pf = config.get("data.n_features_pf")
+    n_features_pf_cat = config.get("data.n_features_pf_cat")
+    normFac = config.get("data.normFac")
+
+    # initialize custom loss function
+    custom_loss = custom_loss_wrapper(
+        normFac=normFac,
+        use_symmetry=config.get("loss.use_symmetry", False),
+        symmetry_weight=config.get("loss.symmetry_weight", 1.0),
+    )
+
+    # Training parameters
+    epochs = config.get("training.epochs")
+    batch_size = config.get("training.batch_size")
+    t_mode = config.get("training.mode")
+    inputPath = config.get("paths.input")
+    path_out = config.get("paths.output")
+
+    # Model parameters
+    compute_ef = config.get("data.compute_edge_feat")
+    edge_list = config.get("data.edge_features", [])
+
+    # File handling
+    filesList = glob(os.path.join(inputPath, "*root"))
+    filesList.sort(reverse=True)
+
+    assert (
+        len(filesList) >= 3
+    ), "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
+
+    # TODO shuffle files each time training starts
+    # Separate files into training, validation, and testing
+    valid_nfiles = max(1, int(0.1 * len(filesList)))
+    train_nfiles = len(filesList) - 2 * valid_nfiles
+    test_nfiles = valid_nfiles
+    train_filesList = filesList[0:train_nfiles]
+    valid_filesList = filesList[train_nfiles : train_nfiles + valid_nfiles]
+    test_filesList = filesList[
+        train_nfiles + valid_nfiles : test_nfiles + train_nfiles + valid_nfiles
+    ]
+
+    # create data generators
+    if compute_ef == 1:
+        trainGenerator = DataGenerator(
+            list_files=train_filesList,
+            batch_size=batch_size,
+            maxNPF=maxNPF,
+            compute_ef=1,
+            edge_list=edge_list,
+        )
+        validGenerator = DataGenerator(
+            list_files=valid_filesList,
+            batch_size=batch_size,
+            maxNPF=maxNPF,
+            compute_ef=1,
+            edge_list=edge_list,
+        )
+        testGenerator = DataGenerator(
+            list_files=test_filesList,
+            batch_size=batch_size,
+            maxNPF=maxNPF,
+            compute_ef=1,
+            edge_list=edge_list,
+        )
+    else:
+        trainGenerator = DataGenerator(
+            list_files=train_filesList, batch_size=batch_size
+        )
+        validGenerator = DataGenerator(
+            list_files=valid_filesList, batch_size=batch_size
+        )
+        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
+
+    # get first batch to determine input dimensions
+    Xr_train, Yr_train = trainGenerator[0]
+
+    # create and compile model
+    keras_model = create_model_from_config(config, trainGenerator.emb_input_dim, maxNPF)
+    keras_model = compile_model(keras_model, config, custom_loss)
+
+    # get callbacks
+    callbacks = get_callbacks_from_config(
+        config, path_out, len(trainGenerator), batch_size
+    )
+
+    # Run training
+    print(keras_model.summary())
+
+    start_time = time.time()
+    history = keras_model.fit(
+        trainGenerator,
+        epochs=epochs,
+        verbose=1,  # switch to 1 for more verbosity
+        validation_data=validGenerator,
+        callbacks=callbacks,
+    )
+    end_time = time.time()
+
+    # Testing and results
+    predict_test = keras_model.predict(testGenerator) * normFac
+    all_PUPPI_pt = []
+    Yr_test = []
+    for Xr, Yr in tqdm.tqdm(testGenerator):
+        puppi_pt = np.sum(Xr[1], axis=1)
+        all_PUPPI_pt.append(puppi_pt)
+        Yr_test.append(Yr)
+
+    PUPPI_pt = normFac * np.concatenate(all_PUPPI_pt)
+    Yr_test = normFac * np.concatenate(Yr_test)
+
+    test(Yr_test, predict_test, PUPPI_pt, path_out)
+
+    fi = open(f"{path_out}time.txt", "w")
+    fi.write(f"Working Time (s): {end_time - start_time}\n")
+    fi.write(f"Working Time (m): {(end_time - start_time) / 60.0}\n")
+    fi.close()
+
+    return history, keras_model
+
+    # train_laodAllData not implemented for config, outdated
 
 
 def MakeEdgeHist(
@@ -880,12 +1006,57 @@ def main():
     args = parser.parse_args()
     workflowType = args.workflowType
 
+    if args.config:
+        config = load_config(args.config)
+        print(f"Using configuration from {args.config}")
+    else:
+        config = Config()
+
+    # Override config parameters with command line arguments
+    config = merge_config_with_args(config, args)
+
+    # Ensure required paths are set
+    if not config.get("paths.input") or not config.get("paths.output"):
+        if not args.input or not args.output:
+            raise ValueError(
+                "Input and output paths must be specified either in config or as command line arguments."
+            )
+        config.set("paths.input", args.input)
+        config.set("paths.output", args.output)
+
+    output_path = config.get("paths.output")
     os.makedirs(args.output, exist_ok=True)
 
-    if workflowType == "dataGenerator":
-        train_dataGenerator(args)
-    elif workflowType == "loadAllData":
-        train_loadAllData(args)
+    # Print key configuration
+    print("\n=== Training Configuration ===")
+    print(f"Model: {config.get('model.type')}")
+    print(f"Workflow: {config.get('training.workflow_type')}")
+    print(f"Epochs: {config.get('training.epochs')}")
+    print(f"Batch size: {config.get('training.batch_size')}")
+    print(f"Units: {config.get('model.units')}")
+    print(f"Input: {config.get('paths.input')}")
+    print(f"Output: {config.get('paths.output')}")
+    print("=" * 30)
+
+    # Legacy mode: if workflowType is specified via args, use old functions
+    if args.workflowType:
+        if args.workflowType == "dataGenerator":
+            train_dataGenerator(args)
+        elif args.workflowType == "loadAllData":
+            train_loadAllData(args)
+    else:
+        # Config-based training
+        try:
+            """
+            Train with:
+            python train.py --config configs/<config>.yaml
+            """
+            history, model = train_dataGenerator_from_config(config)
+            print("Training completed successfully!")
+            return history, model
+        except Exception as e:
+            print(f"Training failed: {e}")
+            raise
 
 
 if __name__ == "__main__":
