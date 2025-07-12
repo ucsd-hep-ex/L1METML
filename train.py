@@ -69,12 +69,12 @@ def get_callbacks_from_config(
     callbacks.append(stop_on_nan)
 
     # CSV Logger
-    csv_logger = CSVLogger(f"{path_out}loss_history.log")
+    csv_logger = CSVLogger(os.path.join(path_out, "loss_history.log"))
     callbacks.append(csv_logger)
 
     # Model Checkpoint
     model_checkpoint = ModelCheckpoint(
-        f"{path_out}model.h5",
+        os.path.join(path_out, "model.h5"),
         monitor="val_loss",
         verbose=0,
         save_best_only=True,
@@ -86,7 +86,7 @@ def get_callbacks_from_config(
 
     # TensorBoard
     tensorboard = TensorBoard(
-        log_dir=f"{path_out}tensorboard_logs",
+        log_dir=os.path.join(path_out, "tensorboard_logs"),
         histogram_freq=1,
         write_graph=True,
         write_images=True,
@@ -214,6 +214,10 @@ def train_dataGenerator_from_config(config: Config):
     t_mode = config.get("training.mode")
     inputPath = config.get("paths.input")
     path_out = config.get("paths.output")
+    
+    # Ensure path_out ends with a slash for proper file path concatenation
+    if not path_out.endswith("/"):
+        path_out += "/"
 
     # Model parameters
     compute_ef = config.get("data.compute_edge_feat")
@@ -374,12 +378,12 @@ def get_callbacks(path_out, sample_size, batch_size):
         monitor="val_loss", patience=40, verbose=1, restore_best_weights=False
     )
 
-    csv_logger = CSVLogger(f"{path_out}loss_history.log")
+    csv_logger = CSVLogger(os.path.join(path_out, "loss_history.log"))
 
     # model checkpoint callback
     # this saves our model architecture + parameters into model.h5
     model_checkpoint = ModelCheckpoint(
-        f"{path_out}model.h5",
+        os.path.join(path_out, "model.h5"),
         monitor="val_loss",
         verbose=0,
         save_best_only=True,
@@ -409,7 +413,7 @@ def get_callbacks(path_out, sample_size, batch_size):
 
     # tensorboard callback
     tensorboard = TensorBoard(
-        log_dir=f"{path_out}tensorboard_logs",
+        log_dir=os.path.join(path_out, "tensorboard_logs"),
         histogram_freq=1,
         write_graph=True,
         write_images=True,
@@ -890,7 +894,7 @@ def main():
         "--workflowType",
         action="store",
         type=str,
-        required=True,
+        required=False,
         choices=["dataGenerator", "loadAllData"],
         help="designate wheather youre using the data generator or loading all data into memory ",
     )
