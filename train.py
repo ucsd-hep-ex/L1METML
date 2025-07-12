@@ -27,7 +27,13 @@ from DataGenerator import DataGenerator
 from loss import custom_loss_wrapper
 from models import dense_embedding, dense_embedding_quantized, graph_embedding
 from utils import MakePlots, convertXY2PtPhi, preProcessing, read_input
-from Write_MET_binned_histogram import extract_result
+from Write_MET_binned_histogram import (
+    MET_binned_predict_mean_opaque,
+    MET_rel_error_opaque,
+    Phi_abs_error_opaque,
+    Pt_abs_error_opaque,
+    extract_result,
+)
 
 # Import custom modules
 
