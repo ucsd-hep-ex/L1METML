@@ -175,6 +175,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
             Xr = [Xi, Xp] + Xc + [ef]
             return Xr, Yr
 
+        #TODO: modify for new features
         else:
             Xc = [Xc1, Xc2]
             # dimension parameter for keras model
@@ -190,7 +191,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         # Double check that file is open
         if self.open_files[ifile] is None:
-            h5_file = h5py.File(file_name, "r")
+            h5_file = h5py.File(ifile, "r")
         else:
             h5_file = self.open_files[ifile]
 

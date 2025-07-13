@@ -161,7 +161,7 @@ def convert_single_file(input_file, output_file, maxevents=-1, is_data=False):
 
     # Setup arrays
     maxNPuppi = 128
-    nFeatures = 12
+    nFeatures = 10
     maxEntries = len(tree["nL1PuppiCands"])
 
     X = np.zeros(shape=(maxEntries, maxNPuppi, nFeatures), dtype=float, order="F")
