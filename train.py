@@ -5,7 +5,7 @@ import os
 # import setGPU
 import time
 from glob import glob
-
+import random
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
@@ -229,12 +229,12 @@ def train_dataGenerator_from_config(config: Config):
     # File handling
     filesList = glob(os.path.join(inputPath, "*root"))
     filesList.sort(reverse=True)
+    random.shuffle(filesList)
 
     assert (
         len(filesList) >= 3
     ), "Need at least 3 files for DataGenerator: 1 valid, 1 test, 1 train"
 
-    # TODO shuffle files each time training starts
     # Separate files into training, validation, and testing
     valid_nfiles = max(1, int(0.1 * len(filesList)))
     train_nfiles = len(filesList) - 2 * valid_nfiles
