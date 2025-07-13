@@ -15,19 +15,13 @@ repos:
       - id: blacken-docs
         additional_dependencies: [black==23.*]
 
-  # autopep8 for PEP 8 formatting
-  - repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v2.0.2
-    hooks:
-      - id: autopep8
-        args: [--in-place, --aggressive, --aggressive, --max-line-length=100]
-        verbose: true
   # Import sorting
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
-        args: ["--line-length=100"]
+        args: ["--profile", "black", "--line-length=100"]
+        verbose: true
 
   # Code linting (after formatting)
   #- repo: https://github.com/pycqa/flake8
