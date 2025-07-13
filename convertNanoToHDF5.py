@@ -31,9 +31,10 @@ def deltaR(eta1, phi1, eta2, phi2):
 
 def HCalDepth(hcal_first1: np.ndarray, hcal_first3: np.ndarray, hcal_first5: np.ndarray) -> np.ndarray:
     '''calculates the effective center of energy depth in the hadronic calorimeter of Phase-2 HGCal'''
-
-    depth_weighted = (hcal_first1 * 1.0 + (hcal_first3 - hcal_first1) * 3.0 + (hcal_first5 - hcal_first3) * 5.0) / (hcal_first5)
-
+    if hcal_first5 > 0:
+        depth_weighted = (hcal_first1 * 1.0 + (hcal_first3 - hcal_first1) * 3.0 + (hcal_first5 - hcal_first3) * 5.0) / (hcal_first5)
+    else:
+        depth_weighted = np.zeros_like(hcal_first1, dtype=float)
     return depth_weighted
 
 
