@@ -64,6 +64,9 @@ def get_callbacks_from_config(
     )
     callbacks.append(clr)
 
+    # ReduceLROnPlateau
+    #TODO: not implemented in config, confliocts with cyclical learning rate
+
     # Terminate on NaN
     stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
     callbacks.append(stop_on_nan)
@@ -1027,7 +1030,7 @@ def main():
         config.set("paths.output", args.output)
 
     output_path = config.get("paths.output")
-    os.makedirs(args.output, exist_ok=True)
+    os.makedirs(output_path, exist_ok=True)
 
     # Print key configuration
     print("\n=== Training Configuration ===")
