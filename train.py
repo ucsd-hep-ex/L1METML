@@ -227,7 +227,11 @@ def train_dataGenerator_from_config(config: Config):
     edge_list = config.get("data.edge_features", [])
 
     # File handling
-    filesList = glob(os.path.join(inputPath, "*root"))
+    preprocessed = config.get("data.preprocessed", False)
+    if preprocessed:
+        filesList = glob(os.path.join(inputPath, "*.h5"))
+    else:
+        filesList = glob(os.path.join(inputPath, "*.root"))
     filesList.sort(reverse=True)
     random.shuffle(filesList)
 
