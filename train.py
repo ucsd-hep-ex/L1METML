@@ -546,7 +546,7 @@ def train_dataGenerator(args):
         )
         Xr_train, Yr_train = trainGenerator[
             0
-        ]  # this apparenly calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
+        ]  # this calls all the attributes, so that we can get the correct input dimensions (train_generator.emb_input_dim)
 
     else:
         trainGenerator = DataGenerator(
