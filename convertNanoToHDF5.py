@@ -29,6 +29,13 @@ def deltaR(eta1, phi1, eta2, phi2):
     deta = eta1 - eta2
     return np.hypot(deta, dphi)
 
+def HCalDepth(hcal_first1: np.ndarray, hcal_first3: np.ndarray, hcal_first5: np.ndarray) -> np.ndarray:
+    '''calculates the effective center of energy depth in the hadronic calorimeter of Phase-2 HGCal'''
+
+    depth_weighted = (hcal_first1 * 1.0 + (hcal_first3 - hcal_first1) * 3.0 + (hcal_first5 - hcal_first3) * 5.0) / (hcal_first5)
+
+    return depth_weighted
+
 
 def parse_arguments():
     """Parse command line arguments."""
@@ -115,6 +122,9 @@ def convert_single_file(input_file, output_file, maxevents=-1, is_data=False):
         "L1PuppiCands_pdgId",
         "L1PuppiCands_puppiWeight",
         "L1PuppiCands_dxyErr",
+        'HGCal3DCl_firstHcal1layers',
+        'HGCal3DCl_firstHcal3layers',
+        'HGCal3DCl_firstHcal5layers',
         "HGCal3DCl_hoe",
         "HGCal3DCl_showerlength",
         "HGCal3DCl_coreshowerlength",
@@ -165,11 +175,11 @@ def convert_single_file(input_file, output_file, maxevents=-1, is_data=False):
     charge = to_np_array(tree["L1PuppiCands_charge"], maxN=maxNPuppi, pad=-999)
     puppiw = to_np_array(tree["L1PuppiCands_puppiWeight"], maxN=maxNPuppi)
     dxyErr = to_np_array(tree["L1PuppiCands_dxyErr"], maxN=maxNPuppi, pad=-999)
-    hoe = to_np_array(tree["HGCal3DCl_hoe"], maxN=maxNPuppi, pad=-999)
-    showerlength = to_np_array(tree["HGCal3DCl_showerlength"], maxN=maxNPuppi, pad=-999)
-    coreshowerlength = to_np_array(
-        tree["HGCal3DCl_coreshowerlength"], maxN=maxNPuppi, pad=-999
-    )
+    hcal_first1 = to_np_array(tree["HGCal3DCl_firstHcal1layers"], maxN=maxNPuppi, pad=0)
+    hcal_first3 = to_np_array(tree["HGCal3DCl_firstHcal3layers"], maxN=maxNPuppi, pad=0)
+    hcal_first5 = to_np_array(tree["HGCal3DCl_firstHcal5layers"], maxN=maxNPuppi, pad=0)
+    
+    hcalDepth = HCalDepth(hcal_first1, hcal_first3, hcal_first5)
 
     # Fill feature array
     X[:, :, 0] = pt
@@ -189,9 +199,9 @@ def convert_single_file(input_file, output_file, maxevents=-1, is_data=False):
 
     # Fill additional features
     X[:, :, 8] = dxyErr
-    X[:, :, 9] = hoe
-    X[:, :, 10] = showerlength
-    X[:, :, 11] = coreshowerlength
+    X[:, :, 9] = hcalDepth
+    
+
 
     # Truth info
     if not is_data:
