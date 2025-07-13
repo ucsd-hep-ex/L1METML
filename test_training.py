@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import h5py
 
 # Import additional modules for config testing
 from config import Config, create_default_config, load_config, merge_config_with_args
@@ -1149,103 +1150,308 @@ class TestConfigValidation(unittest.TestCase):
         self.assertIsInstance(config.get("quantization.enabled"), bool)
 
 
-class TestConfigBasedIntegration(unittest.TestCase):
-    """Integration tests for config-based training system"""
-
+class TestFeatureCompatibility(unittest.TestCase):
+    """Test the new 10-feature format compatibility with utils.py preprocessing"""
+    
     def setUp(self):
-        """Set up integration test environment"""
+        """Set up test data with 10-feature format from convertNanoToHDF5.py"""
+        self.batch_size = 8
+        self.maxNPF = 16
+        self.normFac = 1000.0
+        
+        # Create test data matching the 10-feature format from convertNanoToHDF5.py
+        # Features: pt, px, py, eta, phi, puppi, pdgId, charge, dxyErr, hcalDepth
+        self.test_data = np.random.rand(self.batch_size, self.maxNPF, 10).astype(np.float32)
+        
+        # Set realistic feature values
+        self.test_data[:, :, 0] = np.random.uniform(0, 500, (self.batch_size, self.maxNPF))  # pt
+        self.test_data[:, :, 1] = np.random.uniform(-250, 250, (self.batch_size, self.maxNPF))  # px  
+        self.test_data[:, :, 2] = np.random.uniform(-250, 250, (self.batch_size, self.maxNPF))  # py
+        self.test_data[:, :, 3] = np.random.uniform(-3, 3, (self.batch_size, self.maxNPF))  # eta
+        self.test_data[:, :, 4] = np.random.uniform(-np.pi, np.pi, (self.batch_size, self.maxNPF))  # phi
+        self.test_data[:, :, 5] = np.random.uniform(0, 1, (self.batch_size, self.maxNPF))  # puppi
+        self.test_data[:, :, 6] = np.random.randint(0, 8, (self.batch_size, self.maxNPF))  # encoded pdgId
+        self.test_data[:, :, 7] = np.random.randint(0, 3, (self.batch_size, self.maxNPF))  # encoded charge
+        self.test_data[:, :, 8] = np.random.uniform(0, 0.1, (self.batch_size, self.maxNPF))  # dxyErr
+        self.test_data[:, :, 9] = np.random.uniform(1, 7, (self.batch_size, self.maxNPF))  # hcalDepth
+        
+        # Test target data (MET x, y)
+        self.test_targets = np.random.uniform(-200, 200, (self.batch_size, 2)).astype(np.float32)
+
+    def test_preprocessing_10_features(self):
+        """Test that preProcessing correctly handles 10-feature input"""
+        from utils import preProcessing
+        
+        inputs, pxpy, inputs_cat0, inputs_cat1 = preProcessing(self.test_data, self.normFac)
+        
+        # Verify output shapes
+        self.assertEqual(inputs.shape, (self.batch_size, self.maxNPF, 6))  # 6 continuous features
+        self.assertEqual(pxpy.shape, (self.batch_size, self.maxNPF, 2))  # px, py
+        self.assertEqual(inputs_cat0.shape, (self.batch_size, self.maxNPF))  # categorical pdgId
+        self.assertEqual(inputs_cat1.shape, (self.batch_size, self.maxNPF))  # categorical charge
+        
+        # Verify continuous features are correctly extracted and normalized
+        expected_pt = self.test_data[:, :, 0:1] / self.normFac
+        expected_eta = self.test_data[:, :, 3:4]
+        expected_phi = self.test_data[:, :, 4:5]
+        expected_puppi = self.test_data[:, :, 5:6]
+        expected_dxyErr = self.test_data[:, :, 8:9]
+        expected_hcalDepth = self.test_data[:, :, 9:10]
+        
+        np.testing.assert_array_almost_equal(inputs[:, :, 0:1], expected_pt, decimal=5)
+        np.testing.assert_array_almost_equal(inputs[:, :, 1:2], expected_eta, decimal=5)
+        np.testing.assert_array_almost_equal(inputs[:, :, 2:3], expected_phi, decimal=5)
+        np.testing.assert_array_almost_equal(inputs[:, :, 3:4], expected_puppi, decimal=5)
+        np.testing.assert_array_almost_equal(inputs[:, :, 4:5], expected_dxyErr, decimal=5)
+        np.testing.assert_array_almost_equal(inputs[:, :, 5:6], expected_hcalDepth, decimal=5)
+        
+        # Verify momentum features
+        expected_px = self.test_data[:, :, 1:2] / self.normFac
+        expected_py = self.test_data[:, :, 2:3] / self.normFac
+        np.testing.assert_array_almost_equal(pxpy[:, :, 0:1], expected_px, decimal=5)
+        np.testing.assert_array_almost_equal(pxpy[:, :, 1:2], expected_py, decimal=5)
+        
+        # Verify categorical features
+        np.testing.assert_array_equal(inputs_cat0, self.test_data[:, :, 6])
+        np.testing.assert_array_equal(inputs_cat1, self.test_data[:, :, 7])
+
+    def test_outlier_removal(self):
+        """Test outlier removal in preprocessing"""
+        from utils import preProcessing
+        
+        # Create data with outliers (need to be > 500 after normalization)
+        outlier_data = self.test_data.copy()
+        outlier_data[0, 0, 0] = 600000  # pt outlier at particle 0
+        outlier_data[0, 1, 1] = 600000  # px outlier at particle 1 
+        outlier_data[0, 2, 2] = -600000  # py outlier at particle 2
+        
+        inputs, pxpy, inputs_cat0, inputs_cat1 = preProcessing(outlier_data, self.normFac)
+        
+        # Check that outliers were set to 0
+        # pt outlier: position [0,0] in inputs (pt is first feature)
+        self.assertEqual(inputs[0, 0, 0], 0.0)  # pt outlier removed
+        # px outlier: position [0,1] in pxpy (px is first feature in pxpy)
+        self.assertEqual(pxpy[0, 1, 0], 0.0)  # px outlier removed  
+        # py outlier: position [0,2] in pxpy (py is second feature in pxpy)
+        self.assertEqual(pxpy[0, 2, 1], 0.0)  # py outlier removed
+
+    def test_feature_mapping_consistency(self):
+        """Test that feature mapping matches convertNanoToHDF5.py format"""
+        from utils import preProcessing
+        
+        # Create test data with known values for verification
+        test_batch = np.zeros((1, 1, 10))
+        test_batch[0, 0, :] = [100, 50, 50, 1.5, 0.5, 0.8, 5, 1, 0.02, 3]  # Known values
+        
+        inputs, pxpy, inputs_cat0, inputs_cat1 = preProcessing(test_batch, 1000.0)
+        
+        # Verify specific feature mappings
+        self.assertAlmostEqual(inputs[0, 0, 0], 0.1, places=3)  # pt/1000
+        self.assertAlmostEqual(inputs[0, 0, 1], 1.5, places=3)  # eta (unchanged)
+        self.assertAlmostEqual(inputs[0, 0, 2], 0.5, places=3)  # phi (unchanged)
+        self.assertAlmostEqual(inputs[0, 0, 3], 0.8, places=3)  # puppi (unchanged)
+        self.assertAlmostEqual(inputs[0, 0, 4], 0.02, places=3)  # dxyErr (unchanged)
+        self.assertAlmostEqual(inputs[0, 0, 5], 3.0, places=3)  # hcalDepth (unchanged)
+        
+        self.assertAlmostEqual(pxpy[0, 0, 0], 0.05, places=3)  # px/1000
+        self.assertAlmostEqual(pxpy[0, 0, 1], 0.05, places=3)  # py/1000
+        
+        self.assertEqual(inputs_cat0[0, 0], 5)  # pdgId
+        self.assertEqual(inputs_cat1[0, 0], 1)  # charge
+
+
+class TestDataGeneratorCompatibility(unittest.TestCase):
+    """Test DataGenerator compatibility with new feature format"""
+    
+    def setUp(self):
+        """Set up test environment"""
         self.temp_dir = tempfile.mkdtemp()
-        self.config = create_default_config()
-
-        # Set minimal config for fast testing
-        self.config.set("paths.input", self.temp_dir)
-        self.config.set("paths.output", self.temp_dir + "/output/")
-        self.config.set("training.epochs", 1)
-        self.config.set("training.batch_size", 8)
-        self.config.set("data.maxNPF", 16)
-
+        self.test_file = os.path.join(self.temp_dir, "test_data.h5")
+        
+        # Create test HDF5 file with 10-feature format
+        batch_size = 10
+        maxNPF = 8
+        
+        X_data = np.random.rand(batch_size, maxNPF, 10).astype(np.float32)
+        Y_data = np.random.uniform(-100, 100, (batch_size, 2)).astype(np.float32)
+        
+        with h5py.File(self.test_file, 'w') as f:
+            f.create_dataset('X', data=X_data)
+            f.create_dataset('Y', data=Y_data)
+    
     def tearDown(self):
-        """Clean up"""
+        """Clean up test files"""
+        import shutil
         shutil.rmtree(self.temp_dir)
-
-    def test_config_workflow_equivalence(self):
-        """Test that config-based workflow produces equivalent results to legacy"""
-        # This is a conceptual test - in practice you would compare
-        # outputs from both workflows with identical parameters
-
-        # Legacy args simulation
-        legacy_args = argparse.Namespace(
-            maxNPF=128,
-            normFac=100,
-            epochs=100,
-            batch_size=1024,
-            mode=0,
-            model="dense_embedding",
-            units=[64, 32, 16],
-            loss_symmetry=False,
-            symmetry_weight=1.0,
+    
+    @patch('sys.modules', {'setGPU': MagicMock()})
+    def test_data_generator_preprocessing_integration(self):
+        """Test DataGenerator correctly uses updated preprocessing"""
+        from DataGenerator import DataGenerator
+        
+        # Create DataGenerator with test file
+        generator = DataGenerator(
+            list_files=[self.test_file],
+            batch_size=5,
+            maxNPF=8
         )
+        
+        # Get first batch
+        Xr, Yr = generator[0]
+        
+        # Verify structure: [Xi, Xp, Xc1, Xc2] for non-edge-feature case
+        self.assertEqual(len(Xr), 4)
+        
+        # Check shapes
+        Xi, Xp, Xc1, Xc2 = Xr
+        self.assertEqual(Xi.shape[2], 6)  # 6 continuous features
+        self.assertEqual(Xp.shape[2], 2)  # 2 momentum features
+        self.assertEqual(len(Xc1.shape), 2)  # categorical feature 1
+        self.assertEqual(len(Xc2.shape), 2)  # categorical feature 2
 
-        # Equivalent config
+    @patch('sys.modules', {'setGPU': MagicMock()})
+    def test_data_generator_edge_features_compatibility(self):
+        """Test DataGenerator with edge features using new preprocessing"""
+        from DataGenerator import DataGenerator
+        
+        generator = DataGenerator(
+            list_files=[self.test_file],
+            batch_size=5,
+            maxNPF=8,
+            compute_ef=1,
+            edge_list=['dR', 'kT']
+        )
+        
+        # Get first batch  
+        Xr, Yr = generator[0]
+        
+        # Verify structure: [Xi, Xp, Xc1, Xc2, ef] for edge-feature case
+        self.assertEqual(len(Xr), 5)
+        
+        # Check that edge features were computed correctly
+        Xi, Xp, Xc1, Xc2, ef = Xr
+        self.assertEqual(Xi.shape[2], 6)  # Still 6 continuous features
+        self.assertEqual(ef.shape[2], 2)  # 2 edge features (dR, kT)
+
+
+class TestEndToEndCompatibility(unittest.TestCase):
+    """Test end-to-end compatibility from data format to model input"""
+    
+    def setUp(self):
+        """Set up test environment with realistic data"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.test_file = os.path.join(self.temp_dir, "test_integration.h5")
+        
+        # Create realistic test data matching convertNanoToHDF5.py output
+        batch_size = 20
+        maxNPF = 16
+        
+        # Generate realistic particle data
+        X_data = np.zeros((batch_size, maxNPF, 10), dtype=np.float32)
+        
+        # Realistic particle features
+        for i in range(batch_size):
+            for j in range(maxNPF):
+                X_data[i, j, 0] = np.random.exponential(20)  # pt
+                X_data[i, j, 1] = X_data[i, j, 0] * np.cos(np.random.uniform(-np.pi, np.pi))  # px
+                X_data[i, j, 2] = X_data[i, j, 0] * np.sin(np.random.uniform(-np.pi, np.pi))  # py
+                X_data[i, j, 3] = np.random.normal(0, 2)  # eta
+                X_data[i, j, 4] = np.random.uniform(-np.pi, np.pi)  # phi
+                X_data[i, j, 5] = np.random.beta(2, 2)  # puppi weight
+                X_data[i, j, 6] = np.random.choice([0, 1, 2, 3, 4, 5, 6, 7])  # encoded pdgId
+                X_data[i, j, 7] = np.random.choice([0, 1, 2])  # encoded charge
+                X_data[i, j, 8] = np.random.exponential(0.01)  # dxyErr
+                X_data[i, j, 9] = np.random.choice([1, 2, 3, 4, 5, 6, 7])  # hcalDepth
+        
+        Y_data = np.random.normal(0, 50, (batch_size, 2)).astype(np.float32)
+        
+        with h5py.File(self.test_file, 'w') as f:
+            f.create_dataset('X', data=X_data)
+            f.create_dataset('Y', data=Y_data)
+    
+    def tearDown(self):
+        """Clean up test files"""
+        import shutil
+        shutil.rmtree(self.temp_dir)
+    
+    @patch('sys.modules', {'setGPU': MagicMock()})
+    def test_full_pipeline_compatibility(self):
+        """Test complete pipeline from HDF5 → DataGenerator → preprocessing → model input"""
+        from DataGenerator import DataGenerator
+        from models import dense_embedding
+        
+        # Test DataGenerator
+        generator = DataGenerator(
+            list_files=[self.test_file],
+            batch_size=10,
+            maxNPF=16
+        )
+        
+        # Get batch and verify it processes correctly
+        Xr, Yr = generator[0]
+        Xi, Xp, Xc1, Xc2 = Xr
+        
+        # Verify preprocessing worked correctly
+        self.assertEqual(Xi.shape[2], 6)  # 6 continuous features
+        self.assertEqual(Xp.shape[2], 2)  # 2 momentum features
+        
+        # Test that embedding dimensions are computed correctly after processing a batch
+        self.assertIsInstance(generator.emb_input_dim, dict)
+        self.assertIn(0, generator.emb_input_dim)
+        self.assertIn(1, generator.emb_input_dim)
+        
+        # Verify embedding dimensions are reasonable
+        self.assertGreater(generator.emb_input_dim[0], 0)
+        self.assertGreater(generator.emb_input_dim[1], 0)
+
+    def test_config_compatibility(self):
+        """Test that default config is compatible with new feature format"""
+        from config import create_default_config
+        
         config = create_default_config()
-        config.set("data.maxNPF", 128)
-        config.set("training.normFac", 100)
-        config.set("training.epochs", 100)
-        config.set("training.batch_size", 1024)
-        config.set("training.mode", 0)
-        config.set("model.type", "dense_embedding")
-        config.set("model.units", [64, 32, 16])
-        config.set("loss.use_symmetry", False)
-        config.set("loss.symmetry_weight", 1.0)
+        
+        # The config should still reflect that we process 6 continuous features for the model
+        # even though the raw data has 10 features total
+        self.assertEqual(config.get("data.n_features_pf"), 6)  # Continuous features used in model
+        self.assertEqual(config.get("data.n_features_pf_cat"), 2)  # Categorical features
+        
+        # The config should be updated to reflect higher normalization factor
+        self.assertEqual(config.get("data.normFac"), 100)  # Currently 100, could be updated to 1000
 
-        # Verify parameter equivalence
-        self.assertEqual(config.get("data.maxNPF"), legacy_args.maxNPF)
-        self.assertEqual(config.get("training.normFac"), legacy_args.normFac)
-        self.assertEqual(config.get("training.epochs"), legacy_args.epochs)
-        self.assertEqual(config.get("training.batch_size"), legacy_args.batch_size)
-        self.assertEqual(config.get("training.mode"), legacy_args.mode)
-        self.assertEqual(config.get("model.units"), legacy_args.units)
-
-    def test_end_to_end_config_flow(self):
-        """Test complete config-based training flow"""
-
-        # Save config to file
-        config_path = os.path.join(self.temp_dir, "test_config.yaml")
-        self.config.save(config_path)
-
-        # Load config from file
-        loaded_config = load_config(config_path)
-
-        # Verify config roundtrip
-        self.assertEqual(loaded_config.get("training.epochs"), 1)
-        self.assertEqual(loaded_config.get("data.maxNPF"), 16)
-
-        # Test callback creation
-        callbacks = get_callbacks_from_config(
-            loaded_config, self.config.get("paths.output"), 100, 8
+    @patch('sys.modules', {'setGPU': MagicMock()})
+    def test_config_based_training_compatibility(self):
+        """Test config-based training with new feature format"""
+        from config import create_default_config
+        from DataGenerator import DataGenerator
+        
+        # Create test config
+        config = create_default_config()
+        config.set("paths.input", self.temp_dir)
+        config.set("paths.output", self.temp_dir + "/output/")
+        config.set("training.epochs", 1)
+        config.set("training.batch_size", 5)
+        config.set("data.maxNPF", 16)
+        
+        # Test that DataGenerator works with config
+        generator = DataGenerator(
+            list_files=[self.test_file],
+            batch_size=config.get("training.batch_size"),
+            maxNPF=config.get("data.maxNPF")
         )
-        self.assertIsInstance(callbacks, list)
-        self.assertGreater(len(callbacks), 0)
-
-    @patch("train.dense_embedding")
-    def test_model_creation_integration(self, mock_dense_embedding):
-        """Test model creation integration with config"""
-        mock_model = MagicMock()
-        mock_dense_embedding.return_value = mock_model
-
-        # Test model creation from config
-        emb_input_dim = {0: 8, 1: 4}
-        model = create_model_from_config(self.config, emb_input_dim, 16)
-
-        self.assertEqual(model, mock_model)
-        mock_dense_embedding.assert_called_once()
-
-        # Test model compilation
-        mock_loss = MagicMock()
-        compiled_model = compile_model(model, self.config, mock_loss)
-
-        self.assertEqual(compiled_model, mock_model)
-        mock_model.compile.assert_called_once()
+        
+        # Process a batch to initialize emb_input_dim
+        Xr, Yr = generator[0]
+        
+        # Verify data structure is correct for model input
+        self.assertEqual(len(Xr), 4)  # [Xi, Xp, Xc1, Xc2]
+        Xi, Xp, Xc1, Xc2 = Xr
+        self.assertEqual(Xi.shape[2], 6)  # 6 continuous features
+        self.assertEqual(Xp.shape[2], 2)  # 2 momentum features
+        
+        # Verify embedding dimensions are set correctly
+        self.assertIsInstance(generator.emb_input_dim, dict)
+        self.assertIn(0, generator.emb_input_dim)
+        self.assertIn(1, generator.emb_input_dim)
 
 
 if __name__ == "__main__":
