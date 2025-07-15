@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class Dataset(Enum):
-    TTBAR = "TTbar"
+    TTBAR = "TT"
     SINGLE_NEUTRINO = "SingleNeutrino"
     HIGGS_TO_INVISIBLE = "HtoInvisible"
     SUSY = "SUSY"
@@ -351,14 +351,14 @@ def parse_arguments() -> argparse.Namespace:
         '--sig',
         type=str,
         required=True,
-        choices=['TTbar', 'VBFHToBB', 'HtoInvisible', 'SUSY', 'SingleNeutrino'],
+        choices=['TT', 'VBFHToBB', 'HtoInvisible', 'SUSY', 'SingleNeutrino'],
         help='Signal dataset'
     )
     parser.add_argument(
         '--bg',
         type=str,
         required=True,
-        choices=['TTbar', 'SingleNeutrino', 'MinBias'],
+        choices=['TT', 'SingleNeutrino', 'MinBias'],
         help='Background dataset'
     )
     parser.add_argument(
