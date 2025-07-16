@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class Dataset(Enum):
-    TTBAR = "TTbar"
+    TTBAR = "TT"
     SINGLE_NEUTRINO = "SingleNeutrino"
     HIGGS_TO_INVISIBLE = "HtoInvisible"
     SUSY = "SUSY"
@@ -59,8 +59,9 @@ class AnalysisConfig:
     step: float = 2.0
     true_met_threshold: float = 150.0
     bunch_x_frequency_MHz: float = 40
-    trigger_rate_khz: float = 31000.0
+    trigger_rate_MHz: float = 0.03 # 30 kHz 
     max_threshold_gev: int = bin_number * step
+    turn_on_bins: int = 25  
     
 
 
@@ -208,7 +209,50 @@ class RateAnalyzer:
 
         return ml_auc, puppi_auc
 
+    def calculate_turn_on_curves(self, data: DataArrays, rates: Dict[str, np.ndarray])-> Tuple[np.ndarray, np.ndarray]:
+        """Calculate turn-on curve for ML and PUPPI."""
 
+        ml_threshold, puppi_threshold = self.calculate_equiv_thresholds(rates)
+        
+        # bin data by GenMET values
+        gen_met_bins = np.arange(0, self.config.max_threshold_gev, self.config.turn_on_bins)
+        
+        gen_met_indices_signal = np.digitize(data.signal_ml[:, 1], gen_met_bins)
+        
+        met_counts_ml = np.zeros(len(gen_met_bins))  
+        met_counts_puppi = np.zeros(len(gen_met_bins))
+
+        signal_total = np.zeros(len(gen_met_bins))
+        
+
+        for i in range(len(gen_met_bins)):
+            # Count how many events pass the threshold for each GenMET bin
+
+            met_counts_ml[i] = np.count_nonzero((gen_met_indices_signal == i + 1) &
+                                    (data.signal_ml[:, 0] > ml_threshold)) 
+            met_counts_puppi[i] = np.count_nonzero((gen_met_indices_signal == i + 1) &
+                                    (data.signal_puppi[:, 0] > ml_threshold))
+
+            signal_total[i] = np.sum(gen_met_indices_signal == i + 1)
+
+        ml_efficiencies = met_counts_ml / signal_total
+        puppi_efficiencies = met_counts_puppi / signal_total
+        
+        return ml_efficiencies, puppi_efficiencies, ml_threshold, puppi_threshold 
+    
+
+    def calculate_equiv_thresholds(self, rates: Dict[str, np.ndarray]) -> Tuple[float, float]:
+        "Calculate equivalent MET thresholds for PUPPI and ML at 30 kHz trigger rate."    
+
+        MET_values = np.arange(0, self.config.max_threshold_gev, self.config.step)
+        ml_threshold = np.interp(self.config.trigger_rate_MHz, np.flip(rates['ml_signal_rate']), MET_values)
+        puppi_threshold = np.interp(self.config.trigger_rate_MHz, np.flip(rates['puppi_signal_rate']), MET_values)
+
+        logger.info(f'ML MET threshold at {1000*self.config.trigger_rate_MHz} kHz: {ml_threshold:.2f} GeV')
+        logger.info(f'PUPPI MET threshold at {1000*self.config.trigger_rate_MHz} kHz: {puppi_threshold:.2f} GeV')
+        
+        return ml_threshold, puppi_threshold 
+    
 class PlotGenerator:
     """Generates various plots for rate/ROC analysis."""
 
@@ -242,6 +286,32 @@ class PlotGenerator:
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
         logger.info(f"ROC curve saved to {output_path}")
+
+    def plot_turn_on_curves(self, ml_efficiencies: np.ndarray, puppi_efficiencies: np.ndarray, 
+                            ml_threshold: float, puppi_threshold: float) -> None:
+        """Generate turn-on curves for ML and PUPPI."""
+        gen_MET = np.arange(0, self.config.max_threshold_gev, self.config.turn_on_bins)
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(gen_MET, ml_efficiencies, label='ML MET', color='blue', linewidth=2)
+        plt.plot(gen_MET, puppi_efficiencies, label='PUPPI MET', color='red', linewidth=2)
+
+        self._setup_plot_style()
+        plt.xlabel('GenMET (GeV)', fontsize=16)
+        plt.ylabel('Efficiency at 30 kHz L1 Trigger Rate', fontsize=16)
+        plt.title('Turn-On Curves: ML vs PUPPI MET', fontsize=18)
+        plt.xlim(0, 500)
+        plt.ylim(0, 1.1)
+        plt.legend(
+            [f'ML MET (Threshold: {ml_threshold:.2f} GeV)',
+             f'PUPPI MET (Threshold: {puppi_threshold:.2f} GeV)'],
+            fontsize=14
+        )
+
+        output_path = self.output_dir / f'turn_on_curves_{self.signal_sample}_{self.background_sample}.png'
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Turn-on curves saved to {output_path}")
 
     def plot_trigger_rates(self, rates: Dict[str, np.ndarray]) -> None:
         """Generate trigger rate plot."""
@@ -322,6 +392,10 @@ def main(args: argparse.Namespace) -> None:
         logger.info(f"PUPPI AUC: {auc_scores[1]:.4f}")
         plotter.plot_roc_curve(rates, auc_scores)
 
+    elif args.plot == "turn_on":
+        ml_efficiencies, puppi_efficiencies, ml_threshold, puppi_threshold = analyzer.calculate_turn_on_curves(data, rates)
+        plotter.plot_turn_on_curves(ml_efficiencies, puppi_efficiencies, ml_threshold, puppi_threshold)
+
     elif args.plot == "rate":
         plotter.plot_trigger_rates(rates)
 
@@ -351,21 +425,21 @@ def parse_arguments() -> argparse.Namespace:
         '--sig',
         type=str,
         required=True,
-        choices=['TTbar', 'VBFHToBB', 'HtoInvisible', 'SUSY', 'SingleNeutrino'],
+        choices=['TT', 'VBFHToBB', 'HtoInvisible', 'SUSY', 'SingleNeutrino'],
         help='Signal dataset'
     )
     parser.add_argument(
         '--bg',
         type=str,
         required=True,
-        choices=['TTbar', 'SingleNeutrino', 'MinBias'],
+        choices=['TT', 'SingleNeutrino', 'MinBias'],
         help='Background dataset'
     )
     parser.add_argument(
         '--plot',
         type=str,
         required=True,
-        choices=['ROC', 'rate', 'rate_com'],
+        choices=['ROC', 'rate', 'turn_on', 'rate_com'],
         help='Type of plot to generate'
     )
 
