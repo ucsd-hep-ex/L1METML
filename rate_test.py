@@ -61,7 +61,7 @@ class AnalysisConfig:
     bunch_x_frequency_MHz: float = 40
     trigger_rate_MHz: float = 0.03 # 30 kHz 
     max_threshold_gev: int = bin_number * step
-    turn_on_bins: int = 25  
+    turn_on_bin_width: int = 24  
     
 
 
@@ -214,26 +214,31 @@ class RateAnalyzer:
 
         ml_threshold, puppi_threshold = self.calculate_equiv_thresholds(rates)
         
-        # bin data by GenMET values
-        gen_met_bins = np.arange(0, self.config.max_threshold_gev, self.config.turn_on_bins)
-        
-        gen_met_indices_signal = np.digitize(data.signal_ml[:, 1], gen_met_bins) - 1 # -1 for zero-based index
-        
-        ml_num = np.bincount(gen_met_indices_signal[data.signal_ml[:, 0] > ml_threshold], minlength=len(gen_met_bins) - 1)
-        ml_den = np.bincount(gen_met_indices_signal, minlength=len(gen_met_bins) - 1)
+        ml_passed = data.signal_ml[:, 0] > ml_threshold
+        puppi_passed = data.signal_puppi[:, 0] > puppi_threshold
 
-        puppi_num = np.bincount(gen_met_indices_signal[data.signal_puppi[:, 0] > puppi_threshold], minlength=len(gen_met_bins) - 1)
-        puppi_den = np.bincount(gen_met_indices_signal, minlength=len(gen_met_bins) - 1)
+        bins = np.arange(0, self.config.max_threshold_gev + self.config.turn_on_bin_width, self.config.turn_on_bin_width)
 
-        ml_efficiencies = np.divide(ml_num, ml_den,
-                out=np.zeros_like(ml_num, dtype=float),
-                where=ml_den != 0)
-        puppi_efficiencies = np.divide(puppi_num, puppi_den,
-                out=np.zeros_like(puppi_num, dtype=float),
-                where=puppi_den != 0)
+        ml_tot, _ = np.histogram(data.signal_ml[:, 1], bins=bins)
+        ml_pass, _ = np.histogram(data.signal_ml[ml_passed, 1], bins=bins)
+
+        puppi_tot, _ = np.histogram(data.signal_puppi[:, 1], bins=bins)
+        puppi_pass, _ = np.histogram(data.signal_puppi[puppi_passed, 1], bins=bins)
+
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ml_efficiencies = ml_pass / ml_tot
+            ml_err = np.sqrt(ml_efficiencies * (1 - ml_efficiencies) / ml_tot)
+
+            puppi_efficiencies = puppi_pass / puppi_tot
+            puppi_err = np.sqrt(puppi_efficiencies * (1 - puppi_efficiencies) / puppi_tot)
         
-        return ml_efficiencies, puppi_efficiencies, ml_threshold, puppi_threshold 
-    
+        # replacing NaN and inf values with numbers for plotting
+        ml_efficiencies = np.nan_to_num(ml_efficiencies, nan=0.0, posinf=1.0, neginf=0.0)
+        puppi_efficiencies = np.nan_to_num(puppi_efficiencies, nan=0.0, posinf=1.0, neginf=0.0)
+
+        centers = 0.5 * (bins[1:] + bins[:-1])  # Calculate bin centers for plotting
+
+        return ml_efficiencies, ml_err, ml_threshold, puppi_efficiencies, puppi_err, puppi_threshold, centers
 
     def calculate_equiv_thresholds(self, rates: Dict[str, np.ndarray]) -> Tuple[float, float]:
         "Calculate equivalent MET thresholds for PUPPI and ML at 30 kHz trigger rate."    
@@ -281,15 +286,23 @@ class PlotGenerator:
         plt.close()
         logger.info(f"ROC curve saved to {output_path}")
 
-    def plot_turn_on_curves(self, ml_efficiencies: np.ndarray, puppi_efficiencies: np.ndarray, 
-                            ml_threshold: float, puppi_threshold: float) -> None:
+    def plot_turn_on_curves(
+            self, 
+            ml_efficiencies: np.ndarray, 
+            ml_err: np.ndarray,
+            ml_threshold: float,
+            puppi_efficiencies: np.ndarray,
+            puppi_err: np.ndarray,
+            puppi_threshold: float,
+            centers: np.ndarray) -> None: 
+            
         """Generate turn-on curves for ML and PUPPI."""
-        gen_MET = np.arange(0, self.config.max_threshold_gev, self.config.turn_on_bins)
 
         plt.figure(figsize=(8, 6))
-        plt.plot(gen_MET, ml_efficiencies, label='ML MET', color='blue', linewidth=2)
-        plt.plot(gen_MET, puppi_efficiencies, label='PUPPI MET', color='red', linewidth=2)
-
+        plt.errorbar(centers, ml_efficiencies, yerr= ml_err, linestyle='-',
+                    label='L1DeepMET', color='blue', linewidth=2, capsize=2)
+        plt.errorbar(centers, puppi_efficiencies, yerr= puppi_err, linestyle='--',
+                    label='PUPPI MET', color='red', linewidth=2, capsize=2)
         self._setup_plot_style()
         plt.xlabel('GenMET (GeV)', fontsize=16)
         plt.ylabel('Efficiency at 30 kHz L1 Trigger Rate', fontsize=16)
@@ -387,9 +400,24 @@ def main(args: argparse.Namespace) -> None:
         plotter.plot_roc_curve(rates, auc_scores)
 
     elif args.plot == "turn_on":
-        ml_efficiencies, puppi_efficiencies, ml_threshold, puppi_threshold = analyzer.calculate_turn_on_curves(data, rates)
-        plotter.plot_turn_on_curves(ml_efficiencies, puppi_efficiencies, ml_threshold, puppi_threshold)
-
+        (
+            ml_efficiencies, 
+            ml_err, 
+            ml_threshold,
+            puppi_efficiencies, 
+            puppi_err,
+            puppi_threshold,
+            centers )= analyzer.calculate_turn_on_curves(data, rates)
+        plotter.plot_turn_on_curves(
+            ml_efficiencies, 
+            ml_err, 
+            ml_threshold,
+            puppi_efficiencies, 
+            puppi_err,
+            puppi_threshold,
+            centers
+        ) 
+            
     elif args.plot == "rate":
         plotter.plot_trigger_rates(rates)
 
