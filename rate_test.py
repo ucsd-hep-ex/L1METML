@@ -217,26 +217,20 @@ class RateAnalyzer:
         # bin data by GenMET values
         gen_met_bins = np.arange(0, self.config.max_threshold_gev, self.config.turn_on_bins)
         
-        gen_met_indices_signal = np.digitize(data.signal_ml[:, 1], gen_met_bins)
+        gen_met_indices_signal = np.digitize(data.signal_ml[:, 1], gen_met_bins) - 1 # -1 for zero-based index
         
-        met_counts_ml = np.zeros(len(gen_met_bins))  
-        met_counts_puppi = np.zeros(len(gen_met_bins))
+        ml_num = np.bincount(gen_met_indices_signal[data.signal_ml[:, 0] > ml_threshold], minlength=len(gen_met_bins) - 1)
+        ml_den = np.bincount(gen_met_indices_signal, minlength=len(gen_met_bins) - 1)
 
-        signal_total = np.zeros(len(gen_met_bins))
-        
+        puppi_num = np.bincount(gen_met_indices_signal[data.signal_puppi[:, 0] > puppi_threshold], minlength=len(gen_met_bins) - 1)
+        puppi_den = np.bincount(gen_met_indices_signal, minlength=len(gen_met_bins) - 1)
 
-        for i in range(len(gen_met_bins)):
-            # Count how many events pass the threshold for each GenMET bin
-
-            met_counts_ml[i] = np.count_nonzero((gen_met_indices_signal == i + 1) &
-                                    (data.signal_ml[:, 0] > ml_threshold)) 
-            met_counts_puppi[i] = np.count_nonzero((gen_met_indices_signal == i + 1) &
-                                    (data.signal_puppi[:, 0] > ml_threshold))
-
-            signal_total[i] = np.sum(gen_met_indices_signal == i + 1)
-
-        ml_efficiencies = met_counts_ml / signal_total
-        puppi_efficiencies = met_counts_puppi / signal_total
+        ml_efficiencies = np.divide(ml_num, ml_den,
+                out=np.zeros_like(ml_num, dtype=float),
+                where=ml_den != 0)
+        puppi_efficiencies = np.divide(puppi_num, puppi_den,
+                out=np.zeros_like(puppi_num, dtype=float),
+                where=puppi_den != 0)
         
         return ml_efficiencies, puppi_efficiencies, ml_threshold, puppi_threshold 
     
@@ -300,7 +294,7 @@ class PlotGenerator:
         plt.xlabel('GenMET (GeV)', fontsize=16)
         plt.ylabel('Efficiency at 30 kHz L1 Trigger Rate', fontsize=16)
         plt.title('Turn-On Curves: ML vs PUPPI MET', fontsize=18)
-        plt.xlim(0, 500)
+        plt.xlim(0, 600)
         plt.ylim(0, 1.1)
         plt.legend(
             [f'ML MET (Threshold: {ml_threshold:.2f} GeV)',
