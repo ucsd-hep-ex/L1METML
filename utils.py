@@ -38,13 +38,15 @@ def preProcessing(A, normFac, EVT=None):
     eta = A[:, :, 3:4]
     phi = A[:, :, 4:5]
     puppi = A[:, :, 5:6]
+    dxyErr = A[:, :, 8:9]
+    hcalDepth = A[:, :, 9:10]
 
     # remove outliers
-    pt[np.where(np.abs(pt > 500/norm))] = 0.
-    px[np.where(np.abs(px > 500/norm))] = 0.
-    py[np.where(np.abs(py > 500/norm))] = 0.
+    pt[np.where(np.abs(pt) > 500/norm)] = 0.
+    px[np.where(np.abs(px) > 500/norm)] = 0.
+    py[np.where(np.abs(py) > 500/norm)] = 0.
 
-    inputs = np.concatenate((pt, eta, phi, puppi), axis=2)
+    inputs = np.concatenate((pt, eta, phi, puppi, dxyErr, hcalDepth), axis=2)
     pxpy = np.concatenate((px, py), axis=2)
 
     inputs_cat0 = A[:, :, 6]  # encoded PF pdgId
