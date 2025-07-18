@@ -7,6 +7,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 import uproot
+
 # import progressbar
 from tqdm import tqdm
 
@@ -29,12 +30,25 @@ def deltaR(eta1, phi1, eta2, phi2):
     deta = eta1 - eta2
     return np.hypot(deta, dphi)
 
-def HCalDepth(hcal_first1: np.ndarray, hcal_first3: np.ndarray, hcal_first5: np.ndarray) -> np.ndarray:
-    '''calculates the effective center of energy depth in the hadronic calorimeter of Phase-2 HGCal'''
-    if hcal_first5 > 0:
-        depth_weighted = (hcal_first1 * 1.0 + (hcal_first3 - hcal_first1) * 3.0 + (hcal_first5 - hcal_first3) * 5.0) / (hcal_first5)
-    else:
-        depth_weighted = np.zeros_like(hcal_first1, dtype=float)
+
+def HCalDepth(
+    hcal_first1: np.ndarray, hcal_first3: np.ndarray, hcal_first5: np.ndarray
+) -> np.ndarray:
+    """calculates the effective center of energy depth in the hadronic calorimeter of Phase-2 HGCal"""
+
+    # Avoid division by zero by setting a small epsilon for zero values
+    epsilon = 1e-10
+    hcal_first5_safe = np.where(hcal_first5 == 0, epsilon, hcal_first5)
+
+    depth_weighted = (
+        hcal_first1 * 1.0
+        + (hcal_first3 - hcal_first1) * 3.0
+        + (hcal_first5 - hcal_first3) * 5.0
+    ) / hcal_first5_safe
+
+    # Set depth to 0 where there was no energy deposition (original hcal_first5 was 0)
+    depth_weighted = np.where(hcal_first5 == 0, 0.0, depth_weighted)
+
     return depth_weighted
 
 
@@ -123,9 +137,9 @@ def convert_single_file(input_file, output_file, maxevents=-1, is_data=False):
         "L1PuppiCands_pdgId",
         "L1PuppiCands_puppiWeight",
         "L1PuppiCands_dxyErr",
-        'HGCal3DCl_firstHcal1layers',
-        'HGCal3DCl_firstHcal3layers',
-        'HGCal3DCl_firstHcal5layers',
+        "HGCal3DCl_firstHcal1layers",
+        "HGCal3DCl_firstHcal3layers",
+        "HGCal3DCl_firstHcal5layers",
         "HGCal3DCl_hoe",
         "HGCal3DCl_showerlength",
         "HGCal3DCl_coreshowerlength",
@@ -175,11 +189,13 @@ def convert_single_file(input_file, output_file, maxevents=-1, is_data=False):
     pdgid = to_np_array(tree["L1PuppiCands_pdgId"], maxN=maxNPuppi, pad=-999)
     charge = to_np_array(tree["L1PuppiCands_charge"], maxN=maxNPuppi, pad=-999)
     puppiw = to_np_array(tree["L1PuppiCands_puppiWeight"], maxN=maxNPuppi)
-    dxyErr = to_np_array(tree["L1PuppiCands_dxyErr"], maxN=maxNPuppi, pad=-999)
+    dxyErr = to_np_array(
+        tree["L1PuppiCands_dxyErr"], maxN=maxNPuppi, pad=1000
+    )  # padding that doesn't suggest perfect knowledge like zero, remove in pre-process
     hcal_first1 = to_np_array(tree["HGCal3DCl_firstHcal1layers"], maxN=maxNPuppi, pad=0)
     hcal_first3 = to_np_array(tree["HGCal3DCl_firstHcal3layers"], maxN=maxNPuppi, pad=0)
     hcal_first5 = to_np_array(tree["HGCal3DCl_firstHcal5layers"], maxN=maxNPuppi, pad=0)
-    
+
     hcalDepth = HCalDepth(hcal_first1, hcal_first3, hcal_first5)
 
     # Fill feature array
@@ -201,8 +217,6 @@ def convert_single_file(input_file, output_file, maxevents=-1, is_data=False):
     # Fill additional features
     X[:, :, 8] = dxyErr
     X[:, :, 9] = hcalDepth
-    
-
 
     # Truth info
     if not is_data:
