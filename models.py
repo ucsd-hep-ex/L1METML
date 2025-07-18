@@ -252,3 +252,117 @@ def graph_embedding(compute_ef, n_features=6,
     keras_model.get_layer('tmul_{}_3'.format(name)).set_weights([np.transpose(Rr)])
 
     return keras_model
+
+
+def mlp_mixer_embedding(n_features=6,
+                       n_features_cat=2,
+                       activation='relu',
+                       number_of_pupcandis=128,
+                       embedding_input_dim={0: 13, 1: 3},
+                       emb_out_dim=8,
+                       with_bias=True,
+                       t_mode=1,
+                       mixer_blocks=4,
+                       hidden_dim=256,
+                       tokens_mlp_dim=64,
+                       channels_mlp_dim=128,
+                       dropout_rate=0.1):
+    """
+    MLP-Mixer architecture where puppi candidates are treated as tokens (sequence dimension).
+    
+    Args:
+        n_features: Number of continuous features
+        n_features_cat: Number of categorical features  
+        activation: Activation function for MLPs
+        number_of_pupcandis: Number of puppi candidates (tokens)
+        embedding_input_dim: Dictionary mapping categorical feature index to vocab size
+        emb_out_dim: Embedding output dimension
+        with_bias: Whether to use bias in MET computation
+        t_mode: training mode, 0: regressing MET directly, 1: regressing the MET weights
+        mixer_blocks
+        hidden_dim: Hidden dimension (channels)
+        tokens_mlp_dim: Hidden dimension for token-mixing MLP
+        channels_mlp_dim: Hidden dimension for channel-mixing MLP
+        dropout_rate
+    """
+    # TODO: modeled after dense_embedding model, check what needs to change
+    inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input_cont')
+    pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
+
+    embeddings = []
+    inputs = [inputs_cont, pxpy]
+    
+    for i_emb in range(n_features_cat):
+        input_cat = Input(shape=(number_of_pupcandis, ), name='input_cat{}'.format(i_emb))
+        inputs.append(input_cat)
+        embedding = Embedding(
+            input_dim=embedding_input_dim[i_emb],
+            output_dim=emb_out_dim,
+            embeddings_initializer=initializers.RandomNormal(
+                mean=0,
+                stddev=0.4/emb_out_dim),
+            name='embedding{}'.format(i_emb))(input_cat)
+        embeddings.append(embedding)
+
+    emb_concat = Concatenate()(embeddings)
+    x = Concatenate()([inputs_cont, emb_concat])  # Shape: (batch, tokens, channels)
+    
+    x = Dense(hidden_dim, kernel_initializer='lecun_uniform', name='patch_projection')(x)
+    x = BatchNormalization()(x)
+    
+    # MLP-Mixer blocks
+    for block_idx in range(mixer_blocks):
+        residual = x
+        x = BatchNormalization(name=f'norm1_block_{block_idx}')(x)
+        
+        x = Permute((2, 1), name=f'transpose_for_token_mix_{block_idx}')(x)  # (batch, channels, tokens)
+        x = Dense(tokens_mlp_dim, activation=activation, kernel_initializer='lecun_uniform', 
+                 name=f'token_mix_1_{block_idx}')(x)
+        x = Dropout(dropout_rate, name=f'token_mix_dropout_1_{block_idx}')(x)
+        x = Dense(number_of_pupcandis, kernel_initializer='lecun_uniform', 
+                 name=f'token_mix_2_{block_idx}')(x)
+        x = Dropout(dropout_rate, name=f'token_mix_dropout_2_{block_idx}')(x)
+        x = Permute((2, 1), name=f'transpose_back_token_mix_{block_idx}')(x)  # (batch, tokens, channels)
+        
+        x = Add(name=f'residual_1_{block_idx}')([x, residual])
+        
+        residual = x
+        x = BatchNormalization(name=f'norm2_block_{block_idx}')(x)
+        
+        x = Dense(channels_mlp_dim, activation=activation, kernel_initializer='lecun_uniform',
+                 name=f'channel_mix_1_{block_idx}')(x)
+        x = Dropout(dropout_rate, name=f'channel_mix_dropout_1_{block_idx}')(x)
+        x = Dense(hidden_dim, kernel_initializer='lecun_uniform',
+                 name=f'channel_mix_2_{block_idx}')(x)
+        x = Dropout(dropout_rate, name=f'channel_mix_dropout_2_{block_idx}')(x)
+        
+        x = Add(name=f'residual_2_{block_idx}')([x, residual])
+    
+    x = BatchNormalization(name='final_norm')(x)
+    
+    if t_mode == 0:
+        x = GlobalAveragePooling1D(name='pool')(x)
+        x = Dense(2, name='output', activation='linear')(x)
+    
+    elif t_mode == 1:
+        if with_bias:
+            b = Dense(2, name='met_bias', activation='linear', 
+                     kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+            pxpy = Add()([pxpy, b])
+        
+        w = Dense(1, name='met_weight', activation='linear', 
+                 kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
+        x = Multiply()([w, pxpy])
+        x = GlobalAveragePooling1D(name='output')(x)
+    
+    outputs = x
+    
+    keras_model = Model(inputs=inputs, outputs=outputs)
+    
+    if t_mode == 1:
+        keras_model.get_layer('met_weight_minus_one').set_weights([
+            np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])
+        ])
+    
+    return keras_model
