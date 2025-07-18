@@ -1,11 +1,12 @@
 import argparse
 import itertools
 import os
+import random
 
 # import setGPU
 import time
 from glob import glob
-import random
+
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
@@ -65,7 +66,7 @@ def get_callbacks_from_config(
     callbacks.append(clr)
 
     # ReduceLROnPlateau
-    #TODO: not implemented in config, confliocts with cyclical learning rate
+    # TODO: not implemented in config, confliocts with cyclical learning rate
 
     # Terminate on NaN
     stop_on_nan = tensorflow.keras.callbacks.TerminateOnNaN()
@@ -217,7 +218,7 @@ def train_dataGenerator_from_config(config: Config):
     t_mode = config.get("training.mode")
     inputPath = config.get("paths.input")
     path_out = config.get("paths.output")
-    
+
     # Ensure path_out ends with a slash for proper file path concatenation
     if not path_out.endswith("/"):
         path_out += "/"
@@ -227,7 +228,7 @@ def train_dataGenerator_from_config(config: Config):
     edge_list = config.get("data.edge_features", [])
 
     # File handling
-    filesList = glob(os.path.join(inputPath, "*root"))
+    filesList = glob(os.path.join(inputPath, "*.h5"))
     filesList.sort(reverse=True)
     random.shuffle(filesList)
 
@@ -925,7 +926,6 @@ def main():
         action="store",
         type=int,
         required=False,
-        default=100,
         help="number of epochs to train for",
     )
     parser.add_argument(
@@ -933,7 +933,6 @@ def main():
         action="store",
         type=int,
         required=False,
-        default=1024,
         help="batch size",
     )
     parser.add_argument(
@@ -972,7 +971,7 @@ def main():
         action="store",
         type=int,
         required=False,
-        default=100,
+        default=128,
         help="maximum number of PUPPI candidates",
     )
     parser.add_argument(
@@ -1005,8 +1004,7 @@ def main():
     parser.add_argument(
         "--symmetry-weight",
         type=float,
-        default=1.0,
-        help="Weight for symmetry penalty term (default: 1.0)",
+        help="Weight for symmetry penalty term",
     )
     args = parser.parse_args()
     workflowType = args.workflowType
