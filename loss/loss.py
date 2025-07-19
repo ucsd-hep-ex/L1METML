@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow import keras
 import tensorflow.keras.backend as K
 
-def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1):
+def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1, mse_weight=1):
     '''
     customized loss function to improve the recoil response,
     by balancing the response above one and below one
@@ -56,7 +56,7 @@ def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1):
         #dev += tf.abs(tf.reduce_sum(upar_pred_pos_bin5) + tf.reduce_sum(upar_pred_neg_bin5))
         dev /= norm
 
-        mse_loss = 0.5*normFac**2*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
+        mse_loss = mse_weight*0.5*normFac**2*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
         base_loss = mse_loss + 7000.*dev
         #loss += 200.*dev
         if use_symmetry:
@@ -78,6 +78,7 @@ def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1):
             # Combine base loss with symmetry penalty
             total_loss = base_loss + symmetry_weight * symmetry_penalty
             return total_loss
+        
         else:
             return base_loss
         
