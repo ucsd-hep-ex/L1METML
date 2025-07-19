@@ -27,7 +27,7 @@ from config import Config, create_default_config, load_config, merge_config_with
 from cyclical_learning_rate import CyclicLR
 from DataGenerator import DataGenerator
 from loss import custom_loss_wrapper
-from models import dense_embedding, dense_embedding_quantized, graph_embedding
+from models import mlp_mixer_embedding, dense_embedding, dense_embedding_quantized, graph_embedding
 from pruning.utils import apply_model_pruning, get_pruning_callbacks, get_pruning_config
 from utils import MakePlots, convertXY2PtPhi, preProcessing, read_input
 from Write_MET_binned_histogram import (
@@ -176,6 +176,23 @@ def create_model_from_config(config: Config, emb_input_dim: int, maxNPF: int):
             compute_ef=compute_ef,
             edge_list=edge_list,
         )
+    elif model_type == "mlp-mixer":
+        return mlp_mixer_embedding(
+            n_features=n_features_pf,
+            n_features_cat= n_features_pf_cat,
+            activation=activation,
+            number_of_pupcandis=maxNPF,
+            embedding_input_dim=emb_input_dim,
+            emb_out_dim=emb_out_dim,
+            with_bias=with_bias,
+            t_mode=t_mode,
+            dropout_rate=config.get("model.dropout_rate"),
+            mixer_blocks=config.get("model.mixer blocks"),
+            hidden_dim=config.get("model.hidden_dim"),
+            tokens_mlp_dim=config.get("model.tokens_mlp_dim"),
+            channels_mlp_dim=config.get("model.channels_mlp_dim"),
+        )
+
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
@@ -979,8 +996,7 @@ def main():
         "--model",
         action="store",
         required=False,
-        choices=["dense_embedding", "graph_embedding", "node_select"],
-        default="dense_embedding",
+        choices=["dense_embedding", "graph_embedding", "node_select", "mlp-mixer"],
         help="optional argument: model",
     )
     parser.add_argument(
