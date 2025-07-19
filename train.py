@@ -235,6 +235,8 @@ def train_dataGenerator_from_config(config: Config):
         use_symmetry=config.get("loss.use_symmetry", False),
         symmetry_weight=config.get("loss.symmetry_weight", 1.0),
         mse_weight=config.get("loss.mse_weight"),
+        use_mae=config.get("loss.use_mae"),
+        mae_weight=config.get("loss.mae_weight")
     )
 
     # Training parameters
