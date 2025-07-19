@@ -21,12 +21,14 @@ from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     TensorBoard,
 )
+from tensorflow_model_optimization.sparsity.keras import strip_pruning
 
 from config import Config, create_default_config, load_config, merge_config_with_args
 from cyclical_learning_rate import CyclicLR
 from DataGenerator import DataGenerator
 from loss import custom_loss_wrapper
 from models import dense_embedding, dense_embedding_quantized, graph_embedding
+from pruning.utils import apply_model_pruning, get_pruning_callbacks, get_pruning_config
 from utils import MakePlots, convertXY2PtPhi, preProcessing, read_input
 from Write_MET_binned_histogram import (
     MET_binned_predict_mean_opaque,
@@ -100,6 +102,11 @@ def get_callbacks_from_config(
         write_steps_per_second=True,
     )
     callbacks.append(tensorboard)
+
+    if config.get("pruning.prune"):
+        callbacks.extend(
+            get_pruning_callbacks(path_out, config.get("pruning.target_sparsity"))
+        )
 
     return callbacks
 
@@ -210,6 +217,7 @@ def train_dataGenerator_from_config(config: Config):
         normFac=normFac,
         use_symmetry=config.get("loss.use_symmetry", False),
         symmetry_weight=config.get("loss.symmetry_weight", 1.0),
+        mse_weight=config.get("loss.mse_weight"),
     )
 
     # Training parameters
@@ -281,8 +289,22 @@ def train_dataGenerator_from_config(config: Config):
     # get first batch to determine input dimensions
     Xr_train, Yr_train = trainGenerator[0]
 
-    # create and compile model
-    keras_model = create_model_from_config(config, trainGenerator.emb_input_dim, maxNPF)
+    # create model
+    if config.get("pruning.prune"):
+        pruning_config = get_pruning_config(config)
+
+        keras_model = create_model_from_config(
+            config, trainGenerator.emb_input_dim, maxNPF
+        )
+        keras_model = apply_model_pruning(
+            keras_model, pruning_config, config.get("model.type")
+        )
+
+    else:
+        keras_model = create_model_from_config(
+            config, trainGenerator.emb_input_dim, maxNPF
+        )
+
     keras_model = compile_model(keras_model, config, custom_loss)
 
     # get callbacks
@@ -302,6 +324,10 @@ def train_dataGenerator_from_config(config: Config):
         callbacks=callbacks,
     )
     end_time = time.time()
+
+    if config.get("pruning.prune"):
+        # Strip pruning from the model after training
+        keras_model = strip_pruning(keras_model)
 
     # Testing and results
     predict_test = keras_model.predict(testGenerator) * normFac
