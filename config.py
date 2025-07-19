@@ -113,9 +113,11 @@ def create_default_config() -> Config:
             "normFac": 100,
         },
         "pruning": {
-            "prune": False,
-            "pruning_schedule": None,
+            "prune": False, 
+            "pruning_schedule": "polynomial",
             "target_sparsity": 0.75,
+            "begin_step": 2000,
+            "frequency": 100,
         },
         "loss": {"use_symmetry": False, "symmetry_weight": 1.0},
         "quantization": {"enabled": False, "total_bits": 7, "int_bits": 2},
