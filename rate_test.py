@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class Dataset(Enum):
     TTBAR = "TT"
     SINGLE_NEUTRINO = "SingleNeutrino"
-    HIGGS_TO_INVISIBLE = "HtoInvisible"
+    HIGGS_TO_INVISIBLE = "VBFHToInvisible"
     SUSY = "SUSY"
     VBF_H_TO_BB = "VBFHToBB"
     MIN_BIAS = "MinBias"
@@ -301,7 +301,7 @@ class PlotGenerator:
         plt.figure(figsize=(8, 6))
         plt.errorbar(centers, ml_efficiencies, yerr= ml_err, linestyle='-',
                     label='L1DeepMET', color='blue', linewidth=2, capsize=2)
-        plt.errorbar(centers, puppi_efficiencies, yerr= puppi_err, linestyle='--',
+        plt.errorbar(centers, puppi_efficiencies, yerr= puppi_err, linestyle='-',
                     label='PUPPI MET', color='red', linewidth=2, capsize=2)
         self._setup_plot_style()
         plt.xlabel('GenMET (GeV)', fontsize=16)
@@ -447,7 +447,7 @@ def parse_arguments() -> argparse.Namespace:
         '--sig',
         type=str,
         required=True,
-        choices=['TT', 'VBFHToBB', 'HtoInvisible', 'SUSY', 'SingleNeutrino'],
+        choices=['TT', 'VBFHToBB', 'VBFHToInvisible', 'SUSY', 'SingleNeutrino'],
         help='Signal dataset'
     )
     parser.add_argument(
