@@ -1,0 +1,49 @@
+callbacks:
+  cyclical_lr:
+    base_lr: 0.0003
+    max_lr: 0.001
+    mode: triangular2
+  early_stopping:
+    monitor: val_loss
+    patience: 10
+pruning:
+  prune: true 
+  pruning_schedule: polynomial
+  target_sparsity: 0.75
+  begin_step: 2000
+  end_step: 100000
+  frequency: 100
+data:
+  compute_edge_feat: 0
+  edge_features: []
+  maxNPF: 128
+  n_features_pf: 7
+  n_features_pf_cat: 2
+  normFac: 100
+  preprocessed: true
+loss:
+  symmetry_weight: 1.0
+  use_symmetry: false
+  mse_weight: 12.0
+model:
+  activation: tanh
+  emb_out_dim: 8
+  type: dense_embedding
+  units:
+  - 32
+  - 16
+  with_bias: false
+optimizer:
+  clipnorm: 1.0
+  learning_rate: 1.0
+  type: adam
+quantization:
+  enabled: false
+  int_bits: 2
+  total_bits: 7
+training:
+  batch_size: 512
+  epochs: 250
+  mode: 1
+  normFac: 100
+  workflow_type: dataGenerator
