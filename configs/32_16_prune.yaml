@@ -7,7 +7,7 @@ callbacks:
     monitor: val_loss
     patience: 10
 pruning:
-  prune: true 
+  prune: false 
   pruning_schedule: polynomial
   target_sparsity: 0.75
   begin_step: 2000
@@ -24,7 +24,9 @@ data:
 loss:
   symmetry_weight: 1.0
   use_symmetry: false
-  mse_weight: 12.0
+  mse_weight: 5.0
+  use_mae: true
+  mae_weight: 2.0
 model:
   activation: tanh
   emb_out_dim: 8
