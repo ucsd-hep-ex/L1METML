@@ -2,7 +2,9 @@ import tensorflow as tf
 from tensorflow import keras
 import tensorflow.keras.backend as K
 
-def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1, mse_weight=1, use_mae=False, mae_weight=1):
+def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1, mse_weight=1, 
+                        use_mae=False, mae_weight=1, baseline_loss=False, add_respcorr=False, 
+                        respcorr_factor=1000):
     '''
     customized loss function to improve the recoil response,
     by balancing the response above one and below one
@@ -56,8 +58,8 @@ def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1, mse_we
         #dev += tf.abs(tf.reduce_sum(upar_pred_pos_bin5) + tf.reduce_sum(upar_pred_neg_bin5))
         dev /= norm
 
-        mse_loss = mse_weight*0.5*normFac**2*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
-        base_loss = mse_loss + 7000.*dev
+        #mse_loss = mse_weight*0.5*normFac**2*K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)
+        #base_loss = mse_loss + 7000.*dev
         #loss += 200.*dev
         if use_symmetry:
             # Calculate residuals
@@ -76,13 +78,21 @@ def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1, mse_we
             symmetry_penalty = mean_penalty
             
             # Combine base loss with symmetry penalty
-            total_loss = base_loss + symmetry_weight * symmetry_penalty
+            total_loss = symmetry_weight * symmetry_penalty
             return total_loss
         if use_mae:
             mae_loss = mae_weight * K.mean(K.abs(px_pred - px_truth) + K.abs(py_pred - py_truth))
-            return base_loss + mae_loss
+            return mae_loss
+        elif baseline_loss:
+            #TODO: if-logic currently not super robust, improve later
+            mae_loss = mae_weight * K.mean(K.abs(px_pred - px_truth) + K.abs(py_pred - py_truth))
+            mse_loss = mse_weight * K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)/1000
+            total_loss = mae_loss + mse_loss
+            if add_respcorr:
+                total_loss += respcorr_factor * dev
+
+            return total_loss
         else:
-            return base_loss
-        
+            raise ValueError("No loss type specified, please set use_symmetry, use_mae or baseline_loss to True")
         
     return custom_loss
