@@ -1,15 +1,22 @@
 callbacks:
+  learning_rate:
+    type: cosine_decay #currently doesn't work other than setting learning rate
+    initial_learning_rate: 0.01
+    decay_steps: 100000
+    alpha: 0.0
   cyclical_lr:
-    base_lr: 0.0003
+    base_lr: 0.003
     max_lr: 0.001
     mode: triangular2
   early_stopping:
     monitor: val_loss
-    patience: 10
+    patience: 40
+  reduce_lr_on_plateau:
+    reduce: true
 pruning:
   prune: false 
   pruning_schedule: polynomial
-  target_sparsity: 0.75
+  target_sparsity: 0.40
   begin_step: 2000
   end_step: 100000
   frequency: 100
@@ -24,9 +31,11 @@ data:
 loss:
   symmetry_weight: 1.0
   use_symmetry: false
-  mse_weight: 5.0
-  use_mae: true
+  mse_weight: 1.0
+  baseline_loss: true
   mae_weight: 2.0
+  add_respcorr: true
+  respcorr_factor: 4.0
 model:
   activation: tanh
   emb_out_dim: 8
