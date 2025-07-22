@@ -1,11 +1,21 @@
 callbacks:
-  cyclical_lr:
-    base_lr: 0.0003
-    max_lr: 0.001
-    mode: triangular2
+  learning_rate:
+    type: #cosine_decay #currently doesn't work other than setting learning rate
+    initial_learning_rate: 0.1
+    decay_steps: 100000
+    alpha: 0.0
   early_stopping:
     monitor: val_loss
     patience: 10
+  reduce_lr_on_plateau:
+    reduce: true
+  pruning:
+    prune: false 
+    pruning_schedule: polynomial
+    target_sparsity: 0.75
+    begin_step: 2000
+    end_step: 100000
+    frequency: 100
 data:
   compute_edge_feat: 0
   edge_features: []
@@ -17,8 +27,11 @@ data:
 loss:
   symmetry_weight: 1.0
   use_symmetry: false
-  use_resolution: false
-  mse_weight: 5.0
+  mse_weight: 1.0
+  baseline_loss: true
+  mae_weight: 1.0
+  add_respcorr: true
+  respcorr_factor: 200
 model:
   activation: tanh
   emb_out_dim: 8
@@ -38,8 +51,8 @@ quantization:
   int_bits: 2
   total_bits: 7
 training:
-  batch_size: 256
-  epochs: 200
-  mode: 1
+  batch_size: 512
+  epochs: 250
+  mode: 2
   normFac: 100
   workflow_type: dataGenerator
