@@ -78,7 +78,7 @@ def dense_embedding(n_features=6,
     
     if t_mode == 1:
         keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
-    if t_mode == 2:
+    elif t_mode == 2:
         keras_model.get_layer('pmet_weight_minus_one').set_weights([np.array([1.,1.]), np.array([-1.,-1.]), np.array([0.,0.]), np.array([1., 1.])])
     return keras_model
 
