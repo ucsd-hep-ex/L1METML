@@ -1,13 +1,9 @@
 callbacks:
   learning_rate:
-    type: cosine_decay #currently doesn't work other than setting learning rate
-    initial_learning_rate: 0.01
+    type: #cosine_decay #currently doesn't work other than setting learning rate
+    initial_learning_rate: 0.1
     decay_steps: 100000
     alpha: 0.0
-  cyclical_lr:
-    base_lr: 0.003
-    max_lr: 0.001
-    mode: triangular2
   early_stopping:
     monitor: val_loss
     patience: 40
@@ -33,9 +29,9 @@ loss:
   use_symmetry: false
   mse_weight: 1.0
   baseline_loss: true
-  mae_weight: 2.0
+  mae_weight: 1.0
   add_respcorr: true
-  respcorr_factor: 4.0
+  respcorr_factor: 1.0
 model:
   activation: tanh
   emb_out_dim: 8
@@ -46,7 +42,7 @@ model:
   with_bias: false
 optimizer:
   clipnorm: 1.0
-  learning_rate: 1.0
+  learning_rate: 0.01
   type: adam
 quantization:
   enabled: false

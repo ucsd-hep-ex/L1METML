@@ -85,6 +85,7 @@ def custom_loss_wrapper(normFac=1, use_symmetry=False, symmetry_weight=1, mse_we
             return mae_loss
         elif baseline_loss:
             #TODO: if-logic currently not super robust, improve later
+            
             mae_loss = mae_weight * K.mean(K.abs(px_pred - px_truth) + K.abs(py_pred - py_truth))
             mse_loss = mse_weight * K.mean((px_pred - px_truth)**2 + (py_pred - py_truth)**2)/1000
             total_loss = mae_loss + mse_loss

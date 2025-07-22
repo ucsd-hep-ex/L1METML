@@ -247,7 +247,7 @@ def compile_model(model, config: Config, custom_loss):
             loss=custom_loss,
             metrics=["mean_absolute_error", "mean_squared_error"],
         )
-    elif t_mode == 1:
+    elif t_mode == 1 or t_mode == 2:
         optimizer = optimizers.Adam(
             lr=optimizer_config.get("learning_rate", 1.0),
             clipnorm=optimizer_config.get("clipnorm", 1.0),
@@ -708,7 +708,7 @@ def train_dataGenerator(args):
             metrics=["mean_absolute_error", "mean_squared_error"],
         )
         verbose = 1
-    elif t_mode == 1:
+    elif t_mode == 1 or t_mode == 2:
         optimizer = optimizers.Adam(lr=1.0, clipnorm=1.0)
         keras_model.compile(
             loss=custom_loss,

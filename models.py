@@ -60,13 +60,26 @@ def dense_embedding(n_features=6,
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
         x = Multiply()([w, pxpy])
 
-        x = GlobalAveragePooling1D(name='output')(x)
+        #x = GlobalAveragePooling1D(name='output')(x)
+        x = Lambda(lambda x: K.sum(x, axis=1), name='output')(x)
+
+    if t_mode == 2: # regresses a single met weight rather than 128
+        w = Dense(1, name='puppi_weights', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        w = Lambda(lambda x: K.sum(x, axis=1), name='met_weight')(w) 
+
+        pmet = Lambda(lambda x: K.sum(x, axis=1), name='pmet')(pxpy)
+        pmet = BatchNormalization(trainable=False, name='pmet_weight_minus_one', epsilon=False)(pmet)
+
+        x = Multiply()([w, pmet])
+
     outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
-
-    keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
-
+    
+    if t_mode == 1:
+        keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
+    elif t_mode == 2:
+        keras_model.get_layer('pmet_weight_minus_one').set_weights([np.array([1.,1.]), np.array([-1.,-1.]), np.array([0.,0.]), np.array([1., 1.])])
     return keras_model
 
 
@@ -355,7 +368,15 @@ def mlp_mixer_embedding(n_features=6,
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
         x = Multiply()([w, pxpy])
         x = GlobalAveragePooling1D(name='output')(x)
-    
+    elif t_mode == 2: # regresses a single met weight rather than 128
+        w = Dense(1, name='puppi_weights', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        w = Lambda(lambda x: K.sum(x, axis=1), name='met_weight')(w) 
+
+        pmet = Lambda(lambda x: K.sum(x, axis=1), name='pmet')(pxpy)
+        pmet = BatchNormalization(trainable=False, name='pmet_weight_minus_one', epsilon=False)(pmet)
+
+        x = Multiply()([w, pmet])
+
     outputs = x
     
     keras_model = Model(inputs=inputs, outputs=outputs)
@@ -364,5 +385,10 @@ def mlp_mixer_embedding(n_features=6,
         keras_model.get_layer('met_weight_minus_one').set_weights([
             np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])
         ])
+    if t_mode == 2:
+        keras_model.get_layer('pmet_weight_minus_one').set_weights([
+            np.array([1., 1.]), np.array([-1., -1.]), np.array([0., 0.]), np.array([1., 1.])
+        ])
+    
     
     return keras_model
