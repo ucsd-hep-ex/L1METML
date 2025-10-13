@@ -11,6 +11,21 @@ Create an anaconda environment with Python 3.6 and install packages needed to ru
 bash conda_setup.sh
 ```
 
+### Development Setup
+For code quality and consistent formatting, install pre-commit hooks:
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install the git hooks
+pre-commit install
+
+# Optionally, run on all files once
+pre-commit run --all-files
+```
+
+This will automatically format your code and check for common issues before each commit.
+
 ### Convert
 The TTBar sample used in `convert-uproot.py` is located in
 ```
