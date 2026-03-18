@@ -4,8 +4,6 @@ import tensorflow.keras.backend as K
 import tensorflow as tf
 from tensorflow import slice
 from tensorflow.keras import initializers
-import qkeras
-from qkeras.qlayers import QDense, QActivation
 import numpy as np
 import itertools
 
@@ -40,8 +38,13 @@ def dense_embedding(n_features=6,
 
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
-    emb_concat = Concatenate()(embeddings)
-    x = Concatenate()([inputs_cont, emb_concat])
+    if len(embeddings) == 0:
+        x = inputs_cont
+    elif len(embeddings) == 1:
+        x = Concatenate()([inputs_cont, embeddings[0]])
+    else:
+        emb_concat = Concatenate()(embeddings)
+        x = Concatenate()([inputs_cont, emb_concat])
 
     for i_dense in range(n_dense_layers):
         x = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(x)
@@ -65,7 +68,7 @@ def dense_embedding(n_features=6,
 
     if t_mode == 2: # regresses a single met weight rather than 128
         w = Dense(1, name='puppi_weights', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
-        w = Lambda(lambda x: K.sum(x, axis=1), name='met_weight')(w) 
+        w = Lambda(lambda x: K.sum(x, axis=1), name='met_weight')(w)
 
         pmet = Lambda(lambda x: K.sum(x, axis=1), name='pmet')(pxpy)
         pmet = BatchNormalization(trainable=False, name='pmet_weight_minus_one', epsilon=False)(pmet)
@@ -75,7 +78,7 @@ def dense_embedding(n_features=6,
     outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
-    
+
     if t_mode == 1:
         keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
     elif t_mode == 2:
@@ -99,6 +102,8 @@ def dense_embedding_quantized(n_features=6,
                               alpha=1,
                               use_stochastic_rounding=False,
                               units=[64, 32, 16]):
+    import qkeras
+    from qkeras.qlayers import QDense, QActivation
     n_dense_layers = len(units)
 
     logit_quantizer = getattr(qkeras.quantizers, logit_quantizer)(logit_total_bits, logit_int_bits, alpha=alpha, use_stochastic_rounding=use_stochastic_rounding)
@@ -123,8 +128,13 @@ def dense_embedding_quantized(n_features=6,
 
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
-    emb_concat = Concatenate()(embeddings)
-    x = Concatenate()([inputs_cont, emb_concat])
+    if len(embeddings) == 0:
+        x = inputs_cont
+    elif len(embeddings) == 1:
+        x = Concatenate()([inputs_cont, embeddings[0]])
+    else:
+        emb_concat = Concatenate()(embeddings)
+        x = Concatenate()([inputs_cont, emb_concat])
 
     for i_dense in range(n_dense_layers):
         x = QDense(units[i_dense], kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer='lecun_uniform')(x)
@@ -133,8 +143,7 @@ def dense_embedding_quantized(n_features=6,
 
     if t_mode == 0:
         x = qkeras.qpooling.QGlobalAveragePooling1D(name='pool', quantizer=logit_quantizer)(x)
-        # pool size?
-        outputs = QDense(2, name='output', bias_quantizer=logit_quantizer, kernel_quantizer=logit_quantizer, activation='linear')(x)
+        x = QDense(2, name='output', bias_quantizer=logit_quantizer, kernel_quantizer=logit_quantizer, activation='linear')(x)
 
     if t_mode == 1:
         if with_bias:
@@ -143,13 +152,14 @@ def dense_embedding_quantized(n_features=6,
         w = QDense(1, name='met_weight', kernel_quantizer=logit_quantizer, bias_quantizer=logit_quantizer, kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
         w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
         x = Multiply()([w, pxpy])
-
         x = GlobalAveragePooling1D(name='output')(x)
+
     outputs = x
 
     keras_model = Model(inputs=inputs, outputs=outputs)
 
-    keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
+    if t_mode == 1:
+        keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
 
     return keras_model
 
@@ -202,8 +212,13 @@ def graph_embedding(compute_ef, n_features=6,
 
     # can concatenate all 3 if updated in hls4ml, for now; do it pairwise
     # x = Concatenate()([inputs_cont] + embeddings)
-    emb_concat = Concatenate()(embeddings)
-    x = Concatenate()([inputs_cont, emb_concat])
+    if len(embeddings) == 0:
+        x = inputs_cont
+    elif len(embeddings) == 1:
+        x = Concatenate()([inputs_cont, embeddings[0]])
+    else:
+        emb_concat = Concatenate()(embeddings)
+        x = Concatenate()([inputs_cont, emb_concat])
 
     N = number_of_pupcandis
     P = n_features+n_features_cat
@@ -317,8 +332,13 @@ def mlp_mixer_embedding(n_features=6,
             name='embedding{}'.format(i_emb))(input_cat)
         embeddings.append(embedding)
 
-    emb_concat = Concatenate()(embeddings)
-    x = Concatenate()([inputs_cont, emb_concat])  # Shape: (batch, tokens, channels)
+    if len(embeddings) == 0:
+        x = inputs_cont
+    elif len(embeddings) == 1:
+        x = Concatenate()([inputs_cont, embeddings[0]])  # Shape: (batch, tokens, channels)
+    else:
+        emb_concat = Concatenate()(embeddings)
+        x = Concatenate()([inputs_cont, emb_concat])  # Shape: (batch, tokens, channels)
     
     x = Dense(hidden_dim, kernel_initializer='lecun_uniform', name='patch_projection')(x)
     x = BatchNormalization()(x)
@@ -391,4 +411,110 @@ def mlp_mixer_embedding(n_features=6,
         ])
     
     
+    return keras_model
+
+
+def jedi_linear_embedding(n_features=6,
+                          n_features_cat=2,
+                          activation='relu',
+                          number_of_pupcandis=128,
+                          embedding_input_dim={0: 13, 1: 3},
+                          emb_out_dim=8,
+                          with_bias=True,
+                          t_mode=1,
+                          units=[64, 32, 16],
+                          D_E=64):
+    """
+    JEDI-linear architecture with global information gathering.
+    Complexity is reduced from O(N^2) to O(N).
+    """
+    n_dense_layers = len(units)
+
+    inputs_cont = Input(shape=(number_of_pupcandis, n_features-2), name='input_cont')
+    pxpy = Input(shape=(number_of_pupcandis, 2), name='input_pxpy')
+
+    embeddings = []
+    inputs = [inputs_cont, pxpy]
+    for i_emb in range(n_features_cat):
+        input_cat = Input(shape=(number_of_pupcandis, ), name=f'input_cat{i_emb}')
+        inputs.append(input_cat)
+        embedding = Embedding(
+            input_dim=embedding_input_dim[i_emb],
+            output_dim=emb_out_dim,
+            embeddings_initializer=initializers.RandomNormal(
+                mean=0,
+                stddev=0.4/emb_out_dim),
+            name=f'embedding{i_emb}')(input_cat)
+        embeddings.append(embedding)
+
+    if len(embeddings) == 0:
+        x = inputs_cont
+    elif len(embeddings) == 1:
+        x = Concatenate()([inputs_cont, embeddings[0]])
+    else:
+        emb_concat = Concatenate()(embeddings)
+        x = Concatenate()([inputs_cont, emb_concat])
+
+    # Global information gathering (JEDI-linear formulation)
+    # 1) Global context vector: W_2 * (1/N_O) \sum(I_j)
+    context = GlobalAveragePooling1D(name='global_avg_pool')(x)
+    # The bias term 'C' is absorbed into this Dense layer
+    context = Dense(D_E, use_bias=True, kernel_initializer='lecun_uniform', name='context_dense')(context)
+    # Broadcast back to all particles: Reshape (batch, D_E) -> (batch, 1, D_E)
+    # TF Add will broadcast (batch, 1, D_E) + (batch, N, D_E) -> (batch, N, D_E)
+    context = Reshape((1, D_E), name='context_reshape')(context)
+
+    # 2) Transformation of individual particles: W_1 * I_i
+    indiv = Dense(D_E, use_bias=False, kernel_initializer='lecun_uniform', name='indiv_dense')(x)
+
+    # 3) Combine features: E_i' = W_2 * (1/N_O) \sum(I_j) + W_1 * I_i + C
+    x = Add(name='jedi_linear_add')([context, indiv])
+
+    # Processed by a shared dense layer (often multiple layers as specified by units)
+    for i_dense in range(n_dense_layers):
+        x = Dense(units[i_dense], activation='linear', kernel_initializer='lecun_uniform')(x)
+        x = BatchNormalization(momentum=0.95)(x)
+        x = Activation(activation=activation)(x)
+
+    # Output head (t_mode = 1 is DeepMET approach)
+    if t_mode == 0:
+        x = GlobalAveragePooling1D(name='pool')(x)
+        x = Dense(2, name='output', activation='linear')(x)
+
+    elif t_mode == 1:
+        if with_bias:
+            b = Dense(2, name='met_bias', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+            pxpy = Add()([pxpy, b])
+        w = Dense(1, name='met_weight', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        w = BatchNormalization(trainable=False, name='met_weight_minus_one', epsilon=False)(w)
+        x = Multiply()([w, pxpy])
+        # GlobalAveragePooling1D divides by N; restore sum via fixed Dense(x N)
+        x = GlobalAveragePooling1D(name='pool_output')(x)
+        x = Dense(2, use_bias=False, trainable=False, name='output')(x)
+
+    elif t_mode == 2:
+        w = Dense(1, name='puppi_weights', activation='linear', kernel_initializer=initializers.VarianceScaling(scale=0.02))(x)
+        # GlobalAveragePooling1D divides by N; restore sum via fixed Dense(x N)
+        w = GlobalAveragePooling1D(name='met_weight_pool')(w)
+        w = Dense(1, use_bias=False, trainable=False, name='met_weight')(w)
+
+        pmet = GlobalAveragePooling1D(name='pmet_pool')(pxpy)
+        pmet = Dense(2, use_bias=False, trainable=False, name='pmet')(pmet)
+        pmet = BatchNormalization(trainable=False, name='pmet_weight_minus_one', epsilon=False)(pmet)
+
+        x = Multiply()([w, pmet])
+
+    outputs = x
+
+    keras_model = Model(inputs=inputs, outputs=outputs)
+
+    N = number_of_pupcandis
+    if t_mode == 1:
+        keras_model.get_layer('met_weight_minus_one').set_weights([np.array([1.]), np.array([-1.]), np.array([0.]), np.array([1.])])
+        keras_model.get_layer('output').set_weights([np.array([[N, 0], [0, N]], dtype=np.float32)])
+    elif t_mode == 2:
+        keras_model.get_layer('met_weight').set_weights([np.array([[N]], dtype=np.float32)])
+        keras_model.get_layer('pmet').set_weights([np.array([[N, 0], [0, N]], dtype=np.float32)])
+        keras_model.get_layer('pmet_weight_minus_one').set_weights([np.array([1., 1.]), np.array([-1., -1.]), np.array([0., 0.]), np.array([1., 1.])])
+
     return keras_model

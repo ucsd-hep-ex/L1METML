@@ -3,7 +3,6 @@ import itertools
 import os
 import random
 
-# import setGPU
 import time
 from glob import glob
 
@@ -11,6 +10,15 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
 import tensorflow
+
+# GPU setup: enable memory growth to avoid OOM errors
+_gpus = tensorflow.config.list_physical_devices('GPU')
+for _gpu in _gpus:
+    tensorflow.config.experimental.set_memory_growth(_gpu, True)
+if _gpus:
+    print(f"[GPU] Found {len(_gpus)} GPU(s): {[g.name for g in _gpus]}")
+else:
+    print("[GPU] No GPU found, using CPU")
 import tqdm
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import optimizers
@@ -28,7 +36,7 @@ from config import Config, create_default_config, load_config, merge_config_with
 from cyclical_learning_rate import CyclicLR
 from DataGenerator import DataGenerator
 from loss import custom_loss_wrapper
-from models import mlp_mixer_embedding, dense_embedding, dense_embedding_quantized, graph_embedding
+from models import mlp_mixer_embedding, dense_embedding, dense_embedding_quantized, graph_embedding, jedi_linear_embedding
 from pruning.utils import apply_model_pruning, get_pruning_callbacks, get_pruning_config
 from utils import MakePlots, convertXY2PtPhi, preProcessing, read_input
 from Write_MET_binned_histogram import (
@@ -90,8 +98,10 @@ def get_callbacks_from_config(
         max_lr = clr_config.get("max_lr", 0.001)
         mode = clr_config.get("mode", "triangular2")
 
+        # samples_size is already the number of batches (steps per epoch)
+        # Author suggests setting step_size 2-8 x training iterations in epoch.
         clr = CyclicLR(
-            base_lr=base_lr, max_lr=max_lr, step_size=samples_size / batch_size, mode=mode
+            base_lr=base_lr, max_lr=max_lr, step_size=2 * samples_size, mode=mode
         )
         callbacks.append(clr)
 
@@ -125,17 +135,17 @@ def get_callbacks_from_config(
         save_best_only=True,
         save_weights_only=False,
         mode="auto",
-        period=1,
+        save_freq="epoch",
     )
     callbacks.append(model_checkpoint)
 
     # TensorBoard
     tensorboard = TensorBoard(
         log_dir=os.path.join(path_out, "tensorboard_logs"),
-        histogram_freq=1,
-        write_graph=True,
-        write_images=True,
-        update_freq="batch",
+        histogram_freq=0,
+        write_graph=False,
+        write_images=False,
+        update_freq="epoch",
         profile_batch=0,
         embeddings_freq=0,
         write_steps_per_second=True,
@@ -202,6 +212,19 @@ def create_model_from_config(config: Config, emb_input_dim: int, maxNPF: int):
             with_bias=with_bias,
             units=units,
         )
+    elif model_type == "jedi_linear_embedding":
+        return jedi_linear_embedding(
+            n_features=n_features_pf,
+            emb_out_dim=emb_out_dim,
+            n_features_cat=n_features_pf_cat,
+            activation=activation,
+            embedding_input_dim=emb_input_dim,
+            number_of_pupcandis=maxNPF,
+            t_mode=t_mode,
+            with_bias=with_bias,
+            units=units,
+            D_E=config.get("model.hidden_dim", 64),
+        )
     elif model_type == "graph_embedding":
         # Graph neural network with embedding layer
         return graph_embedding(
@@ -249,15 +272,43 @@ def compile_model(model, config: Config, custom_loss):
         )
     elif t_mode == 1 or t_mode == 2:
         optimizer = optimizers.Adam(
-            lr=optimizer_config.get("learning_rate", 1.0),
+            learning_rate=optimizer_config.get("learning_rate", 1.0),
             clipnorm=optimizer_config.get("clipnorm", 1.0),
         )
         model.compile(
             loss=custom_loss,
             optimizer=optimizer,
             metrics=["mean_absolute_error", "mean_squared_error"],
+            jit_compile=False,
         )
     return model
+
+
+def make_prefetch_dataset(generator):
+    """Wrap a keras.utils.Sequence in a tf.data.Dataset with AUTOTUNE prefetch.
+
+    In Keras 3, model.fit() no longer supports workers/use_multiprocessing.
+    The equivalent is to convert the generator to a tf.data.Dataset and use
+    prefetch(AUTOTUNE), which pipelines CPU data loading with GPU computation.
+    Drop the last (possibly incomplete) batch so cache() sees uniform shapes.
+    """
+    Xr0, Yr0 = generator[0]
+    batch_size = Yr0.shape[0]
+    x_sig = tuple(
+        tensorflow.TensorSpec(shape=(batch_size,) + x.shape[1:], dtype=tensorflow.float32)
+        for x in Xr0
+    )
+    y_sig = tensorflow.TensorSpec(shape=(batch_size,) + Yr0.shape[1:], dtype=tensorflow.float32)
+
+    n_full_batches = len(generator) - 1  # drop last incomplete batch
+
+    def py_gen():
+        for i in range(n_full_batches):
+            Xr, Yr = generator[i]
+            yield tuple(x.astype(np.float32) for x in Xr), Yr.astype(np.float32)
+
+    ds = tensorflow.data.Dataset.from_generator(py_gen, output_signature=(x_sig, y_sig))
+    return ds.cache().prefetch(tensorflow.data.AUTOTUNE)
 
 
 def train_dataGenerator_from_config(config: Config):
@@ -295,6 +346,7 @@ def train_dataGenerator_from_config(config: Config):
     # Model parameters
     compute_ef = config.get("data.compute_edge_feat")
     edge_list = config.get("data.edge_features", [])
+    feature_mode = config.get("data.feature_mode", "full")
 
     # File handling
     filesList = glob(os.path.join(inputPath, "*.h5"))
@@ -323,6 +375,8 @@ def train_dataGenerator_from_config(config: Config):
             maxNPF=maxNPF,
             compute_ef=1,
             edge_list=edge_list,
+            n_features_pf_cat=n_features_pf_cat,
+            feature_mode=feature_mode,
         )
         validGenerator = DataGenerator(
             list_files=valid_filesList,
@@ -330,6 +384,8 @@ def train_dataGenerator_from_config(config: Config):
             maxNPF=maxNPF,
             compute_ef=1,
             edge_list=edge_list,
+            n_features_pf_cat=n_features_pf_cat,
+            feature_mode=feature_mode,
         )
         testGenerator = DataGenerator(
             list_files=test_filesList,
@@ -337,18 +393,29 @@ def train_dataGenerator_from_config(config: Config):
             maxNPF=maxNPF,
             compute_ef=1,
             edge_list=edge_list,
+            n_features_pf_cat=n_features_pf_cat,
+            feature_mode=feature_mode,
         )
     else:
         trainGenerator = DataGenerator(
-            list_files=train_filesList, batch_size=batch_size
+            list_files=train_filesList, batch_size=batch_size,
+            n_features_pf_cat=n_features_pf_cat, feature_mode=feature_mode,
         )
         validGenerator = DataGenerator(
-            list_files=valid_filesList, batch_size=batch_size
+            list_files=valid_filesList, batch_size=batch_size,
+            n_features_pf_cat=n_features_pf_cat, feature_mode=feature_mode,
         )
-        testGenerator = DataGenerator(list_files=test_filesList, batch_size=batch_size)
+        testGenerator = DataGenerator(
+            list_files=test_filesList, batch_size=batch_size,
+            n_features_pf_cat=n_features_pf_cat, feature_mode=feature_mode,
+        )
 
     # get first batch to determine input dimensions
     Xr_train, Yr_train = trainGenerator[0]
+
+    # wrap generators in tf.data.Dataset with prefetch (Keras 3 multiprocessing equivalent)
+    train_ds = make_prefetch_dataset(trainGenerator)
+    valid_ds = make_prefetch_dataset(validGenerator)
 
     # create model
     if config.get("pruning.prune"):
@@ -378,10 +445,10 @@ def train_dataGenerator_from_config(config: Config):
 
     start_time = time.time()
     history = keras_model.fit(
-        trainGenerator,
+        train_ds,
         epochs=epochs,
-        verbose=1,  # switch to 1 for more verbosity
-        validation_data=validGenerator,
+        verbose=1,
+        validation_data=valid_ds,
         callbacks=callbacks,
     )
     end_time = time.time()
@@ -391,7 +458,8 @@ def train_dataGenerator_from_config(config: Config):
         keras_model = strip_pruning(keras_model)
 
     # Testing and results
-    predict_test = keras_model.predict(testGenerator) * normFac
+    test_ds = make_prefetch_dataset(testGenerator)
+    predict_test = keras_model.predict(test_ds) * normFac
     all_PUPPI_pt = []
     Yr_test = []
     for Xr, Yr in tqdm.tqdm(testGenerator):
@@ -493,10 +561,18 @@ def get_callbacks(path_out, sample_size, batch_size):
     )
 
     lr_scale = 1.0
+    # Determine step_size: if sample_size is small (number of batches), use it directly.
+    # If sample_size is large (total events), divide by batch_size.
+    # In both cases, step_size should be roughly 2-8 times steps_per_epoch.
+    if sample_size < batch_size: # Likely already steps per epoch
+        calculated_step_size = 2 * sample_size
+    else:
+        calculated_step_size = 2 * (sample_size / batch_size)
+
     clr = CyclicLR(
         base_lr=0.0003 * lr_scale,
         max_lr=0.001 * lr_scale,
-        step_size=sample_size / batch_size,
+        step_size=calculated_step_size,
         mode="triangular2",
     )
 
@@ -505,10 +581,10 @@ def get_callbacks(path_out, sample_size, batch_size):
     # tensorboard callback
     tensorboard = TensorBoard(
         log_dir=os.path.join(path_out, "tensorboard_logs"),
-        histogram_freq=1,
-        write_graph=True,
-        write_images=True,
-        update_freq="batch",
+        histogram_freq=0,
+        write_graph=False,
+        write_images=False,
+        update_freq="epoch",
         profile_batch=0,
         embeddings_freq=0,
         write_steps_per_second=True,
@@ -709,7 +785,7 @@ def train_dataGenerator(args):
         )
         verbose = 1
     elif t_mode == 1 or t_mode == 2:
-        optimizer = optimizers.Adam(lr=1.0, clipnorm=1.0)
+        optimizer = optimizers.Adam(learning_rate=1.0, clipnorm=1.0)
         keras_model.compile(
             loss=custom_loss,
             optimizer=optimizer,
@@ -938,7 +1014,7 @@ def train_loadAllData(args):
         )
         verbose = 1
     elif t_mode == 1:
-        optimizer = optimizers.Adam(lr=1.0, clipnorm=1.0)
+        optimizer = optimizers.Adam(learning_rate=1.0, clipnorm=1.0)
         keras_model.compile(
             loss=custom_loss,
             optimizer=optimizer,

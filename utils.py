@@ -1,6 +1,5 @@
 import math
 
-import awkward as ak
 import numpy as np
 
 
@@ -29,14 +28,34 @@ def convertXY2PtPhi(arrayXY):
     return arrayPtPhi
 
 
-def preProcessing(A, normFac, EVT=None):
-    """pre-processing input"""
+def preProcessing(A, normFac, EVT=None, feature_mode='full'):
+    """pre-processing input
+
+    Args:
+        feature_mode: 'full' uses (pt, eta, phi, puppi, hcalDepth) + (pdgId, charge);
+                      'eta_puppi_pdgid' uses only (eta, puppi) + (pdgId)
+    """
 
     norm = normFac
 
-    pt = A[:, :, 0:1] / norm
     px = A[:, :, 1:2] / norm
     py = A[:, :, 2:3] / norm
+    px[np.where(np.abs(px) > 500 / norm)] = 0.0
+    py[np.where(np.abs(py) > 500 / norm)] = 0.0
+    pxpy = np.concatenate((px, py), axis=2)
+
+    inputs_cat0 = A[:, :, 6]  # encoded PF pdgId
+    inputs_cat1 = A[:, :, 7]  # encoded PF charge
+
+    if feature_mode == 'eta_puppi_pdgid':
+        # Use only eta and puppi_weight as continuous features
+        eta = A[:, :, 3:4]
+        puppi = A[:, :, 5:6]
+        inputs = np.concatenate((eta, puppi), axis=2)
+        return inputs, pxpy, inputs_cat0, inputs_cat1
+
+    # Default: full feature set
+    pt = A[:, :, 0:1] / norm
     eta = A[:, :, 3:4]
     phi = A[:, :, 4:5]
     puppi = A[:, :, 5:6]
@@ -45,8 +64,6 @@ def preProcessing(A, normFac, EVT=None):
 
     # remove outliers
     pt[np.where(np.abs(pt) > 500 / norm)] = 0.0
-    px[np.where(np.abs(px) > 500 / norm)] = 0.0
-    py[np.where(np.abs(py) > 500 / norm)] = 0.0
 
     # Handle dxyErr outliers (replace -999 padding values and extreme values)
     dxyErr[np.where(dxyErr == -999)] = 0.0
@@ -57,10 +74,6 @@ def preProcessing(A, normFac, EVT=None):
     hcalDepth[np.where(np.abs(hcalDepth) > 100)] = 0.0  # Cap extreme hcalDepth values
 
     inputs = np.concatenate((pt, eta, phi, puppi, hcalDepth), axis=2)
-    pxpy = np.concatenate((px, py), axis=2)
-
-    inputs_cat0 = A[:, :, 6]  # encoded PF pdgId
-    inputs_cat1 = A[:, :, 7]  # encoded PF charge
 
     return inputs, pxpy, inputs_cat0, inputs_cat1
 
@@ -627,4 +640,5 @@ def Make1DHists(
 
 
 def to_np_array(ak_array, maxN=100, pad=0):
+    import awkward as ak
     return ak.fill_none(ak.pad_none(ak_array, maxN, clip=True, axis=-1), pad).to_numpy()
