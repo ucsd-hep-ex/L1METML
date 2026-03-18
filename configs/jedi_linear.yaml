@@ -1,0 +1,53 @@
+callbacks:
+  learning_rate:
+    type: cyclical
+  cyclical_lr:
+    base_lr: 0.0003
+    max_lr: 0.001
+    mode: triangular2
+  early_stopping:
+    monitor: val_loss
+    patience: 10
+data:
+  compute_edge_feat: 0
+  edge_features: []
+  feature_mode: eta_puppi_pdgid
+  maxNPF: 128
+  n_features_pf: 4        # 2 continuous (eta, puppi) + 2 for pxpy = 4 total
+  n_features_pf_cat: 1    # only pdgId
+  normFac: 100
+  preprocessed: true
+loss:
+  baseline_loss: true
+  mse_weight: 1.0
+  mae_weight: 1.0
+  add_respcorr: false
+  use_symmetry: false
+  symmetry_weight: 1.0
+model:
+  activation: tanh
+  emb_out_dim: 8
+  type: jedi_linear_embedding
+  hidden_dim: 64
+  units:
+  - 64
+  - 32
+  - 8
+  with_bias: false
+optimizer:
+  clipnorm: 1.0
+  learning_rate: 1.0
+  type: adam
+paths:
+  input: /cms/ldap_home/taebh/ml_workspace/projects/L1METML/inputs
+  output: /cms/ldap_home/taebh/ml_workspace/projects/L1METML/results/jedi_linear
+quantization:
+  enabled: false
+  int_bits: 2
+  total_bits: 7
+training:
+  batch_size: 16384
+  epochs: 200
+  mode: 1
+  normFac: 100
+  workflow_type: dataGenerator

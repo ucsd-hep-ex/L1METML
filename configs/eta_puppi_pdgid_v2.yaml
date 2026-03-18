@@ -1,0 +1,53 @@
+callbacks:
+  learning_rate:
+    type: cyclical
+  cyclical_lr:
+    base_lr: 0.0003
+    max_lr: 0.001
+    mode: triangular2
+  early_stopping:
+    monitor: val_loss
+    patience: 20
+data:
+  compute_edge_feat: 0
+  edge_features: []
+  feature_mode: full
+  maxNPF: 128
+  n_features_pf: 6        # full: pt, eta, phi, puppi + 2 for pxpy = 6 total
+  n_features_pf_cat: 2    # pdgId + charge
+  normFac: 100
+  preprocessed: true
+loss:
+  baseline_loss: true
+  mse_weight: 1.0
+  mae_weight: 1.0
+  add_respcorr: true
+  respcorr_factor: 1000
+  use_symmetry: false
+  symmetry_weight: 1.0
+model:
+  activation: tanh
+  emb_out_dim: 16
+  type: dense_embedding
+  units:
+  - 128
+  - 64
+  - 32
+  with_bias: true
+optimizer:
+  clipnorm: 1.0
+  learning_rate: 1.0
+  type: adam
+paths:
+  input: /cms/ldap_home/taebh/ml_workspace/projects/L1METML/inputs
+  output: /cms/ldap_home/taebh/ml_workspace/projects/L1METML/results/eta_puppi_pdgid_v2
+quantization:
+  enabled: false
+  int_bits: 2
+  total_bits: 7
+training:
+  batch_size: 16384
+  epochs: 200
+  mode: 1
+  normFac: 100
+  workflow_type: dataGenerator

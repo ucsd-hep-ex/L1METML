@@ -2,8 +2,6 @@
 import tensorflow
 import tensorflow.keras as keras
 import numpy as np
-import uproot
-import awkward as ak
 from utils import convertXY2PtPhi, preProcessing, to_np_array
 import h5py
 import os
@@ -14,10 +12,11 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
 
     def __init__(self, list_files, batch_size=1024, n_dim=100, maxNPF=100, compute_ef=0,
-                 max_entry=100000000, edge_list=[]):
+                 max_entry=100000000, edge_list=[], n_features_pf_cat=2, feature_mode='full'):
         'Initialization'
         self.n_features_pf = 6
-        self.n_features_pf_cat = 2
+        self.n_features_pf_cat = n_features_pf_cat
+        self.feature_mode = feature_mode
         self.normFac = 1.
         self.batch_size = batch_size
         self.n_dim = n_dim
@@ -105,6 +104,12 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         m2 = pij[:, :, 0]**2 - pij[:, :, 1]**2 - pij[:, :, 2]**2 - pij[:, :, 3]**2
         return m2
 
+    def __getstate__(self):
+        """Close file handles before pickling (required for multiprocessing workers)."""
+        state = self.__dict__.copy()
+        state['open_files'] = [None] * len(self.h5files)
+        return state
+
     def __data_generation(self, unique_files, starts, stops):
         'Generates data containing batch_size samples'
         # X : (n_samples, n_dim, n_channels)
@@ -114,18 +119,21 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         # Generate data
         for ifile, start, stop in zip(unique_files, starts, stops):
-            self.X, self.y = self.__get_features_labels(ifile, start, stop)
-            Xs.append(self.X)
-            ys.append(self.y)
+            X, y = self.__get_features_labels(ifile, start, stop)
+            Xs.append(X)
+            ys.append(y)
 
         # Stack data if going over multiple files
         if len(unique_files) > 1:
-            self.X = np.concatenate(Xs, axis=0)
-            self.y = np.concatenate(ys, axis=0)
+            X = np.concatenate(Xs, axis=0)
+            y = np.concatenate(ys, axis=0)
+        else:
+            X = Xs[0]
+            y = ys[0]
 
         # process inputs
-        Y = self.y / (self.normFac)#(-self.normFac)
-        Xi, Xp, Xc1, Xc2 = preProcessing(self.X, self.normFac)
+        Y = y / self.normFac
+        Xi, Xp, Xc1, Xc2 = preProcessing(X, self.normFac, feature_mode=self.feature_mode)
 
         N = self.maxNPF
         Nr = N*(N-1)
@@ -166,7 +174,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                 edge_stack.append(m2)
             ef = np.stack(edge_stack, axis=-1)
 
-            Xc = [Xc1, Xc2]
+            Xc = [Xc1, Xc2][:self.n_features_pf_cat]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
 
@@ -177,7 +185,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         #TODO: modify for new features
         else:
-            Xc = [Xc1, Xc2]
+            Xc = [Xc1, Xc2][:self.n_features_pf_cat]
             # dimension parameter for keras model
             self.emb_input_dim = {i: int(np.max(Xc[i][0:1000])) + 1 for i in range(self.n_features_pf_cat)}
 
@@ -200,9 +208,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
 
         if self.maxNPF < 100:
             order = X[:, :, 0].argsort(axis=1)[:, ::-1]
-            shape = np.shape(X)
-            for x in range(shape[0]):
-                X[x, :, :] = X[x, order[x], :]
+            X = X[np.arange(X.shape[0])[:, None], order, :]
             X = X[:, 0:self.maxNPF, :]
 
         return X, y

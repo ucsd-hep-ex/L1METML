@@ -131,13 +131,19 @@ class CyclicLR(Callback):
             return self.base_lr + (self.max_lr - self.base_lr) * \
                 np.maximum(0, (1 - x)) * self.scale_fn(self.clr_iterations)
 
+    def _set_lr(self, lr):
+        self.model.optimizer.learning_rate = lr
+
+    def _get_lr(self):
+        return float(self.model.optimizer.learning_rate)
+
     def on_train_begin(self, logs={}):
         logs = logs or {}
 
         if self.clr_iterations == 0:
-            K.set_value(self.model.optimizer.lr, self.base_lr)
+            self._set_lr(self.base_lr)
         else:
-            K.set_value(self.model.optimizer.lr, self.clr())
+            self._set_lr(self.clr())
 
     def on_batch_end(self, epoch, logs=None):
 
@@ -145,12 +151,9 @@ class CyclicLR(Callback):
         self.trn_iterations += 1
         self.clr_iterations += 1
 
-        K.set_value(self.model.optimizer.lr, self.clr())
+        self._set_lr(self.clr())
 
-        self.history.setdefault(
-            'lr', []).append(
-            K.get_value(
-                self.model.optimizer.lr))
+        self.history.setdefault('lr', []).append(self._get_lr())
         self.history.setdefault('iterations', []).append(self.trn_iterations)
 
         for k, v in logs.items():
@@ -158,4 +161,4 @@ class CyclicLR(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        logs['lr'] = K.get_value(self.model.optimizer.lr)
+        logs['lr'] = self._get_lr()
